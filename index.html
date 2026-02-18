@@ -35,15 +35,15 @@
         <span class="challenge-date">2026-02-18</span>
         <span class="badge medium">Medium</span>
       </div>
-      <h2>Typed Retry Pipeline with Result&lt;T, E&gt;</h2>
-      <p>You're building a resilient data-ingestion service that fetches records from unreliable third-party APIs. Each fetch operation can fail with distinct, typed errors — and callers need to configure per-operation retry budgets while getting back a strongly-typed Result instead of raw thrown exceptions.</p>
+      <h2>Typed Event Emitter with Middleware Chain</h2>
+      <p>You're building a plugin-friendly analytics SDK where every tracked event flows through a configurable middleware chain before being dispatched. Each middleware can transform the event payload, short-circuit the chain, or pass control to the next handler — all with full type safety across a heterogeneous event map.</p>
       <div class="challenge-goals">
         <h3>Goals</h3>
         <ul>
-          <li>Define the Ok&lt;T&gt;/Err&lt;E&gt; discriminated union and the FetchError typed error hierarchy, then implement the ok() and err() constructor helpers.</li>
-          <li>Implement the isOk and isErr type-guard functions so callers can narrow a Result&lt;T,E&gt; to its concrete variant without casting.</li>
-          <li>Implement mapResult and matchResult to transform and consume Result values in a fully type-safe, exception-free style.</li>
-          <li>Implement withRetry so it re-invokes a fallible async operation up to maxAttempts times with exponential back-off, returning the first Ok or the final Err.</li>
+          <li>Define the `Middleware&lt;TPayload&gt;` type and implement `composeMiddleware` so middleware run left-to-right, threading the payload and supporting short-circuiting.</li>
+          <li>Implement `TypedEmitter&lt;TMap&gt;` with per-event middleware and handler registries, keyed by `keyof TMap`.</li>
+          <li>Ensure `use`, `on`, and `emit` are fully type-safe: the payload type for each event is inferred from `TMap` without any `any` or casts.</li>
+          <li>Handle edge cases: no registered middleware/handlers (no-op), short-circuiting, and multiple terminal handlers all receiving the final mutated payload.</li>
         </ul>
       </div>
       <div class="code-block">
@@ -53,45 +53,50 @@
           <span class="dot green"></span>
           <span class="code-block-title">challenge.ts</span>
         </div>
-        <pre><code class="language-typescript">// Core types and main function signature
+        <pre><code class="language-typescript">// Core types and main class signature at a glance
 
-export type Ok&lt;T&gt;  = { readonly _tag: &quot;ok&quot;;  readonly value: T };
-export type Err&lt;E&gt; = { readonly _tag: &quot;err&quot;; readonly error: E };
-export type Result&lt;T, E&gt; = Ok&lt;T&gt; | Err&lt;E&gt;;
+export type EventMap = Record&lt;string, object&gt;;
 
-export type FetchError =
-  | { kind: &quot;network&quot;; message: string; statusCode: number }
-  | { kind: &quot;parse&quot;;   message: string; raw: string }
-  | { kind: &quot;timeout&quot;; message: string; afterMs: number };
+export type Middleware&lt;TPayload extends object&gt; = (
+  payload: TPayload,
+  next: (payload: TPayload) =&gt; void
+) =&gt; void;
 
-export interface RetryOptions {
-  maxAttempts: number; // total attempts (&gt;= 1)
-  baseDelayMs: number; // delay = baseDelayMs * 2^attemptIndex
+export function composeMiddleware&lt;TPayload extends object&gt;(
+  middlewares: ReadonlyArray&lt;Middleware&lt;TPayload&gt;&gt;
+): Middleware&lt;TPayload&gt; { /* ... */ }
+
+// Usage example:
+interface AppEvents extends EventMap {
+  pageView: { path: string; userId: string };
+  purchase: { itemId: string; price: number; currency: string };
 }
 
-export async function withRetry&lt;T, E&gt;(
-  operation: () =&gt; Promise&lt;Result&lt;T, E&gt;&gt;,
-  options: RetryOptions
-): Promise&lt;Result&lt;T, E&gt;&gt; { /* TODO */ throw new Error(&quot;not implemented&quot;); }</code></pre>
+export class TypedEmitter&lt;TMap extends EventMap&gt; {
+  use&lt;K extends keyof TMap&gt;(event: K, mw: Middleware&lt;TMap[K]&gt;): this { /* ... */ }
+  on&lt;K extends keyof TMap&gt;(event: K, handler: (payload: TMap[K]) =&gt; void): this { /* ... */ }
+  emit&lt;K extends keyof TMap&gt;(event: K, payload: TMap[K]): void { /* ... */ }
+}
+</code></pre>
       </div>
       <details class="challenge-hints-details">
         <summary>Hints (click to reveal)</summary>
       <div class="challenge-hints">
         <h3>Hints</h3>
         <ul>
-          <li>For Ok&lt;T&gt; and Err&lt;E&gt;, use a readonly literal discriminant field (e.g. `_tag: 'ok'`) — TypeScript will use it to narrow the union in isOk/isErr without any casting.</li>
-          <li>In withRetry, track the 0-based attempt index in a loop; the delay before attempt i+1 is `baseDelayMs * Math.pow(2, i)` — await a small Promise timeout helper between retries.</li>
-          <li>matchResult can be implemented in two lines using isOk/isErr — let the type guards do the narrowing so you never need `as` or `any`.</li>
+          <li>For `composeMiddleware`, think recursively or with `reduceRight` — each middleware wraps the remainder of the chain as its own `next`.</li>
+          <li>Inside `TypedEmitter`, you can't use `TMap[K]` as a storage key type directly. Consider using `Map&lt;keyof TMap, ...&gt;` with a helper type or storing handlers as `Array&lt;(p: object) =&gt; void&gt;` keyed by event name — the public API still enforces the correct types.</li>
+          <li>Returning `this` from `use` and `on` enables fluent chaining; TypeScript will infer the concrete subclass type if you ever extend `TypedEmitter`.</li>
         </ul>
       </div>
       </details>
       <div class="challenge-docs">
         <h3>Useful resources</h3>
         <ul>
-          <li><a href="https://www.typescriptlang.org/docs/handbook/2/narrowing.html#discriminated-unions" target="_blank" rel="noopener noreferrer">TypeScript Handbook – Discriminated Unions</a></li>
-          <li><a href="https://www.typescriptlang.org/docs/handbook/2/generics.html" target="_blank" rel="noopener noreferrer">TypeScript Handbook – Generic Functions</a></li>
-          <li><a href="https://www.typescriptlang.org/docs/handbook/2/narrowing.html#using-type-predicates" target="_blank" rel="noopener noreferrer">TypeScript Handbook – Narrowing (type predicates)</a></li>
-          <li><a href="https://developer.mozilla.org/en-US/docs/Learn_web_development/Extensions/Async_JS/Promises" target="_blank" rel="noopener noreferrer">MDN – Promise &amp; async/await</a></li>
+          <li><a href="https://www.typescriptlang.org/docs/handbook/2/generics.html" target="_blank" rel="noopener noreferrer">TypeScript Handbook – Generics</a></li>
+          <li><a href="https://www.typescriptlang.org/docs/handbook/2/indexed-access-types.html" target="_blank" rel="noopener noreferrer">TypeScript Handbook – keyof &amp; Indexed Access Types</a></li>
+          <li><a href="https://www.typescriptlang.org/docs/handbook/2/mapped-types.html" target="_blank" rel="noopener noreferrer">TypeScript Handbook – Mapped Types</a></li>
+          <li><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/reduceRight" target="_blank" rel="noopener noreferrer">MDN – Array.prototype.reduceRight</a></li>
         </ul>
       </div>
       <a class="cta-button" href="https://codesandbox.io/p/github/niltonheck/typedrop/challenge/2026-02-18" target="_blank" rel="noopener noreferrer">

@@ -77,5 +77,41 @@
         "url": "https://developer.mozilla.org/en-US/docs/Learn_web_development/Extensions/Async_JS/Promises"
       }
     ]
+  },
+  {
+    "date": "2026-02-18",
+    "name": "Typed Event Emitter with Middleware Chain",
+    "difficulty": "Medium",
+    "description": "You're building a plugin-friendly analytics SDK where every tracked event flows through a configurable middleware chain before being dispatched. Each middleware can transform the event payload, short-circuit the chain, or pass control to the next handler — all with full type safety across a heterogeneous event map.",
+    "snippet": "// Core types and main class signature at a glance\n\nexport type EventMap = Record<string, object>;\n\nexport type Middleware<TPayload extends object> = (\n  payload: TPayload,\n  next: (payload: TPayload) => void\n) => void;\n\nexport function composeMiddleware<TPayload extends object>(\n  middlewares: ReadonlyArray<Middleware<TPayload>>\n): Middleware<TPayload> { /* ... */ }\n\n// Usage example:\ninterface AppEvents extends EventMap {\n  pageView: { path: string; userId: string };\n  purchase: { itemId: string; price: number; currency: string };\n}\n\nexport class TypedEmitter<TMap extends EventMap> {\n  use<K extends keyof TMap>(event: K, mw: Middleware<TMap[K]>): this { /* ... */ }\n  on<K extends keyof TMap>(event: K, handler: (payload: TMap[K]) => void): this { /* ... */ }\n  emit<K extends keyof TMap>(event: K, payload: TMap[K]): void { /* ... */ }\n}\n",
+    "goals": [
+      "Define the `Middleware<TPayload>` type and implement `composeMiddleware` so middleware run left-to-right, threading the payload and supporting short-circuiting.",
+      "Implement `TypedEmitter<TMap>` with per-event middleware and handler registries, keyed by `keyof TMap`.",
+      "Ensure `use`, `on`, and `emit` are fully type-safe: the payload type for each event is inferred from `TMap` without any `any` or casts.",
+      "Handle edge cases: no registered middleware/handlers (no-op), short-circuiting, and multiple terminal handlers all receiving the final mutated payload."
+    ],
+    "hints": [
+      "For `composeMiddleware`, think recursively or with `reduceRight` — each middleware wraps the remainder of the chain as its own `next`.",
+      "Inside `TypedEmitter`, you can't use `TMap[K]` as a storage key type directly. Consider using `Map<keyof TMap, ...>` with a helper type or storing handlers as `Array<(p: object) => void>` keyed by event name — the public API still enforces the correct types.",
+      "Returning `this` from `use` and `on` enables fluent chaining; TypeScript will infer the concrete subclass type if you ever extend `TypedEmitter`."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript Handbook – Generics",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/generics.html"
+      },
+      {
+        "title": "TypeScript Handbook – keyof & Indexed Access Types",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/indexed-access-types.html"
+      },
+      {
+        "title": "TypeScript Handbook – Mapped Types",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/mapped-types.html"
+      },
+      {
+        "title": "MDN – Array.prototype.reduceRight",
+        "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/reduceRight"
+      }
+    ]
   }
 ]
