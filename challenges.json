@@ -1,0 +1,81 @@
+[
+  {
+    "date": "2026-02-17",
+    "name": "Strict Omit",
+    "difficulty": "Medium",
+    "description": "Implement a StrictOmit type that works like Omit, but raises a compile error if you try to omit keys that don't exist on the original type.",
+    "snippet": "type StrictOmit<T, K extends keyof T> = /* your implementation */"
+  },
+  {
+    "date": "2026-02-18",
+    "name": "Paginated API Client with Typed Cursors",
+    "difficulty": "Medium",
+    "description": "You're building a typed API client for a product catalog service. The API uses cursor-based pagination where each resource type has its own cursor shape — you must model this with generics and discriminated unions so callers never mix up cursors across endpoints.",
+    "snippet": "declare const __brand: unique symbol;\ntype Cursor<TResource extends string> = string & { readonly [__brand]: TResource };\n\ninterface RawPage {\n  items: unknown[];\n  total: number;\n  nextCursor: string | null;\n}\n\n// You define these:\ntype Page<TItem, TResource extends string> = never;     // TODO\ntype Endpoint<TItem, TResource extends string> = never; // TODO\n\n// Then implement:\ndeclare function fetchPage<TItem, TResource extends string>(\n  endpoint: Endpoint<TItem, TResource>,\n  cursor?: Cursor<TResource>         // branded — can't mix product/order cursors!\n): Promise<Page<TItem, TResource>>;\n\ndeclare function collectAllPages<TItem, TResource extends string>(\n  endpoint: Endpoint<TItem, TResource>\n): Promise<TItem[]>;",
+    "goals": [
+      "Define a branded `Cursor<TResource>` type that prevents passing an order cursor to a product endpoint at compile time",
+      "Model `Page<TItem, TResource>` and `Endpoint<TItem, TResource>` as generic types that thread the same `TResource` literal through cursor branding",
+      "Implement `fetchPage` to call the endpoint's fetcher, validate each item, and return a properly typed `Page`",
+      "Implement `collectAllPages` to follow `nextCursor` links sequentially until exhausted, returning a flat `TItem[]`"
+    ],
+    "hints": [
+      "A branded type is just an intersection with a unique phantom property — `type Cursor<R extends string> = string & { readonly [__brand]: R }`",
+      "To create a branded cursor from a raw API string without spreading `as` everywhere, use the pre-written `brandCursor` helper inside your `fetchPage` implementation",
+      "For `collectAllPages`, a `while (cursor !== null)` loop that reassigns `cursor = page.nextCursor` after each `await fetchPage(...)` is the cleanest pattern"
+    ],
+    "docs": [
+      {
+        "title": "TypeScript Handbook — Generics",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/generics.html"
+      },
+      {
+        "title": "TypeScript Handbook — Utility Types",
+        "url": "https://www.typescriptlang.org/docs/handbook/utility-types.html"
+      },
+      {
+        "title": "TypeScript Handbook — Narrowing",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html"
+      },
+      {
+        "title": "TypeScript Deep Dive — Branded Types",
+        "url": "https://basarat.gitbook.io/typescript/main-1/nominaltyping"
+      }
+    ]
+  },
+  {
+    "date": "2026-02-18",
+    "name": "Typed Retry Pipeline with Result<T, E>",
+    "difficulty": "Medium",
+    "description": "You're building a resilient data-ingestion service that fetches records from unreliable third-party APIs. Each fetch operation can fail with distinct, typed errors — and callers need to configure per-operation retry budgets while getting back a strongly-typed Result instead of raw thrown exceptions.",
+    "snippet": "// Core types and main function signature\n\nexport type Ok<T>  = { readonly _tag: \"ok\";  readonly value: T };\nexport type Err<E> = { readonly _tag: \"err\"; readonly error: E };\nexport type Result<T, E> = Ok<T> | Err<E>;\n\nexport type FetchError =\n  | { kind: \"network\"; message: string; statusCode: number }\n  | { kind: \"parse\";   message: string; raw: string }\n  | { kind: \"timeout\"; message: string; afterMs: number };\n\nexport interface RetryOptions {\n  maxAttempts: number; // total attempts (>= 1)\n  baseDelayMs: number; // delay = baseDelayMs * 2^attemptIndex\n}\n\nexport async function withRetry<T, E>(\n  operation: () => Promise<Result<T, E>>,\n  options: RetryOptions\n): Promise<Result<T, E>> { /* TODO */ throw new Error(\"not implemented\"); }",
+    "goals": [
+      "Define the Ok<T>/Err<E> discriminated union and the FetchError typed error hierarchy, then implement the ok() and err() constructor helpers.",
+      "Implement the isOk and isErr type-guard functions so callers can narrow a Result<T,E> to its concrete variant without casting.",
+      "Implement mapResult and matchResult to transform and consume Result values in a fully type-safe, exception-free style.",
+      "Implement withRetry so it re-invokes a fallible async operation up to maxAttempts times with exponential back-off, returning the first Ok or the final Err."
+    ],
+    "hints": [
+      "For Ok<T> and Err<E>, use a readonly literal discriminant field (e.g. `_tag: 'ok'`) — TypeScript will use it to narrow the union in isOk/isErr without any casting.",
+      "In withRetry, track the 0-based attempt index in a loop; the delay before attempt i+1 is `baseDelayMs * Math.pow(2, i)` — await a small Promise timeout helper between retries.",
+      "matchResult can be implemented in two lines using isOk/isErr — let the type guards do the narrowing so you never need `as` or `any`."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript Handbook – Discriminated Unions",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html#discriminated-unions"
+      },
+      {
+        "title": "TypeScript Handbook – Generic Functions",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/generics.html"
+      },
+      {
+        "title": "TypeScript Handbook – Narrowing (type predicates)",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html#using-type-predicates"
+      },
+      {
+        "title": "MDN – Promise & async/await",
+        "url": "https://developer.mozilla.org/en-US/docs/Learn_web_development/Extensions/Async_JS/Promises"
+      }
+    ]
+  }
+]

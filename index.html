@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TypeDrop — Daily TypeScript Challenges</title>
+  <meta name="description" content="A new TypeScript challenge every day. AI-generated, open source, zero setup — just click and code in CodeSandbox.">
+  <meta property="og:title" content="TypeDrop — Daily TypeScript Challenges">
+  <meta property="og:description" content="A new TypeScript challenge every day. Sharpen your types.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://niltonheck.github.io/typedrop/">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="TypeDrop — Daily TypeScript Challenges">
+  <meta name="twitter:description" content="A new TypeScript challenge every day. AI-generated, open source, zero setup.">
+  <link rel="icon" href="misc/favicon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Permanent+Marker&display=swap">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/fontsource/fonts/0x-proto@latest/latin-400-normal.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/fontsource/fonts/0x-proto@latest/latin-700-normal.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1/themes/prism-tomorrow.min.css">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <a href="#challenge" class="skip-link">Skip to challenge</a>
+  <main>
+    <header>
+      <h1>TypeDrop</h1>
+      <p class="tagline">A new TypeScript challenge every day. Sharpen your types.</p>
+    </header>
+
+    <!-- CHALLENGE_START -->
+    <section class="challenge-card">
+      <div class="challenge-header">
+        <span class="challenge-date">2026-02-18</span>
+        <span class="badge medium">Medium</span>
+      </div>
+      <h2>Typed Retry Pipeline with Result&lt;T, E&gt;</h2>
+      <p>You're building a resilient data-ingestion service that fetches records from unreliable third-party APIs. Each fetch operation can fail with distinct, typed errors — and callers need to configure per-operation retry budgets while getting back a strongly-typed Result instead of raw thrown exceptions.</p>
+      <div class="challenge-goals">
+        <h3>Goals</h3>
+        <ul>
+          <li>Define the Ok&lt;T&gt;/Err&lt;E&gt; discriminated union and the FetchError typed error hierarchy, then implement the ok() and err() constructor helpers.</li>
+          <li>Implement the isOk and isErr type-guard functions so callers can narrow a Result&lt;T,E&gt; to its concrete variant without casting.</li>
+          <li>Implement mapResult and matchResult to transform and consume Result values in a fully type-safe, exception-free style.</li>
+          <li>Implement withRetry so it re-invokes a fallible async operation up to maxAttempts times with exponential back-off, returning the first Ok or the final Err.</li>
+        </ul>
+      </div>
+      <div class="code-block">
+        <div class="code-block-header">
+          <span class="dot red"></span>
+          <span class="dot yellow"></span>
+          <span class="dot green"></span>
+          <span class="code-block-title">challenge.ts</span>
+        </div>
+        <pre><code class="language-typescript">// Core types and main function signature
+
+export type Ok&lt;T&gt;  = { readonly _tag: &quot;ok&quot;;  readonly value: T };
+export type Err&lt;E&gt; = { readonly _tag: &quot;err&quot;; readonly error: E };
+export type Result&lt;T, E&gt; = Ok&lt;T&gt; | Err&lt;E&gt;;
+
+export type FetchError =
+  | { kind: &quot;network&quot;; message: string; statusCode: number }
+  | { kind: &quot;parse&quot;;   message: string; raw: string }
+  | { kind: &quot;timeout&quot;; message: string; afterMs: number };
+
+export interface RetryOptions {
+  maxAttempts: number; // total attempts (&gt;= 1)
+  baseDelayMs: number; // delay = baseDelayMs * 2^attemptIndex
+}
+
+export async function withRetry&lt;T, E&gt;(
+  operation: () =&gt; Promise&lt;Result&lt;T, E&gt;&gt;,
+  options: RetryOptions
+): Promise&lt;Result&lt;T, E&gt;&gt; { /* TODO */ throw new Error(&quot;not implemented&quot;); }</code></pre>
+      </div>
+      <details class="challenge-hints-details">
+        <summary>Hints (click to reveal)</summary>
+      <div class="challenge-hints">
+        <h3>Hints</h3>
+        <ul>
+          <li>For Ok&lt;T&gt; and Err&lt;E&gt;, use a readonly literal discriminant field (e.g. `_tag: 'ok'`) — TypeScript will use it to narrow the union in isOk/isErr without any casting.</li>
+          <li>In withRetry, track the 0-based attempt index in a loop; the delay before attempt i+1 is `baseDelayMs * Math.pow(2, i)` — await a small Promise timeout helper between retries.</li>
+          <li>matchResult can be implemented in two lines using isOk/isErr — let the type guards do the narrowing so you never need `as` or `any`.</li>
+        </ul>
+      </div>
+      </details>
+      <div class="challenge-docs">
+        <h3>Useful resources</h3>
+        <ul>
+          <li><a href="https://www.typescriptlang.org/docs/handbook/2/narrowing.html#discriminated-unions" target="_blank" rel="noopener noreferrer">TypeScript Handbook – Discriminated Unions</a></li>
+          <li><a href="https://www.typescriptlang.org/docs/handbook/2/generics.html" target="_blank" rel="noopener noreferrer">TypeScript Handbook – Generic Functions</a></li>
+          <li><a href="https://www.typescriptlang.org/docs/handbook/2/narrowing.html#using-type-predicates" target="_blank" rel="noopener noreferrer">TypeScript Handbook – Narrowing (type predicates)</a></li>
+          <li><a href="https://developer.mozilla.org/en-US/docs/Learn_web_development/Extensions/Async_JS/Promises" target="_blank" rel="noopener noreferrer">MDN – Promise &amp; async/await</a></li>
+        </ul>
+      </div>
+      <a class="cta-button" href="https://codesandbox.io/p/github/niltonheck/typedrop/challenge/2026-02-18" target="_blank" rel="noopener noreferrer">
+        <img class="csb-icon" src="https://cdn.simpleicons.org/codesandbox/e0e0e0" alt=""> Open in CodeSandbox
+      </a>
+    </section>
+    <!-- CHALLENGE_END -->
+
+    <footer>
+      <p>
+        Challenges are AI-generated and open source.
+        <a href="https://github.com/niltonheck/typedrop" target="_blank" rel="noopener noreferrer">View on GitHub</a>
+        &middot;
+        <a href="archive.html">Archive</a>
+      </p>
+      <p>
+        Built with <svg class="inline-icon heart-icon" viewBox="0 0 24 24" fill="currentColor" aria-label="love"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg> and <img src="https://cdn.simpleicons.org/anthropic/d4a27f" alt="Claude" class="inline-icon"> from <a href="https://www.youtube.com/watch?v=s9hl8i_yeUw" target="_blank" rel="noopener noreferrer"><img src="misc/pe-flag.jpg" alt="Peru" class="flag-icon"></a> by
+        <a href="https://github.com/niltonheck" target="_blank" rel="noopener noreferrer">@niltonheck</a>
+      </p>
+    </footer>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1/prism.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1/components/prism-typescript.min.js"></script>
+</body>
+</html>
