@@ -113,5 +113,41 @@
         "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/reduceRight"
       }
     ]
+  },
+  {
+    "date": "2026-02-18",
+    "name": "Typed In-Memory LRU Cache with TTL",
+    "difficulty": "Medium",
+    "description": "You're building a client-side data layer for a dashboard that fetches expensive aggregations from a REST API. To avoid redundant network calls, you need a generic, strongly-typed LRU (Least Recently Used) cache that also supports per-entry TTL (time-to-live) expiration — with a branded key type so callers can't accidentally mix cache namespaces.",
+    "snippet": "// Key types needed to understand the main factory:\n\ntype CacheKey<NS extends string> = string & { readonly __ns: NS };\n\ntype CacheEntry<T> = {\n  value: T;\n  insertedAt: number; // Date.now() ms\n  ttl: number;        // 0 = no expiry\n};\n\ntype CacheOptions = {\n  maxSize: number;\n  defaultTtl: number;\n};\n\ninterface LRUCache<NS extends string, T> {\n  set(key: CacheKey<NS>, value: T, ttl?: number): void;\n  get(key: CacheKey<NS>): T | undefined;\n  delete(key: CacheKey<NS>): boolean;\n  clear(): void;\n  size(): number;\n  keys(): ReadonlyArray<CacheKey<NS>>;\n}\n\n// Main factory — you implement this:\nfunction createLRUCache<NS extends string, T>(\n  ns: NS,\n  options: CacheOptions\n): LRUCache<NS, T> { /* ... */ }\n",
+    "goals": [
+      "Define a branded `CacheKey<NS>` type so that keys from different namespaces are incompatible at compile time.",
+      "Implement `createLRUCache` returning an object that fully satisfies the `LRUCache<NS, T>` interface.",
+      "Correctly handle LRU eviction using insertion-order tracking so the least-recently-used entry is dropped when `maxSize` is exceeded.",
+      "Support per-entry TTL expiration: expired entries must be treated as absent on `get`, `size`, and `keys`."
+    ],
+    "hints": [
+      "A JavaScript `Map` preserves insertion order — you can simulate LRU by deleting a key and re-inserting it on every `set` or cache hit, so the Map's natural order always reflects LRU → MRU.",
+      "To create a branded type without `as`, define the brand as a `readonly` property in an intersection: `type CacheKey<NS extends string> = string & { readonly __ns: NS }` — then use a single, carefully scoped assertion only inside `makeCacheKey`.",
+      "For `size()` and `keys()`, iterate the internal Map and filter out expired entries lazily (check `Date.now() - entry.insertedAt > entry.ttl`) rather than running a background sweep."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript Handbook — Generics",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/generics.html"
+      },
+      {
+        "title": "TypeScript Handbook — Utility Types",
+        "url": "https://www.typescriptlang.org/docs/handbook/utility-types.html"
+      },
+      {
+        "title": "MDN — Map (insertion-order iteration)",
+        "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Map"
+      },
+      {
+        "title": "TypeScript Deep Dive — Branded Types",
+        "url": "https://basarat.gitbook.io/typescript/main-1/nominaltyping"
+      }
+    ]
   }
 ]
