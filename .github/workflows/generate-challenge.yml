@@ -37,6 +37,9 @@ jobs:
           # Stash challenges.json update (belongs to main, not the branch)
           git stash push challenges.json -- 2>/dev/null || true
 
+          # Remove existing branch if re-running on the same day
+          git push origin --delete "${BRANCH}" 2>/dev/null || true
+
           # Create challenge branch with only the output files
           git checkout -b "${BRANCH}"
           cp challenge-output/* .
