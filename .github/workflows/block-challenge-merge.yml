@@ -1,0 +1,15 @@
+name: Block challenge branch merges
+
+on:
+  pull_request:
+    branches: [main]
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Block challenge branches
+        if: startsWith(github.head_ref, 'challenge/')
+        run: |
+          echo "::error::Challenge branches should not be merged into main."
+          exit 1

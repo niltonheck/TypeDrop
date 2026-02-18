@@ -1,0 +1,47 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" width="1200" height="630">
+  <defs>
+    <style>
+      @import url('https://fonts.googleapis.com/css2?family=Permanent+Marker&amp;display=swap');
+    </style>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1200" height="630" fill="#0a0a0a"/>
+
+  <!-- Subtle grid pattern -->
+  <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+    <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#1a1a1a" stroke-width="0.5"/>
+  </pattern>
+  <rect width="1200" height="630" fill="url(#grid)"/>
+
+  <!-- Accent line top -->
+  <rect x="0" y="0" width="1200" height="3" fill="#3b82f6"/>
+
+  <!-- Traffic light dots -->
+  <circle cx="80" cy="80" r="8" fill="#ff5f57"/>
+  <circle cx="106" cy="80" r="8" fill="#febc2e"/>
+  <circle cx="132" cy="80" r="8" fill="#28c840"/>
+
+  <!-- Title -->
+  <text x="600" y="250" text-anchor="middle" font-family="Permanent Marker, cursive" font-size="96" fill="#ffffff" letter-spacing="2">TypeDrop</text>
+
+  <!-- Tagline -->
+  <text x="600" y="330" text-anchor="middle" font-family="monospace" font-size="28" fill="#999999">A new TypeScript challenge every day.</text>
+  <text x="600" y="370" text-anchor="middle" font-family="monospace" font-size="28" fill="#999999">AI-generated. Open source. Zero setup.</text>
+
+  <!-- Difficulty badges -->
+  <rect x="370" y="420" width="80" height="32" rx="4" fill="#0d3b1e"/>
+  <text x="410" y="442" text-anchor="middle" font-family="monospace" font-size="14" font-weight="bold" fill="#4ade80" letter-spacing="1">EASY</text>
+
+  <rect x="470" y="420" width="110" height="32" rx="4" fill="#3b2e0d"/>
+  <text x="525" y="442" text-anchor="middle" font-family="monospace" font-size="14" font-weight="bold" fill="#facc15" letter-spacing="1">MEDIUM</text>
+
+  <rect x="600" y="420" width="80" height="32" rx="4" fill="#3b0d0d"/>
+  <text x="640" y="442" text-anchor="middle" font-family="monospace" font-size="14" font-weight="bold" fill="#f87171" letter-spacing="1">HARD</text>
+
+  <!-- Code snippet hint -->
+  <text x="600" y="530" text-anchor="middle" font-family="monospace" font-size="20" fill="#3b82f6">type Challenge = { types: true; algorithms: false };</text>
+
+  <!-- URL -->
+  <text x="600" y="590" text-anchor="middle" font-family="monospace" font-size="16" fill="#666666">niltonheck.github.io/TypeDrop</text>
+</svg>
