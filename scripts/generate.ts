@@ -279,6 +279,39 @@ async function generate() {
     ) + "\n"
   );
 
+  // CodeSandbox configuration
+  mkdirSync(join(OUTPUT_DIR, ".codesandbox"), { recursive: true });
+
+  writeFileSync(
+    join(OUTPUT_DIR, ".codesandbox", "tasks.json"),
+    JSON.stringify(
+      {
+        setupTasks: [
+          { name: "Install Dependencies", command: "npm install" },
+        ],
+        tasks: {
+          "type-check": {
+            name: "Type Check",
+            command: "npx tsc --noEmit",
+            runAtStart: false,
+          },
+          "run-tests": {
+            name: "Run Tests",
+            command: "npx tsx challenge.test.ts",
+            runAtStart: false,
+          },
+          test: {
+            name: "Type Check + Run Tests",
+            command: "npm test",
+            runAtStart: false,
+          },
+        },
+      },
+      null,
+      2
+    ) + "\n"
+  );
+
   // --- Update challenges.json (stays in repo root for main branch) ---
 
   const challengesPath = "challenges.json";

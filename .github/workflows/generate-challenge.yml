@@ -42,7 +42,8 @@ jobs:
           # Create challenge branch with only the output files
           git checkout -b "${BRANCH}"
           cp challenge-output/* .
-          git add challenge.ts challenge.test.ts README.md tsconfig.json package.json
+          cp -r challenge-output/.codesandbox .
+          git add challenge.ts challenge.test.ts README.md tsconfig.json package.json .codesandbox/
           git commit -m "challenge: ${DATE}"
           git push origin "${BRANCH}"
 

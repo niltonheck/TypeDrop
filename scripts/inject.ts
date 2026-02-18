@@ -50,7 +50,7 @@ function inject() {
     process.exit(1);
   }
 
-  const sandboxURL = `https://codesandbox.io/p/github/${REPO_OWNER}/${REPO_NAME}/challenge/${escapeAttr(latest.date)}`;
+  const sandboxURL = `https://codesandbox.io/p/devbox/github/${REPO_OWNER}/${REPO_NAME}/tree/challenge/${escapeAttr(latest.date)}`;
   const difficultyClass = VALID_DIFFICULTIES.has(latest.difficulty.toLowerCase())
     ? latest.difficulty.toLowerCase()
     : "medium";
@@ -121,7 +121,7 @@ function generateArchive(
           <td><span class="badge ${VALID_DIFFICULTIES.has(c.difficulty.toLowerCase()) ? c.difficulty.toLowerCase() : "medium"}">${escapeHTML(c.difficulty)}</span></td>
           <td>${escapeHTML(c.name)}</td>
           <td>${escapeHTML(c.description)}</td>
-          <td><a href="https://codesandbox.io/p/github/${REPO_OWNER}/${REPO_NAME}/challenge/${escapeAttr(c.date)}" target="_blank" rel="noopener noreferrer">Open</a></td>
+          <td><a href="https://codesandbox.io/p/devbox/github/${REPO_OWNER}/${REPO_NAME}/tree/challenge/${escapeAttr(c.date)}" target="_blank" rel="noopener noreferrer">Open</a></td>
         </tr>`
     )
     .join("\n");
