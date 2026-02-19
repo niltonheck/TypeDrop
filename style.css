@@ -489,6 +489,14 @@ footer a:hover {
   text-decoration: underline;
 }
 
+.footer-note {
+  font-size: 0.75rem;
+  color: #666;
+  max-width: 480px;
+  margin: 0.5rem auto 0;
+  line-height: 1.5;
+}
+
 .flag-icon {
   height: 1.15em;
   width: auto;
