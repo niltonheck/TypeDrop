@@ -233,6 +233,7 @@ async function generate() {
     "",
     "1. Click the **Open Devtool** icon in the top-right corner (or press `Ctrl + \\``)",
     "2. In the Devtools panel, click **Type Check + Run Tests** to validate your solution",
+    "3. For `console.log` output and assertion results, open your **browser DevTools** (`F12` > Console tab)",
     "",
     "### Locally",
     "",
