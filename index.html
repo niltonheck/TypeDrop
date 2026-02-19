@@ -32,18 +32,18 @@
     <!-- CHALLENGE_START -->
     <section class="challenge-card">
       <div class="challenge-header">
-        <span class="challenge-date">2026-02-18</span>
+        <span class="challenge-date">2026-02-19</span>
         <span class="badge medium">Medium</span>
       </div>
-      <h2>Typed In-Memory LRU Cache with TTL</h2>
-      <p>You're building a client-side data layer for a dashboard that fetches expensive aggregations from a REST API. To avoid redundant network calls, you need a generic, strongly-typed LRU (Least Recently Used) cache that also supports per-entry TTL (time-to-live) expiration — with a branded key type so callers can't accidentally mix cache namespaces.</p>
+      <h2>Single-Pass Log Aggregator with Discriminated Unions</h2>
+      <p>You're building an observability dashboard for a microservices platform. Raw log entries stream in as heterogeneous records — each with a distinct `level` that determines what extra fields are present. You must aggregate them in a single pass into a strongly-typed summary report, with no data loss and no unsafe casting.</p>
       <div class="challenge-goals">
         <h3>Goals</h3>
         <ul>
-          <li>Define a branded `CacheKey&lt;NS&gt;` type so that keys from different namespaces are incompatible at compile time.</li>
-          <li>Implement `createLRUCache` returning an object that fully satisfies the `LRUCache&lt;NS, T&gt;` interface.</li>
-          <li>Correctly handle LRU eviction using insertion-order tracking so the least-recently-used entry is dropped when `maxSize` is exceeded.</li>
-          <li>Support per-entry TTL expiration: expired entries must be treated as absent on `get`, `size`, and `keys`.</li>
+          <li>Define the LogEntry discriminated union and derive LogLevel from it using an indexed access type — no manual string union allowed.</li>
+          <li>Design the LogSummary type with a Record&lt;LogLevel, number&gt; count map, a typed ErrorLog array, a Set for warning services, and numeric aggregation fields.</li>
+          <li>Implement aggregateLogs in a single pass using type narrowing (if/switch on entry.level) to safely access level-specific fields without any type assertions.</li>
+          <li>Handle the empty-array edge cases correctly: avgResponseMs → 0, firstTimestamp → Infinity, lastTimestamp → -Infinity.</li>
         </ul>
       </div>
       <div class="code-block">
@@ -53,58 +53,48 @@
           <span class="dot green"></span>
           <span class="code-block-title">challenge.ts</span>
         </div>
-        <pre><code class="language-typescript">// Key types needed to understand the main factory:
-
-type CacheKey&lt;NS extends string&gt; = string &amp; { readonly __ns: NS };
-
-type CacheEntry&lt;T&gt; = {
-  value: T;
-  insertedAt: number; // Date.now() ms
-  ttl: number;        // 0 = no expiry
-};
-
-type CacheOptions = {
-  maxSize: number;
-  defaultTtl: number;
-};
-
-interface LRUCache&lt;NS extends string, T&gt; {
-  set(key: CacheKey&lt;NS&gt;, value: T, ttl?: number): void;
-  get(key: CacheKey&lt;NS&gt;): T | undefined;
-  delete(key: CacheKey&lt;NS&gt;): boolean;
-  clear(): void;
-  size(): number;
-  keys(): ReadonlyArray&lt;CacheKey&lt;NS&gt;&gt;;
+        <pre><code class="language-typescript">export interface ErrorLog {
+  level: &quot;error&quot;;
+  message: string;
+  code: number;
+  timestamp: number;
 }
 
-// Main factory — you implement this:
-function createLRUCache&lt;NS extends string, T&gt;(
-  ns: NS,
-  options: CacheOptions
-): LRUCache&lt;NS, T&gt; { /* ... */ }
-</code></pre>
+export interface HttpLog {
+  level: &quot;http&quot;;
+  method: &quot;GET&quot; | &quot;POST&quot; | &quot;PUT&quot; | &quot;DELETE&quot; | &quot;PATCH&quot;;
+  path: string;
+  statusCode: number;
+  responseMs: number;
+  timestamp: number;
+}
+
+// TODO: define LogEntry, LogLevel, LogSummary, then implement:
+export function aggregateLogs(entries: LogEntry[]): LogSummary {
+  throw new Error(&quot;Not implemented&quot;);
+}</code></pre>
       </div>
       <details class="challenge-hints-details">
         <summary>Hints (click to reveal)</summary>
       <div class="challenge-hints">
         <h3>Hints</h3>
         <ul>
-          <li>A JavaScript `Map` preserves insertion order — you can simulate LRU by deleting a key and re-inserting it on every `set` or cache hit, so the Map's natural order always reflects LRU → MRU.</li>
-          <li>To create a branded type without `as`, define the brand as a `readonly` property in an intersection: `type CacheKey&lt;NS extends string&gt; = string &amp; { readonly __ns: NS }` — then use a single, carefully scoped assertion only inside `makeCacheKey`.</li>
-          <li>For `size()` and `keys()`, iterate the internal Map and filter out expired entries lazily (check `Date.now() - entry.insertedAt &gt; entry.ttl`) rather than running a background sweep.</li>
+          <li>LogLevel can be derived in one line with an indexed access type on LogEntry — look at how TypeScript lets you index a union with a key name.</li>
+          <li>A single reduce whose accumulator carries all seven fields at once satisfies the single-pass requirement; initialise countByLevel with all five levels set to 0 so the Record type is always fully populated.</li>
+          <li>A switch (entry.level) with exhaustive cases is the cleanest narrowing strategy here — TypeScript will fully narrow each branch so you never need `as` or `as unknown`.</li>
         </ul>
       </div>
       </details>
       <div class="challenge-docs">
         <h3>Useful resources</h3>
         <ul>
-          <li><a href="https://www.typescriptlang.org/docs/handbook/2/generics.html" target="_blank" rel="noopener noreferrer">TypeScript Handbook — Generics</a></li>
-          <li><a href="https://www.typescriptlang.org/docs/handbook/utility-types.html" target="_blank" rel="noopener noreferrer">TypeScript Handbook — Utility Types</a></li>
-          <li><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Map" target="_blank" rel="noopener noreferrer">MDN — Map (insertion-order iteration)</a></li>
-          <li><a href="https://basarat.gitbook.io/typescript/main-1/nominaltyping" target="_blank" rel="noopener noreferrer">TypeScript Deep Dive — Branded Types</a></li>
+          <li><a href="https://www.typescriptlang.org/docs/handbook/2/narrowing.html#discriminated-unions" target="_blank" rel="noopener noreferrer">Discriminated Unions — TypeScript Handbook</a></li>
+          <li><a href="https://www.typescriptlang.org/docs/handbook/2/indexed-access-types.html" target="_blank" rel="noopener noreferrer">Indexed Access Types — TypeScript Handbook</a></li>
+          <li><a href="https://www.typescriptlang.org/docs/handbook/utility-types.html#recordkeys-type" target="_blank" rel="noopener noreferrer">Record&lt;Keys, Type&gt; Utility Type</a></li>
+          <li><a href="https://www.typescriptlang.org/docs/handbook/2/narrowing.html" target="_blank" rel="noopener noreferrer">Narrowing — TypeScript Handbook</a></li>
         </ul>
       </div>
-      <a class="cta-button" href="https://codesandbox.io/p/devbox/github/niltonheck/typedrop/tree/challenge/2026-02-18" target="_blank" rel="noopener noreferrer">
+      <a class="cta-button" href="https://codesandbox.io/p/devbox/github/niltonheck/typedrop/tree/challenge/2026-02-19" target="_blank" rel="noopener noreferrer">
         <img class="csb-icon" src="https://cdn.simpleicons.org/codesandbox/e0e0e0" alt=""> Open in CodeSandbox
       </a>
     </section>

@@ -149,5 +149,41 @@
         "url": "https://basarat.gitbook.io/typescript/main-1/nominaltyping"
       }
     ]
+  },
+  {
+    "date": "2026-02-19",
+    "name": "Single-Pass Log Aggregator with Discriminated Unions",
+    "difficulty": "Medium",
+    "description": "You're building an observability dashboard for a microservices platform. Raw log entries stream in as heterogeneous records — each with a distinct `level` that determines what extra fields are present. You must aggregate them in a single pass into a strongly-typed summary report, with no data loss and no unsafe casting.",
+    "snippet": "export interface ErrorLog {\n  level: \"error\";\n  message: string;\n  code: number;\n  timestamp: number;\n}\n\nexport interface HttpLog {\n  level: \"http\";\n  method: \"GET\" | \"POST\" | \"PUT\" | \"DELETE\" | \"PATCH\";\n  path: string;\n  statusCode: number;\n  responseMs: number;\n  timestamp: number;\n}\n\n// TODO: define LogEntry, LogLevel, LogSummary, then implement:\nexport function aggregateLogs(entries: LogEntry[]): LogSummary {\n  throw new Error(\"Not implemented\");\n}",
+    "goals": [
+      "Define the LogEntry discriminated union and derive LogLevel from it using an indexed access type — no manual string union allowed.",
+      "Design the LogSummary type with a Record<LogLevel, number> count map, a typed ErrorLog array, a Set for warning services, and numeric aggregation fields.",
+      "Implement aggregateLogs in a single pass using type narrowing (if/switch on entry.level) to safely access level-specific fields without any type assertions.",
+      "Handle the empty-array edge cases correctly: avgResponseMs → 0, firstTimestamp → Infinity, lastTimestamp → -Infinity."
+    ],
+    "hints": [
+      "LogLevel can be derived in one line with an indexed access type on LogEntry — look at how TypeScript lets you index a union with a key name.",
+      "A single reduce whose accumulator carries all seven fields at once satisfies the single-pass requirement; initialise countByLevel with all five levels set to 0 so the Record type is always fully populated.",
+      "A switch (entry.level) with exhaustive cases is the cleanest narrowing strategy here — TypeScript will fully narrow each branch so you never need `as` or `as unknown`."
+    ],
+    "docs": [
+      {
+        "title": "Discriminated Unions — TypeScript Handbook",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html#discriminated-unions"
+      },
+      {
+        "title": "Indexed Access Types — TypeScript Handbook",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/indexed-access-types.html"
+      },
+      {
+        "title": "Record<Keys, Type> Utility Type",
+        "url": "https://www.typescriptlang.org/docs/handbook/utility-types.html#recordkeys-type"
+      },
+      {
+        "title": "Narrowing — TypeScript Handbook",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html"
+      }
+    ]
   }
 ]
