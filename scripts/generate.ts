@@ -154,6 +154,16 @@ async function callWithRetry(): Promise<Anthropic.ToolUseBlock> {
           .join("\n")
       : "(none — this is the first challenge)";
 
+  // Pick a difficulty that differs from the last challenge
+  const difficulties = ["Easy", "Medium", "Hard"] as const;
+  const lastDifficulty = existing.length > 0
+    ? (existing[existing.length - 1] as { difficulty: string }).difficulty
+    : null;
+  const available = difficulties.filter((d) => d !== lastDifficulty);
+  const difficulty = available[Math.floor(Math.random() * available.length)];
+
+  console.log(`Target difficulty: ${difficulty} (last was: ${lastDifficulty ?? "none"})`);
+
   for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
     try {
       console.log(`Attempt ${attempt}/${MAX_RETRIES}...`);
@@ -168,7 +178,7 @@ async function callWithRetry(): Promise<Anthropic.ToolUseBlock> {
         messages: [
           {
             role: "user",
-            content: `Generate today's TypeScript challenge (${today}).\n\nRecent challenges (avoid repeating these themes):\n${previousContext}`,
+            content: `Generate today's TypeScript challenge (${today}).\n\nDifficulty: **${difficulty}** (this is mandatory, do not pick a different level).\n\nRecent challenges (avoid repeating these themes):\n${previousContext}`,
           },
         ],
       });
