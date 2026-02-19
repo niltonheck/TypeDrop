@@ -59,6 +59,9 @@ function inject() {
   const hintsHTML = renderList(latest.hints, "challenge-hints", "Hints");
   const docsHTML = renderDocs(latest.docs);
 
+  const stackblitzURL = `https://stackblitz.com/github/${REPO_OWNER}/${REPO_NAME}/tree/challenge/${escapeAttr(latest.date)}`;
+  const cloneCommand = `git clone -b challenge/${escapeAttr(latest.date)} https://github.com/${REPO_OWNER}/${REPO_NAME}.git`;
+
   const challengeHTML = `    <section class="challenge-card">
       <div class="challenge-header">
         <span class="challenge-date">${escapeHTML(latest.date)}</span>
@@ -81,9 +84,21 @@ ${goalsHTML}
 ${hintsHTML}
       </details>
 ${docsHTML}
-      <a class="cta-button" href="${sandboxURL}" target="_blank" rel="noopener noreferrer">
-        <img class="csb-icon" src="https://cdn.simpleicons.org/codesandbox/e0e0e0" alt=""> Open in CodeSandbox
-      </a>
+      <div class="cta-row">
+        <a class="cta-button" href="${sandboxURL}" target="_blank" rel="noopener noreferrer">
+          <img class="csb-icon" src="https://cdn.simpleicons.org/codesandbox/e0e0e0" alt=""> CodeSandbox
+        </a>
+        <a class="cta-button" href="${stackblitzURL}" target="_blank" rel="noopener noreferrer">
+          <img class="sb-icon" src="https://cdn.simpleicons.org/stackblitz/e0e0e0" alt=""> StackBlitz
+        </a>
+      </div>
+      <div class="clone-section">
+        <h3>Or clone locally</h3>
+        <div class="clone-box">
+          <code id="clone-cmd">${escapeHTML(cloneCommand)}</code>
+          <button class="clone-copy-btn" onclick="navigator.clipboard.writeText(document.getElementById('clone-cmd').textContent).then(()=>{this.textContent='Copied!';this.classList.add('copied');setTimeout(()=>{this.textContent='Copy';this.classList.remove('copied')},2000)})">Copy</button>
+        </div>
+      </div>
     </section>`;
 
   const html = readFileSync("index.html", "utf-8");
