@@ -30,73 +30,9 @@
     </header>
 
     <!-- CHALLENGE_START -->
-    <section class="challenge-card">
-      <div class="challenge-header">
-        <span class="challenge-date">2026-02-19</span>
-        <span class="badge medium">Medium</span>
-      </div>
-      <h2>Single-Pass Log Aggregator with Discriminated Unions</h2>
-      <p>You're building an observability dashboard for a microservices platform. Raw log entries stream in as heterogeneous records — each with a distinct `level` that determines what extra fields are present. You must aggregate them in a single pass into a strongly-typed summary report, with no data loss and no unsafe casting.</p>
-      <div class="challenge-goals">
-        <h3>Goals</h3>
-        <ul>
-          <li>Define the LogEntry discriminated union and derive LogLevel from it using an indexed access type — no manual string union allowed.</li>
-          <li>Design the LogSummary type with a Record&lt;LogLevel, number&gt; count map, a typed ErrorLog array, a Set for warning services, and numeric aggregation fields.</li>
-          <li>Implement aggregateLogs in a single pass using type narrowing (if/switch on entry.level) to safely access level-specific fields without any type assertions.</li>
-          <li>Handle the empty-array edge cases correctly: avgResponseMs → 0, firstTimestamp → Infinity, lastTimestamp → -Infinity.</li>
-        </ul>
-      </div>
-      <div class="code-block">
-        <div class="code-block-header">
-          <span class="dot red"></span>
-          <span class="dot yellow"></span>
-          <span class="dot green"></span>
-          <span class="code-block-title">challenge.ts</span>
-        </div>
-        <pre><code class="language-typescript">export interface ErrorLog {
-  level: &quot;error&quot;;
-  message: string;
-  code: number;
-  timestamp: number;
-}
-
-export interface HttpLog {
-  level: &quot;http&quot;;
-  method: &quot;GET&quot; | &quot;POST&quot; | &quot;PUT&quot; | &quot;DELETE&quot; | &quot;PATCH&quot;;
-  path: string;
-  statusCode: number;
-  responseMs: number;
-  timestamp: number;
-}
-
-// TODO: define LogEntry, LogLevel, LogSummary, then implement:
-export function aggregateLogs(entries: LogEntry[]): LogSummary {
-  throw new Error(&quot;Not implemented&quot;);
-}</code></pre>
-      </div>
-      <details class="challenge-hints-details">
-        <summary>Hints (click to reveal)</summary>
-      <div class="challenge-hints">
-        <h3>Hints</h3>
-        <ul>
-          <li>LogLevel can be derived in one line with an indexed access type on LogEntry — look at how TypeScript lets you index a union with a key name.</li>
-          <li>A single reduce whose accumulator carries all seven fields at once satisfies the single-pass requirement; initialise countByLevel with all five levels set to 0 so the Record type is always fully populated.</li>
-          <li>A switch (entry.level) with exhaustive cases is the cleanest narrowing strategy here — TypeScript will fully narrow each branch so you never need `as` or `as unknown`.</li>
-        </ul>
-      </div>
-      </details>
-      <div class="challenge-docs">
-        <h3>Useful resources</h3>
-        <ul>
-          <li><a href="https://www.typescriptlang.org/docs/handbook/2/narrowing.html#discriminated-unions" target="_blank" rel="noopener noreferrer">Discriminated Unions — TypeScript Handbook</a></li>
-          <li><a href="https://www.typescriptlang.org/docs/handbook/2/indexed-access-types.html" target="_blank" rel="noopener noreferrer">Indexed Access Types — TypeScript Handbook</a></li>
-          <li><a href="https://www.typescriptlang.org/docs/handbook/utility-types.html#recordkeys-type" target="_blank" rel="noopener noreferrer">Record&lt;Keys, Type&gt; Utility Type</a></li>
-          <li><a href="https://www.typescriptlang.org/docs/handbook/2/narrowing.html" target="_blank" rel="noopener noreferrer">Narrowing — TypeScript Handbook</a></li>
-        </ul>
-      </div>
-      <a class="cta-button" href="https://codesandbox.io/p/devbox/github/niltonheck/typedrop/tree/challenge/2026-02-19" target="_blank" rel="noopener noreferrer">
-        <img class="csb-icon" src="https://cdn.simpleicons.org/codesandbox/e0e0e0" alt=""> Open in CodeSandbox
-      </a>
+    <section id="challenge" class="challenge-card">
+      <h2>No challenge yet</h2>
+      <p>The first challenge will drop soon. Check back tomorrow at 6:00 UTC.</p>
     </section>
     <!-- CHALLENGE_END -->
 
