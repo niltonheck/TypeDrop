@@ -306,6 +306,11 @@ async function generate() {
   mkdirSync(join(OUTPUT_DIR, ".codesandbox"), { recursive: true });
 
   writeFileSync(
+    join(OUTPUT_DIR, ".codesandbox", "template.json"),
+    JSON.stringify({ title: "TypeDrop Challenge", template: "node" }, null, 2) + "\n"
+  );
+
+  writeFileSync(
     join(OUTPUT_DIR, ".codesandbox", "tasks.json"),
     JSON.stringify(
       {
