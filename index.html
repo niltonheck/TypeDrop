@@ -42,17 +42,17 @@
     <section class="challenge-card">
       <div class="challenge-header">
         <span class="challenge-date">2026-02-19</span>
-        <span class="badge medium">Medium</span>
+        <span class="badge hard">Hard</span>
       </div>
-      <h2>Typed Paginated API Client</h2>
-      <p>You're building an internal dashboard that fetches paginated data from multiple REST endpoints. Each endpoint returns a different resource type, so the client must be strongly typed end-to-end — from the request shape all the way to the accumulated results.</p>
+      <h2>Typed Middleware Pipeline with Retry &amp; Cancellation</h2>
+      <p>You're building an internal HTTP gateway layer that processes outgoing requests through a chain of typed middleware (auth injection, logging, rate-limit headers). Each middleware can transform the request context, short-circuit with a typed error, and the pipeline runner supports per-request cancellation and automatic retry with exponential back-off.</p>
       <div class="challenge-goals">
         <h3>Goals</h3>
         <ul>
-          <li>Implement `fetchAllPages` to sequentially fetch all pages and accumulate items, short-circuiting on the first error.</li>
-          <li>Implement the `EndpointMap&lt;S&gt;` mapped type that maps each key in S to a `PageFetcher` for the corresponding value type.</li>
-          <li>Implement `fetchAll` to run all endpoint fetchers in parallel with `Promise.all`, returning per-key Results so one failure never blocks another.</li>
-          <li>Ensure the entire solution compiles under `strict: true` with no `any` or unsafe type assertions (only `toCursor` is permitted to use one).</li>
+          <li>Define `Middleware`, `Executor`, `RetryPolicy`, and `PipelineOptions` as fully-typed generic aliases/interfaces with no `any` or `never` placeholders.</li>
+          <li>Implement `runPipeline` with a recursive `dispatch` function that threads context through middlewares, supports short-circuiting, and retries failed attempts using the supplied `RetryPolicy` with exponential back-off.</li>
+          <li>Implement the three middleware factories (`withBearerAuth`, `withRequestLogger`, `withRateLimitHeader`) and the `exponentialBackoff` helper so all five test cases pass.</li>
+          <li>Implement `sleep` so it respects an optional `AbortSignal`, rejecting immediately with the signal's reason when already aborted or when aborted mid-sleep.</li>
         </ul>
       </div>
       <div class="code-block">
@@ -63,36 +63,32 @@
           <span class="code-block-title">challenge.ts</span>
         </div>
         <pre><code class="language-typescript">
-// Key types at a glance:
+// Key types at a glance
 
-interface Page&lt;T&gt; {
-  items: T[];
-  nextCursor?: string;
+type Milliseconds = number &amp; { readonly __brand: &quot;Milliseconds&quot; };
+
+interface PipelineContext&lt;TBody = unknown&gt; {
+  readonly requestId: string;
+  url: string;
+  method: &quot;GET&quot; | &quot;POST&quot; | &quot;PUT&quot; | &quot;PATCH&quot; | &quot;DELETE&quot;;
+  headers: Record&lt;string, string&gt;;
+  body: TBody | undefined;
+  meta: Record&lt;string, unknown&gt;;
 }
 
-type Cursor = string &amp; { readonly __brand: &quot;Cursor&quot; };
+type PipelineResult&lt;TResponse, TError&gt; =
+  | { readonly kind: &quot;success&quot;; readonly response: TResponse;
+      readonly durationMs: Milliseconds; readonly attempts: number }
+  | { readonly kind: &quot;failure&quot;; readonly error: TError;
+      readonly durationMs: Milliseconds; readonly attempts: number };
 
-type FetchError =
-  | { kind: &quot;NetworkError&quot;; message: string }
-  | { kind: &quot;ParseError&quot;; message: string; raw: string }
-  | { kind: &quot;RateLimitError&quot;; retryAfterMs: number };
+// TODO (a) — fill in the body:
+type Middleware&lt;TBody, TResponse, TError&gt; = never;
 
-type Result&lt;T, E&gt; =
-  | { ok: true;  value: T }
-  | { ok: false; error: E };
-
-type PageFetcher&lt;T&gt; = (
-  cursor: Cursor | undefined
-) =&gt; Promise&lt;Result&lt;Page&lt;T&gt;, FetchError&gt;&gt;;
-
-// ✏️  Your job: implement these two functions
-async function fetchAllPages&lt;T&gt;(
-  fetcher: PageFetcher&lt;T&gt;
-): Promise&lt;Result&lt;T[], FetchError&gt;&gt; { /* TODO */ }
-
-async function fetchAll&lt;S extends Record&lt;string, unknown&gt;&gt;(
-  endpoints: EndpointMap&lt;S&gt;
-): Promise&lt;{ [K in keyof S]: Result&lt;S[K][], FetchError&gt; }&gt; { /* TODO */ }
+// TODO (f) — implement this:
+async function runPipeline&lt;TBody, TResponse, TError&gt;(
+  options: PipelineOptions&lt;TBody, TResponse, TError&gt;
+): Promise&lt;PipelineResult&lt;TResponse, TError&gt;&gt; { ... }
 </code></pre>
       </div>
       <details class="challenge-hints-details">
@@ -100,19 +96,19 @@ async function fetchAll&lt;S extends Record&lt;string, unknown&gt;&gt;(
       <div class="challenge-hints">
         <h3>Hints</h3>
         <ul>
-          <li>For `fetchAllPages`, a `while (true)` loop that checks for `nextCursor` and calls `toCursor()` on it is cleaner than recursion.</li>
-          <li>The return type of `fetchAll` is a mapped type over `keyof S` — you already wrote a very similar shape for `EndpointMap&lt;S&gt;`, just swap `PageFetcher&lt;S[K]&gt;` for `Result&lt;S[K][], FetchError&gt;`.</li>
-          <li>To run all endpoints in parallel AND isolate errors, map the entries of `endpoints` to individual `fetchAllPages(...)` promises before passing them to `Promise.all`.</li>
+          <li>For `Middleware&lt;TBody, TResponse, TError&gt;`, the `next` parameter's type is the same async function shape as the middleware itself minus the `next` arg — write it as an inline function type `(ctx: PipelineContext&lt;TBody&gt;) =&gt; Promise&lt;PipelineResult&lt;TResponse, TError&gt;&gt;`.</li>
+          <li>In `runPipeline`, track `startTime = Date.now()` before the attempt loop and compute `durationMs` only once when you're ready to return — the `durationMs` fields from the executor are intentionally ignored at the pipeline level.</li>
+          <li>For `sleep` + `AbortSignal`, register a one-shot `'abort'` event listener and also check `signal.aborted` synchronously at the top of the function before creating the timeout.</li>
         </ul>
       </div>
       </details>
       <div class="challenge-docs">
         <h3>Useful resources</h3>
         <ul>
-          <li><a href="https://www.typescriptlang.org/docs/handbook/2/mapped-types.html" target="_blank" rel="noopener noreferrer">TypeScript Handbook: Mapped Types</a></li>
-          <li><a href="https://www.typescriptlang.org/docs/handbook/2/generics.html" target="_blank" rel="noopener noreferrer">TypeScript Handbook: Generics</a></li>
-          <li><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise/all" target="_blank" rel="noopener noreferrer">MDN: Promise.all</a></li>
-          <li><a href="https://www.typescriptlang.org/docs/handbook/2/narrowing.html#discriminated-unions" target="_blank" rel="noopener noreferrer">TypeScript Handbook: Narrowing (discriminated unions)</a></li>
+          <li><a href="https://www.typescriptlang.org/docs/handbook/2/generics.html" target="_blank" rel="noopener noreferrer">TypeScript Handbook — Generics</a></li>
+          <li><a href="https://www.typescriptlang.org/docs/handbook/2/conditional-types.html" target="_blank" rel="noopener noreferrer">TypeScript Handbook — Conditional Types &amp; infer</a></li>
+          <li><a href="https://developer.mozilla.org/en-US/docs/Web/API/AbortController" target="_blank" rel="noopener noreferrer">MDN — AbortSignal &amp; AbortController</a></li>
+          <li><a href="https://www.typescriptlang.org/docs/handbook/utility-types.html" target="_blank" rel="noopener noreferrer">TypeScript Handbook — Utility Types (Extract, Record, Pick…)</a></li>
         </ul>
       </div>
       <div class="cta-row">

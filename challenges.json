@@ -34,5 +34,41 @@
         "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html#discriminated-unions"
       }
     ]
+  },
+  {
+    "date": "2026-02-19",
+    "name": "Typed Middleware Pipeline with Retry & Cancellation",
+    "difficulty": "Hard",
+    "description": "You're building an internal HTTP gateway layer that processes outgoing requests through a chain of typed middleware (auth injection, logging, rate-limit headers). Each middleware can transform the request context, short-circuit with a typed error, and the pipeline runner supports per-request cancellation and automatic retry with exponential back-off.",
+    "snippet": "\n// Key types at a glance\n\ntype Milliseconds = number & { readonly __brand: \"Milliseconds\" };\n\ninterface PipelineContext<TBody = unknown> {\n  readonly requestId: string;\n  url: string;\n  method: \"GET\" | \"POST\" | \"PUT\" | \"PATCH\" | \"DELETE\";\n  headers: Record<string, string>;\n  body: TBody | undefined;\n  meta: Record<string, unknown>;\n}\n\ntype PipelineResult<TResponse, TError> =\n  | { readonly kind: \"success\"; readonly response: TResponse;\n      readonly durationMs: Milliseconds; readonly attempts: number }\n  | { readonly kind: \"failure\"; readonly error: TError;\n      readonly durationMs: Milliseconds; readonly attempts: number };\n\n// TODO (a) — fill in the body:\ntype Middleware<TBody, TResponse, TError> = never;\n\n// TODO (f) — implement this:\nasync function runPipeline<TBody, TResponse, TError>(\n  options: PipelineOptions<TBody, TResponse, TError>\n): Promise<PipelineResult<TResponse, TError>> { ... }\n",
+    "goals": [
+      "Define `Middleware`, `Executor`, `RetryPolicy`, and `PipelineOptions` as fully-typed generic aliases/interfaces with no `any` or `never` placeholders.",
+      "Implement `runPipeline` with a recursive `dispatch` function that threads context through middlewares, supports short-circuiting, and retries failed attempts using the supplied `RetryPolicy` with exponential back-off.",
+      "Implement the three middleware factories (`withBearerAuth`, `withRequestLogger`, `withRateLimitHeader`) and the `exponentialBackoff` helper so all five test cases pass.",
+      "Implement `sleep` so it respects an optional `AbortSignal`, rejecting immediately with the signal's reason when already aborted or when aborted mid-sleep."
+    ],
+    "hints": [
+      "For `Middleware<TBody, TResponse, TError>`, the `next` parameter's type is the same async function shape as the middleware itself minus the `next` arg — write it as an inline function type `(ctx: PipelineContext<TBody>) => Promise<PipelineResult<TResponse, TError>>`.",
+      "In `runPipeline`, track `startTime = Date.now()` before the attempt loop and compute `durationMs` only once when you're ready to return — the `durationMs` fields from the executor are intentionally ignored at the pipeline level.",
+      "For `sleep` + `AbortSignal`, register a one-shot `'abort'` event listener and also check `signal.aborted` synchronously at the top of the function before creating the timeout."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript Handbook — Generics",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/generics.html"
+      },
+      {
+        "title": "TypeScript Handbook — Conditional Types & infer",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/conditional-types.html"
+      },
+      {
+        "title": "MDN — AbortSignal & AbortController",
+        "url": "https://developer.mozilla.org/en-US/docs/Web/API/AbortController"
+      },
+      {
+        "title": "TypeScript Handbook — Utility Types (Extract, Record, Pick…)",
+        "url": "https://www.typescriptlang.org/docs/handbook/utility-types.html"
+      }
+    ]
   }
 ]
