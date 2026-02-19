@@ -1,1 +1,38 @@
-[]
+[
+  {
+    "date": "2026-02-19",
+    "name": "Typed Notification Pipeline",
+    "difficulty": "Medium",
+    "description": "You're building a notification service that fans out messages across multiple channels (email, SMS, push). Each channel has its own payload shape, and every delivery attempt must be tracked as a typed Result — so callers always know exactly what succeeded, what failed, and why.",
+    "snippet": "// Core types you'll define and wire together:\n\ntype Result<T, E> =\n  | { ok: true;  value: T }\n  | { ok: false; error: E };\n\ntype NotificationPayload = EmailPayload | SmsPayload | PushPayload;\n// Each variant carries a `channel` discriminant literal.\n\ntype ChannelSender<P extends NotificationPayload> = {\n  channel: P[\"channel\"];\n  send: (payload: P) => Promise<Result<NotificationReceipt, ChannelError>>;\n};\n\ntype SenderRegistry = {\n  [C in NotificationPayload[\"channel\"]]: ChannelSender<\n    Extract<NotificationPayload, { channel: C }>\n  >;\n};\n\n// Functions to implement:\nasync function sendNotification<P extends NotificationPayload>(\n  payload: P,\n  sender: ChannelSender<P>\n): Promise<Result<NotificationReceipt, ChannelError>> { /* TODO */ }\n\nasync function fanOut(\n  payloads: NotificationPayload[],\n  registry: SenderRegistry\n): Promise<FanOutReport> { /* TODO */ }\n",
+    "goals": [
+      "Define `NotificationPayload` as a discriminated union of three channel variants, plus a `ChannelError` discriminated union with three failure kinds.",
+      "Implement the generic `Result<T, E>` type and wire it through `ChannelSender`, `sendNotification`, and `fanOut`.",
+      "Implement `sendNotification` so it delegates to the provided typed sender and returns its `Result` directly.",
+      "Implement `fanOut` to dispatch all payloads concurrently via the registry, collect results, and return a `FanOutReport` — using only type narrowing (no `any` or `as`)."
+    ],
+    "hints": [
+      "In `fanOut`, indexing `registry[payload.channel]` already narrows the sender type — lean on that instead of casting.",
+      "A mapped type with `Extract<NotificationPayload, { channel: C }>` as the value ensures each registry slot is typed to the *exact* payload variant.",
+      "Use `Promise.allSettled` if you want per-item error isolation, or `Promise.all` on pre-caught results — both are valid approaches."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript Handbook — Discriminated Unions",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html#discriminated-unions"
+      },
+      {
+        "title": "TypeScript Handbook — Mapped Types",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/mapped-types.html"
+      },
+      {
+        "title": "TypeScript Handbook — Conditional Types & Extract",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/conditional-types.html"
+      },
+      {
+        "title": "MDN — Promise.allSettled",
+        "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise/allSettled"
+      }
+    ]
+  }
+]
