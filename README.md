@@ -1,6 +1,7 @@
-# TypeDrop
-
-A new TypeScript challenge every day. AI-generated, open source, zero setup.
+<p align="center">
+  <img src="misc/typedrop-logo.png" alt="TypeDrop" width="400">
+</p>
+<p align="center">A new TypeScript challenge every day. AI-generated, open source, zero setup.</p>
 
 ## What is this?
 

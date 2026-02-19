@@ -33,7 +33,7 @@ body {
 }
 
 main {
-  max-width: 720px;
+  max-width: 800px;
   width: 100%;
 }
 
@@ -54,6 +54,35 @@ h1 {
   color: #999;
   margin-top: 0.25rem;
   font-size: 1rem;
+}
+
+/* About callout */
+.about-callout {
+  background: #111;
+  border: 1px solid #222;
+  border-radius: 12px;
+  padding: 1.25rem 1.5rem;
+  margin-bottom: 1.5rem;
+  color: #bbb;
+  line-height: 1.6;
+}
+
+.about-callout p + p {
+  margin-top: 0.5rem;
+}
+
+.about-callout strong {
+  color: #fff;
+}
+
+.about-callout a {
+  color: #3b82f6;
+  text-decoration: none;
+  font-size: 0.85rem;
+}
+
+.about-callout a:hover {
+  text-decoration: underline;
 }
 
 /* Challenge card */
