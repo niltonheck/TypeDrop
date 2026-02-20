@@ -1,42 +1,6 @@
 [
   {
     "date": "2026-02-19",
-    "name": "Typed Paginated API Client",
-    "difficulty": "Medium",
-    "description": "You're building an internal dashboard that fetches paginated data from multiple REST endpoints. Each endpoint returns a different resource type, so the client must be strongly typed end-to-end — from the request shape all the way to the accumulated results.",
-    "snippet": "\n// Key types at a glance:\n\ninterface Page<T> {\n  items: T[];\n  nextCursor?: string;\n}\n\ntype Cursor = string & { readonly __brand: \"Cursor\" };\n\ntype FetchError =\n  | { kind: \"NetworkError\"; message: string }\n  | { kind: \"ParseError\"; message: string; raw: string }\n  | { kind: \"RateLimitError\"; retryAfterMs: number };\n\ntype Result<T, E> =\n  | { ok: true;  value: T }\n  | { ok: false; error: E };\n\ntype PageFetcher<T> = (\n  cursor: Cursor | undefined\n) => Promise<Result<Page<T>, FetchError>>;\n\n// ✏️  Your job: implement these two functions\nasync function fetchAllPages<T>(\n  fetcher: PageFetcher<T>\n): Promise<Result<T[], FetchError>> { /* TODO */ }\n\nasync function fetchAll<S extends Record<string, unknown>>(\n  endpoints: EndpointMap<S>\n): Promise<{ [K in keyof S]: Result<S[K][], FetchError> }> { /* TODO */ }\n",
-    "goals": [
-      "Implement `fetchAllPages` to sequentially fetch all pages and accumulate items, short-circuiting on the first error.",
-      "Implement the `EndpointMap<S>` mapped type that maps each key in S to a `PageFetcher` for the corresponding value type.",
-      "Implement `fetchAll` to run all endpoint fetchers in parallel with `Promise.all`, returning per-key Results so one failure never blocks another.",
-      "Ensure the entire solution compiles under `strict: true` with no `any` or unsafe type assertions (only `toCursor` is permitted to use one)."
-    ],
-    "hints": [
-      "For `fetchAllPages`, a `while (true)` loop that checks for `nextCursor` and calls `toCursor()` on it is cleaner than recursion.",
-      "The return type of `fetchAll` is a mapped type over `keyof S` — you already wrote a very similar shape for `EndpointMap<S>`, just swap `PageFetcher<S[K]>` for `Result<S[K][], FetchError>`.",
-      "To run all endpoints in parallel AND isolate errors, map the entries of `endpoints` to individual `fetchAllPages(...)` promises before passing them to `Promise.all`."
-    ],
-    "docs": [
-      {
-        "title": "TypeScript Handbook: Mapped Types",
-        "url": "https://www.typescriptlang.org/docs/handbook/2/mapped-types.html"
-      },
-      {
-        "title": "TypeScript Handbook: Generics",
-        "url": "https://www.typescriptlang.org/docs/handbook/2/generics.html"
-      },
-      {
-        "title": "MDN: Promise.all",
-        "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise/all"
-      },
-      {
-        "title": "TypeScript Handbook: Narrowing (discriminated unions)",
-        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html#discriminated-unions"
-      }
-    ]
-  },
-  {
-    "date": "2026-02-19",
     "name": "Typed Middleware Pipeline with Retry & Cancellation",
     "difficulty": "Hard",
     "description": "You're building an internal HTTP gateway layer that processes outgoing requests through a chain of typed middleware (auth injection, logging, rate-limit headers). Each middleware can transform the request context, short-circuit with a typed error, and the pipeline runner supports per-request cancellation and automatic retry with exponential back-off.",
