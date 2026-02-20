@@ -34,5 +34,41 @@
         "url": "https://www.typescriptlang.org/docs/handbook/utility-types.html"
       }
     ]
+  },
+  {
+    "date": "2026-02-20",
+    "name": "Typed Inventory Aggregator",
+    "difficulty": "Easy",
+    "description": "You're building a dashboard for a small e-commerce warehouse. Given a flat list of product entries (each with a category, SKU, price, and stock count), aggregate them into a per-category summary — the hardest part is getting the TypeScript types exactly right.",
+    "snippet": "// Key types & main function signature\n\ntype Sku = string & { readonly _brand: \"Sku\" };\n\ninterface InventoryItem {\n  sku:          Sku;\n  name:         string;\n  category:     string;\n  priceUsd:     number;\n  stock:        number;\n}\n\ninterface CategorySummary {\n  totalItems:     number;\n  totalStock:     number;\n  totalValueUsd:  number;\n  cheapestSku:    Sku;\n  mostStockedSku: Sku;\n}\n\ntype InventorySummary = Record<string, CategorySummary>;\n\nfunction aggregateInventory(items: InventoryItem[]): InventorySummary { ... }\nfunction topCategories(summary: InventorySummary, n: number): string[] { ... }",
+    "goals": [
+      "Define a branded `Sku` type and implement `toSku` without using `any` or a type assertion.",
+      "Build the `InventoryItem` and `CategorySummary` interfaces with all required fields typed correctly.",
+      "Implement `aggregateInventory` to produce a correct per-category summary in a single pass over the items array.",
+      "Implement `topCategories` returning category names sorted by total inventory value descending, capped at n results."
+    ],
+    "hints": [
+      "For `toSku`, look at how TypeScript's `satisfies` operator or a simple return-type annotation can coerce a `string` to a branded type without writing `as Sku`.",
+      "Use a `for...of` loop or `Array.reduce` over the items and build up the `InventorySummary` object incrementally — initialise each category bucket on first encounter.",
+      "For `topCategories`, `Object.entries` gives you `[category, summary]` pairs you can sort by `totalValueUsd` before slicing to `n`."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript Handbook — Utility Types (Record)",
+        "url": "https://www.typescriptlang.org/docs/handbook/utility-types.html#recordkeys-type"
+      },
+      {
+        "title": "TypeScript Handbook — Interfaces",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/objects.html"
+      },
+      {
+        "title": "TypeScript 5.0 — satisfies operator",
+        "url": "https://www.typescriptlang.org/docs/handbook/release-notes/typescript-4-9.html#the-satisfies-operator"
+      },
+      {
+        "title": "MDN — Array.prototype.reduce",
+        "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/reduce"
+      }
+    ]
   }
 ]
