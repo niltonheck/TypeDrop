@@ -70,5 +70,41 @@
         "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/reduce"
       }
     ]
+  },
+  {
+    "date": "2026-02-21",
+    "name": "Paginated API Client with Typed Result Accumulation",
+    "difficulty": "Hard",
+    "description": "You're building a typed API client for an analytics platform that exposes cursor-based paginated endpoints. The client must traverse all pages concurrently (up to a configurable limit), accumulate results into a strongly-typed aggregate, and surface per-page errors without aborting the entire fetch — all without a single `any` or type assertion.",
+    "snippet": "// Key types and main function signature\n\ndeclare const __brand: unique symbol;\ntype Brand<B> = { readonly [__brand]: B };\n\ntype Cursor      = string & Brand<\"Cursor\">;\ntype EndpointPath = string & Brand<\"EndpointPath\">;\n\ntype PageResponse<T> = {\n  items:      T[];\n  nextCursor: Cursor | undefined;\n  pageIndex:  number;\n};\n\ntype FetchResult<T> =\n  | { ok: true;  data: T }\n  | { ok: false; error: PageError };\n\ntype AccumulatedResult<T> = /* discriminated by `ok` — you define it */;\n\ntype PageFetcher<T> =\n  (req: PageRequest) => Promise<FetchResult<PageResponse<T>>>;\n\n// ── Core entry point ──────────────────────────────────────────\nasync function fetchAllPages<T>(\n  endpoint: EndpointPath,\n  fetcher:  PageFetcher<T>,\n  options?: FetchAllOptions\n): Promise<AccumulatedResult<T>>\n",
+    "goals": [
+      "Define branded string types `Cursor` and `EndpointPath` using a `unique symbol` brand and a single generic branding helper — no `as` outside that helper.",
+      "Model `FetchResult<T>` and `AccumulatedResult<T>` as discriminated unions so TypeScript can narrow them without type assertions.",
+      "Implement `withConcurrencyLimit<R>` that runs async task factories with a configurable concurrency cap and returns results in original order.",
+      "Implement `fetchAllPages<T>` that traverses cursor-based pages using `withConcurrencyLimit`, collects items in page order, and accumulates per-page errors without aborting the traversal."
+    ],
+    "hints": [
+      "For `withConcurrencyLimit`, track results by index in a pre-allocated array and maintain a pointer to the next task to start — avoid `Promise.all` on the full set.",
+      "The `AccumulatedResult<T>` discriminated union should mirror `FetchResult` — an `ok: true` branch with no `errors` field forces callers through `handleAccumulatedResult` to access errors safely.",
+      "When traversing pages, only enqueue the next cursor if the current page succeeded — failed pages cannot yield a `nextCursor`, so that branch of the graph is naturally pruned."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript Handbook — Branded / Nominal Types",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/types-from-types.html"
+      },
+      {
+        "title": "TypeScript Handbook — Narrowing & Discriminated Unions",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html#discriminated-unions"
+      },
+      {
+        "title": "MDN — Promise.allSettled",
+        "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise/allSettled"
+      },
+      {
+        "title": "TypeScript Handbook — Generics",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/generics.html"
+      }
+    ]
   }
 ]
