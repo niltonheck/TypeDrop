@@ -106,5 +106,41 @@
         "url": "https://www.typescriptlang.org/docs/handbook/2/generics.html"
       }
     ]
+  },
+  {
+    "date": "2026-02-22",
+    "name": "Typed Event Log Parser",
+    "difficulty": "Easy",
+    "description": "You're building a monitoring dashboard for a cloud platform. Raw event logs arrive as untyped JSON blobs — your job is to safely parse them into a discriminated union of strongly-typed events, then aggregate counts and extract the latest timestamp per event kind.",
+    "snippet": "/** All supported event kinds */\ntype EventKind = \"deploy\" | \"error\" | \"scale\" | \"alert\";\n\ninterface AlertEvent {\n  kind: \"alert\";\n  timestamp: number;\n  alertName: string;\n  severity: \"low\" | \"medium\" | \"high\" | \"critical\";\n}\n\ntype AppEvent = DeployEvent | ErrorEvent | ScaleEvent | AlertEvent;\n\n/** Mapped over EventKind — adding a new kind extends this automatically */\ntype EventSummary = {\n  [K in EventKind]: {\n    count: number;\n    latestTimestamp: number | null;\n  };\n};\n\n/** Parse one unknown blob → typed AppEvent or null if invalid */\nfunction parseEvent(raw: unknown): AppEvent | null { ... }\n\n/** Parse an array of unknown blobs, silently dropping invalid entries */\nfunction parseEventLog(raw: unknown): AppEvent[] { ... }\n\n/** Aggregate parsed events into per-kind counts + latest timestamps */\nfunction summariseEvents(events: AppEvent[]): EventSummary { ... }\n",
+    "goals": [
+      "Implement `parseEvent` to safely narrow `unknown` input into a typed `AppEvent` discriminated union — no `any`, no type assertions.",
+      "Implement `parseEventLog` to filter an unknown array, silently dropping entries that fail validation.",
+      "Define `EventSummary` as a mapped type over `EventKind` so the shape automatically extends when a new kind is added.",
+      "Implement `summariseEvents` to aggregate event counts and track the latest timestamp per kind, seeding all keys up front for compile-time exhaustiveness."
+    ],
+    "hints": [
+      "Use `typeof raw === 'object' && raw !== null && 'kind' in raw` to safely access fields on an `unknown` value — no casting needed.",
+      "A `switch` on `event.kind` after you've confirmed it's a valid `EventKind` lets TypeScript narrow each branch to the correct interface.",
+      "Initialise the `EventSummary` accumulator by listing every `EventKind` literal explicitly — TypeScript will flag a missing key as a compile error."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript Handbook — Narrowing",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html"
+      },
+      {
+        "title": "TypeScript Handbook — Discriminated Unions",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html#discriminated-unions"
+      },
+      {
+        "title": "TypeScript Handbook — Mapped Types",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/mapped-types.html"
+      },
+      {
+        "title": "MDN — Array.isArray",
+        "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/isArray"
+      }
+    ]
   }
 ]

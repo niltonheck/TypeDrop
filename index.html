@@ -41,18 +41,18 @@
     <!-- CHALLENGE_START -->
     <section class="challenge-card">
       <div class="challenge-header">
-        <span class="challenge-date">2026-02-21</span>
-        <span class="badge hard">Hard</span>
+        <span class="challenge-date">2026-02-22</span>
+        <span class="badge easy">Easy</span>
       </div>
-      <h2>Paginated API Client with Typed Result Accumulation</h2>
-      <p>You're building a typed API client for an analytics platform that exposes cursor-based paginated endpoints. The client must traverse all pages concurrently (up to a configurable limit), accumulate results into a strongly-typed aggregate, and surface per-page errors without aborting the entire fetch — all without a single `any` or type assertion.</p>
+      <h2>Typed Event Log Parser</h2>
+      <p>You're building a monitoring dashboard for a cloud platform. Raw event logs arrive as untyped JSON blobs — your job is to safely parse them into a discriminated union of strongly-typed events, then aggregate counts and extract the latest timestamp per event kind.</p>
       <div class="challenge-goals">
         <h3>Goals</h3>
         <ul>
-          <li>Define branded string types `Cursor` and `EndpointPath` using a `unique symbol` brand and a single generic branding helper — no `as` outside that helper.</li>
-          <li>Model `FetchResult&lt;T&gt;` and `AccumulatedResult&lt;T&gt;` as discriminated unions so TypeScript can narrow them without type assertions.</li>
-          <li>Implement `withConcurrencyLimit&lt;R&gt;` that runs async task factories with a configurable concurrency cap and returns results in original order.</li>
-          <li>Implement `fetchAllPages&lt;T&gt;` that traverses cursor-based pages using `withConcurrencyLimit`, collects items in page order, and accumulates per-page errors without aborting the traversal.</li>
+          <li>Implement `parseEvent` to safely narrow `unknown` input into a typed `AppEvent` discriminated union — no `any`, no type assertions.</li>
+          <li>Implement `parseEventLog` to filter an unknown array, silently dropping entries that fail validation.</li>
+          <li>Define `EventSummary` as a mapped type over `EventKind` so the shape automatically extends when a new kind is added.</li>
+          <li>Implement `summariseEvents` to aggregate event counts and track the latest timestamp per kind, seeding all keys up front for compile-time exhaustiveness.</li>
         </ul>
       </div>
       <div class="code-block">
@@ -62,35 +62,34 @@
           <span class="dot green"></span>
           <span class="code-block-title">challenge.ts</span>
         </div>
-        <pre><code class="language-typescript">// Key types and main function signature
+        <pre><code class="language-typescript">/** All supported event kinds */
+type EventKind = &quot;deploy&quot; | &quot;error&quot; | &quot;scale&quot; | &quot;alert&quot;;
 
-declare const __brand: unique symbol;
-type Brand&lt;B&gt; = { readonly [__brand]: B };
+interface AlertEvent {
+  kind: &quot;alert&quot;;
+  timestamp: number;
+  alertName: string;
+  severity: &quot;low&quot; | &quot;medium&quot; | &quot;high&quot; | &quot;critical&quot;;
+}
 
-type Cursor      = string &amp; Brand&lt;&quot;Cursor&quot;&gt;;
-type EndpointPath = string &amp; Brand&lt;&quot;EndpointPath&quot;&gt;;
+type AppEvent = DeployEvent | ErrorEvent | ScaleEvent | AlertEvent;
 
-type PageResponse&lt;T&gt; = {
-  items:      T[];
-  nextCursor: Cursor | undefined;
-  pageIndex:  number;
+/** Mapped over EventKind — adding a new kind extends this automatically */
+type EventSummary = {
+  [K in EventKind]: {
+    count: number;
+    latestTimestamp: number | null;
+  };
 };
 
-type FetchResult&lt;T&gt; =
-  | { ok: true;  data: T }
-  | { ok: false; error: PageError };
+/** Parse one unknown blob → typed AppEvent or null if invalid */
+function parseEvent(raw: unknown): AppEvent | null { ... }
 
-type AccumulatedResult&lt;T&gt; = /* discriminated by `ok` — you define it */;
+/** Parse an array of unknown blobs, silently dropping invalid entries */
+function parseEventLog(raw: unknown): AppEvent[] { ... }
 
-type PageFetcher&lt;T&gt; =
-  (req: PageRequest) =&gt; Promise&lt;FetchResult&lt;PageResponse&lt;T&gt;&gt;&gt;;
-
-// ── Core entry point ──────────────────────────────────────────
-async function fetchAllPages&lt;T&gt;(
-  endpoint: EndpointPath,
-  fetcher:  PageFetcher&lt;T&gt;,
-  options?: FetchAllOptions
-): Promise&lt;AccumulatedResult&lt;T&gt;&gt;
+/** Aggregate parsed events into per-kind counts + latest timestamps */
+function summariseEvents(events: AppEvent[]): EventSummary { ... }
 </code></pre>
       </div>
       <details class="challenge-hints-details">
@@ -98,33 +97,33 @@ async function fetchAllPages&lt;T&gt;(
       <div class="challenge-hints">
         <h3>Hints</h3>
         <ul>
-          <li>For `withConcurrencyLimit`, track results by index in a pre-allocated array and maintain a pointer to the next task to start — avoid `Promise.all` on the full set.</li>
-          <li>The `AccumulatedResult&lt;T&gt;` discriminated union should mirror `FetchResult` — an `ok: true` branch with no `errors` field forces callers through `handleAccumulatedResult` to access errors safely.</li>
-          <li>When traversing pages, only enqueue the next cursor if the current page succeeded — failed pages cannot yield a `nextCursor`, so that branch of the graph is naturally pruned.</li>
+          <li>Use `typeof raw === 'object' &amp;&amp; raw !== null &amp;&amp; 'kind' in raw` to safely access fields on an `unknown` value — no casting needed.</li>
+          <li>A `switch` on `event.kind` after you've confirmed it's a valid `EventKind` lets TypeScript narrow each branch to the correct interface.</li>
+          <li>Initialise the `EventSummary` accumulator by listing every `EventKind` literal explicitly — TypeScript will flag a missing key as a compile error.</li>
         </ul>
       </div>
       </details>
       <div class="challenge-docs">
         <h3>Useful resources</h3>
         <ul>
-          <li><a href="https://www.typescriptlang.org/docs/handbook/2/types-from-types.html" target="_blank" rel="noopener noreferrer">TypeScript Handbook — Branded / Nominal Types</a></li>
-          <li><a href="https://www.typescriptlang.org/docs/handbook/2/narrowing.html#discriminated-unions" target="_blank" rel="noopener noreferrer">TypeScript Handbook — Narrowing &amp; Discriminated Unions</a></li>
-          <li><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise/allSettled" target="_blank" rel="noopener noreferrer">MDN — Promise.allSettled</a></li>
-          <li><a href="https://www.typescriptlang.org/docs/handbook/2/generics.html" target="_blank" rel="noopener noreferrer">TypeScript Handbook — Generics</a></li>
+          <li><a href="https://www.typescriptlang.org/docs/handbook/2/narrowing.html" target="_blank" rel="noopener noreferrer">TypeScript Handbook — Narrowing</a></li>
+          <li><a href="https://www.typescriptlang.org/docs/handbook/2/narrowing.html#discriminated-unions" target="_blank" rel="noopener noreferrer">TypeScript Handbook — Discriminated Unions</a></li>
+          <li><a href="https://www.typescriptlang.org/docs/handbook/2/mapped-types.html" target="_blank" rel="noopener noreferrer">TypeScript Handbook — Mapped Types</a></li>
+          <li><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/isArray" target="_blank" rel="noopener noreferrer">MDN — Array.isArray</a></li>
         </ul>
       </div>
       <div class="cta-row">
-        <a class="cta-button cta-primary" href="https://stackblitz.com/github/niltonheck/typedrop/tree/challenge/2026-02-21" target="_blank" rel="noopener noreferrer">
+        <a class="cta-button cta-primary" href="https://stackblitz.com/github/niltonheck/typedrop/tree/challenge/2026-02-22" target="_blank" rel="noopener noreferrer">
           <img class="sb-icon" src="https://cdn.simpleicons.org/stackblitz/e0e0e0" alt=""> StackBlitz
         </a>
-        <a class="cta-button" href="https://codesandbox.io/p/devbox/github/niltonheck/typedrop/tree/challenge/2026-02-21" target="_blank" rel="noopener noreferrer">
+        <a class="cta-button" href="https://codesandbox.io/p/devbox/github/niltonheck/typedrop/tree/challenge/2026-02-22" target="_blank" rel="noopener noreferrer">
           <img class="csb-icon" src="https://cdn.simpleicons.org/codesandbox/e0e0e0" alt=""> CodeSandbox
         </a>
       </div>
       <div class="clone-section">
         <h3>Or clone locally</h3>
         <div class="clone-box">
-          <code id="clone-cmd">git clone -b challenge/2026-02-21 https://github.com/niltonheck/typedrop.git</code>
+          <code id="clone-cmd">git clone -b challenge/2026-02-22 https://github.com/niltonheck/typedrop.git</code>
           <button class="clone-copy-btn" onclick="navigator.clipboard.writeText(document.getElementById('clone-cmd').textContent).then(()=>{this.textContent='Copied!';this.classList.add('copied');setTimeout(()=>{this.textContent='Copy';this.classList.remove('copied')},2000)})">Copy</button>
         </div>
       </div>
