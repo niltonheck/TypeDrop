@@ -142,5 +142,41 @@
         "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/isArray"
       }
     ]
+  },
+  {
+    "date": "2026-02-23",
+    "name": "Typed Reactive State Machine",
+    "difficulty": "Hard",
+    "description": "You're building the core of a checkout flow for an e-commerce platform. The checkout process moves through well-defined states (idle → validating → payment → confirmed / failed), and every transition must be explicitly allowed, carry typed payloads, and notify strongly-typed subscribers — all enforced at compile time.",
+    "snippet": "export type CheckoutState =\n  | IdleState\n  | ValidatingState\n  | PaymentState\n  | ConfirmedState\n  | FailedState;\n\n// Each event variant carries only the payload its transition needs:\nexport type CheckoutEvent = never; // TODO: your discriminated union here\n\n// TransitionMap maps every event `type` to its allowed source states\n// and a pure reduce function — narrowed at the type level:\nexport type TransitionMap = {\n  [E in CheckoutEvent as E[\"type\"]]: {\n    from: ReadonlyArray<CheckoutState[\"kind\"]>;\n    reduce: (state: /* narrowed */ CheckoutState, event: E) => CheckoutState;\n  };\n};\n\nexport class CheckoutMachine {\n  constructor(initialCart: CartItem[]);\n  getState(): CheckoutState;\n  send(event: CheckoutEvent): CheckoutState;\n  subscribe(fn: Subscriber): () => void;\n  reset(newCart?: CartItem[]): CheckoutState;\n}\n",
+    "goals": [
+      "Define a discriminated `CheckoutEvent` union whose variants carry only the payload each transition needs, and a `TransitionMap` mapped type where `reduce` receives narrowed state and event types — not the full unions.",
+      "Implement `CheckoutMachine` so that `send()` enforces allowed transitions at runtime, throws a `TypeError` on illegal ones, and notifies subscribers with `(nextState, prevState)`.",
+      "Implement `subscribe()` returning a working unsubscribe function, and `reset()` as a convenience wrapper that guards against calls from non-terminal states.",
+      "Implement `cartTotal` using a single `reduce` call and `assertNeverState` as an exhaustive compile-time + runtime safety net."
+    ],
+    "hints": [
+      "To get narrowed types in `TransitionMap`, try a helper type like `type EventByType<T extends CheckoutEvent[\"type\"]> = Extract<CheckoutEvent, { type: T }>` and use it in the mapped type's `reduce` signature.",
+      "Use `Extract<CheckoutState, { kind: K }>` to narrow the `state` parameter in each `reduce` function — this keeps the transition table fully type-safe without any casts.",
+      "Store subscribers in a `Set<Subscriber>` so that returning `() => set.delete(fn)` from `subscribe()` gives you a clean, allocation-light unsubscribe pattern."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript Handbook — Discriminated Unions",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html#discriminated-unions"
+      },
+      {
+        "title": "TypeScript Handbook — Mapped Types",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/mapped-types.html"
+      },
+      {
+        "title": "TypeScript Handbook — Conditional Types & infer",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/conditional-types.html"
+      },
+      {
+        "title": "TypeScript Handbook — Extract Utility Type",
+        "url": "https://www.typescriptlang.org/docs/handbook/utility-types.html#extracttype-union"
+      }
+    ]
   }
 ]
