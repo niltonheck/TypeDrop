@@ -62,7 +62,7 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
           npx tsx scripts/inject.ts
-          git add challenges.json index.html archive.html
+          git add challenges.json index.html archive.html archive/
           git commit -m "challenge: ${DATE} — update site"
           git push origin main
 

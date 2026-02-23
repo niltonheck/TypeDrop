@@ -1,4 +1,5 @@
-import { readFileSync, writeFileSync } from "fs";
+import { mkdirSync, readFileSync, writeFileSync } from "fs";
+import { join } from "path";
 
 const REPO_OWNER = "niltonheck";
 const REPO_NAME = "typedrop";
@@ -15,6 +16,16 @@ function escapeHTML(str: string): string {
 
 function escapeAttr(str: string): string {
   return str.replace(/[^a-z0-9-]/gi, "");
+}
+
+function slugify(name: string): string {
+  return name
+    .toLowerCase()
+    .replace(/&/g, "and")
+    .replace(/[^a-z0-9\s-]/g, "")
+    .replace(/\s+/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-|-$/g, "");
 }
 
 function renderList(items: string[], className: string, title: string): string {
@@ -41,34 +52,35 @@ ${links}
       </div>`;
 }
 
-function inject() {
-  const challenges = JSON.parse(readFileSync("challenges.json", "utf-8"));
-  const latest = challenges[challenges.length - 1];
-
-  if (!latest) {
-    console.error("No challenges found in challenges.json");
-    process.exit(1);
-  }
-
-  const sandboxURL = `https://codesandbox.io/p/devbox/github/${REPO_OWNER}/${REPO_NAME}/tree/challenge/${escapeAttr(latest.date)}`;
-  const difficultyClass = VALID_DIFFICULTIES.has(latest.difficulty.toLowerCase())
-    ? latest.difficulty.toLowerCase()
+function buildChallengeCardHTML(challenge: {
+  date: string;
+  name: string;
+  difficulty: string;
+  description: string;
+  snippet: string;
+  goals?: string[];
+  hints?: string[];
+  docs?: { title: string; url: string }[];
+}): string {
+  const sandboxURL = `https://codesandbox.io/p/devbox/github/${REPO_OWNER}/${REPO_NAME}/tree/challenge/${escapeAttr(challenge.date)}`;
+  const difficultyClass = VALID_DIFFICULTIES.has(challenge.difficulty.toLowerCase())
+    ? challenge.difficulty.toLowerCase()
     : "medium";
 
-  const goalsHTML = renderList(latest.goals, "challenge-goals", "Goals");
-  const hintsHTML = renderList(latest.hints, "challenge-hints", "Hints");
-  const docsHTML = renderDocs(latest.docs);
+  const goalsHTML = renderList(challenge.goals ?? [], "challenge-goals", "Goals");
+  const hintsHTML = renderList(challenge.hints ?? [], "challenge-hints", "Hints");
+  const docsHTML = renderDocs(challenge.docs ?? []);
 
-  const stackblitzURL = `https://stackblitz.com/github/${REPO_OWNER}/${REPO_NAME}/tree/challenge/${escapeAttr(latest.date)}`;
-  const cloneCommand = `git clone -b challenge/${escapeAttr(latest.date)} https://github.com/${REPO_OWNER}/${REPO_NAME}.git`;
+  const stackblitzURL = `https://stackblitz.com/github/${REPO_OWNER}/${REPO_NAME}/tree/challenge/${escapeAttr(challenge.date)}`;
+  const cloneCommand = `git clone -b challenge/${escapeAttr(challenge.date)} https://github.com/${REPO_OWNER}/${REPO_NAME}.git`;
 
-  const challengeHTML = `    <section class="challenge-card">
+  return `    <section class="challenge-card">
       <div class="challenge-header">
-        <span class="challenge-date">${escapeHTML(latest.date)}</span>
-        <span class="badge ${difficultyClass}">${escapeHTML(latest.difficulty)}</span>
+        <span class="challenge-date">${escapeHTML(challenge.date)}</span>
+        <span class="badge ${difficultyClass}">${escapeHTML(challenge.difficulty)}</span>
       </div>
-      <h2>${escapeHTML(latest.name)}</h2>
-      <p>${escapeHTML(latest.description)}</p>
+      <h2>${escapeHTML(challenge.name)}</h2>
+      <p>${escapeHTML(challenge.description)}</p>
 ${goalsHTML}
       <div class="code-block">
         <div class="code-block-header">
@@ -77,7 +89,7 @@ ${goalsHTML}
           <span class="dot green"></span>
           <span class="code-block-title">challenge.ts</span>
         </div>
-        <pre><code class="language-typescript">${escapeHTML(latest.snippet)}</code></pre>
+        <pre><code class="language-typescript">${escapeHTML(challenge.snippet)}</code></pre>
       </div>
       <details class="challenge-hints-details">
         <summary>Hints (click to reveal)</summary>
@@ -100,6 +112,94 @@ ${docsHTML}
         </div>
       </div>
     </section>`;
+}
+
+function generateChallengePage(challenge: {
+  date: string;
+  name: string;
+  difficulty: string;
+  description: string;
+  snippet: string;
+  goals?: string[];
+  hints?: string[];
+  docs?: { title: string; url: string }[];
+}): void {
+  const slug = slugify(challenge.name);
+  const dir = join("archive", challenge.date);
+  mkdirSync(dir, { recursive: true });
+
+  const cardHTML = buildChallengeCardHTML(challenge);
+  const filePath = join(dir, `${slug}.html`);
+
+  const pageHTML = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TypeDrop — ${escapeHTML(challenge.name)}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Permanent+Marker&display=swap">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/fontsource/fonts/0x-proto@latest/latin-400-normal.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/fontsource/fonts/0x-proto@latest/latin-700-normal.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1/themes/prism-tomorrow.min.css">
+  <link rel="icon" href="../../misc/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="../../style.css">
+</head>
+<body>
+  <main>
+    <header>
+      <h1><a href="../../index.html" style="color: inherit; text-decoration: none;">TypeDrop</a></h1>
+      <p class="tagline">${escapeHTML(challenge.date)} Challenge</p>
+    </header>
+
+${cardHTML}
+
+    <footer>
+      <p>
+        <a href="../../index.html">&larr; Today's challenge</a>
+        &middot;
+        <a href="../../archive.html">Archive</a>
+      </p>
+    </footer>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1/prism.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1/components/prism-typescript.min.js"></script>
+  <script data-goatcounter="https://niltonheck.goatcounter.com/count"
+        async src="//gc.zgo.at/count.js"></script>
+</body>
+</html>`;
+
+  writeFileSync(filePath, pageHTML);
+  console.log(`  Generated page: ${filePath}`);
+}
+
+function generateAllChallengePages(challenges: {
+  date: string;
+  name: string;
+  difficulty: string;
+  description: string;
+  snippet: string;
+  goals?: string[];
+  hints?: string[];
+  docs?: { title: string; url: string }[];
+}[]): void {
+  for (const challenge of challenges) {
+    generateChallengePage(challenge);
+  }
+}
+
+function inject() {
+  const challenges = JSON.parse(readFileSync("challenges.json", "utf-8"));
+  const latest = challenges[challenges.length - 1];
+
+  if (!latest) {
+    console.error("No challenges found in challenges.json");
+    process.exit(1);
+  }
+
+  const challengeHTML = buildChallengeCardHTML(latest);
 
   const html = readFileSync("index.html", "utf-8");
   if (!html.includes("<!-- CHALLENGE_START -->") || !html.includes("<!-- CHALLENGE_END -->")) {
@@ -116,6 +216,9 @@ ${docsHTML}
 
   // Also update archive.html
   generateArchive(challenges);
+
+  // Generate individual challenge pages
+  generateAllChallengePages(challenges);
 
   console.log(`Injected challenge: ${latest.name} (${latest.date})`);
 }
@@ -136,7 +239,7 @@ function generateArchive(
           <td><span class="badge ${VALID_DIFFICULTIES.has(c.difficulty.toLowerCase()) ? c.difficulty.toLowerCase() : "medium"}">${escapeHTML(c.difficulty)}</span></td>
           <td>${escapeHTML(c.name)}</td>
           <td>${escapeHTML(c.description)}</td>
-          <td><a href="https://codesandbox.io/p/devbox/github/${REPO_OWNER}/${REPO_NAME}/tree/challenge/${escapeAttr(c.date)}" target="_blank" rel="noopener noreferrer">Open</a></td>
+          <td><a href="archive/${c.date}/${slugify(c.name)}.html">See</a></td>
         </tr>`
     )
     .join("\n");
