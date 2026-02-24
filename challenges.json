@@ -178,5 +178,41 @@
         "url": "https://www.typescriptlang.org/docs/handbook/utility-types.html#extracttype-union"
       }
     ]
+  },
+  {
+    "date": "2026-02-24",
+    "name": "Typed Contact Book Lookup",
+    "difficulty": "Easy",
+    "description": "You're building a small contact book utility for an internal HR tool. Given a list of contacts with varying optional fields, you must build a strongly-typed lookup index and implement search/filter helpers — the challenge is in the types, not the logic.",
+    "snippet": "/** The department a contact belongs to. */\ntype Department = \"engineering\" | \"design\" | \"marketing\" | \"hr\" | \"finance\";\n\n/** A contact's role seniority. */\ntype Seniority = \"junior\" | \"mid\" | \"senior\" | \"lead\" | \"manager\";\n\ninterface Contact {\n  id: string;\n  name: string;\n  email: string;\n  department: Department;\n  seniority: Seniority;\n  phone?: string;\n  tags?: string[];\n}\n\n// Your job: define these three types using built-in utility types...\ntype ContactIndex  = Record<string, Contact>;       // TODO: use Record<>\ntype ContactSummary = Pick<Contact, \"id\" | ...>;    // TODO: use Pick<>\ntype SearchFilters  = Partial<Contact>;             // TODO: use Partial<>\n\n// ...then implement these three functions:\nfunction buildIndex(contacts: Contact[]): ContactIndex { ... }\nfunction summarise(index: ContactIndex): ContactSummary[] { ... }\nfunction filterContacts(contacts: Contact[], filters: SearchFilters): Contact[] { ... }",
+    "goals": [
+      "Define `ContactIndex`, `ContactSummary`, and `SearchFilters` using the `Record`, `Pick`, and `Partial` built-in utility types respectively.",
+      "Implement `buildIndex` to convert a `Contact[]` into a `ContactIndex` keyed by each contact's `id`.",
+      "Implement `summarise` to extract only the `id`, `name`, `email`, and `department` fields from every contact in a `ContactIndex`.",
+      "Implement `filterContacts` to return contacts matching ALL provided filter fields, with special subset-matching logic for the optional `tags` array."
+    ],
+    "hints": [
+      "For `filterContacts`, iterate over the keys of the `filters` object with `Object.keys` — but remember each value may be `undefined` (Partial!), so skip those keys entirely.",
+      "When checking `tags`, `Array.prototype.every` paired with `Array.prototype.includes` is your friend for verifying that all filter tags exist on the contact.",
+      "The `Pick` utility type takes a type and a union of string literal keys: `Pick<Contact, 'id' | 'name'>` — make sure you only name the four required fields for `ContactSummary`."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript Utility Types (Pick, Partial, Record)",
+        "url": "https://www.typescriptlang.org/docs/handbook/utility-types.html"
+      },
+      {
+        "title": "TypeScript Handbook — Object Types & Optional Properties",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/objects.html"
+      },
+      {
+        "title": "MDN — Array.prototype.every()",
+        "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/every"
+      },
+      {
+        "title": "MDN — Object.keys() / Object.values()",
+        "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object/keys"
+      }
+    ]
   }
 ]
