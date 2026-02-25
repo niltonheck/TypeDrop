@@ -214,5 +214,41 @@
         "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object/keys"
       }
     ]
+  },
+  {
+    "date": "2026-02-25",
+    "name": "Typed Middleware Pipeline Builder",
+    "difficulty": "Medium",
+    "description": "You're building the request-handling core of an internal HTTP gateway. Middleware functions transform a typed context object one step at a time — the challenge is composing them into a pipeline where each middleware's output type flows into the next middleware's input type, all enforced at compile time.",
+    "snippet": "/** A single middleware: receives a context of type In, returns Out. */\ntype Middleware<In, Out> = (ctx: In) => Out;\n\n/** Unwrap a Promise<T> → T; leave non-promise types unchanged. */\ntype Awaited_<T> = /* TODO: conditional type using infer */;\n\n/** Infer the output type of the last middleware in a tuple. */\ntype PipelineOutput<\n  Middlewares extends readonly Middleware<unknown, unknown>[]\n> = /* TODO: recursive conditional type */;\n\n/** Discriminated union returned by runPipeline. */\ntype PipelineResult<T> =\n  | { ok: true; value: T }\n  | { ok: false; error: string; step: number };\n\n/** Chain two middlewares — intermediate type is fully inferred. */\ndeclare function compose<A, B, C>(\n  f: Middleware<A, B>,\n  g: Middleware<B, C>\n): Middleware<A, C>;\n\n/** Run an ordered array of middlewares, catching per-step errors. */\ndeclare function runPipeline(\n  initial: unknown,\n  middlewares: Array<Middleware<unknown, unknown>>\n): PipelineResult<unknown>;\n",
+    "goals": [
+      "Implement `Awaited_<T>` and `PipelineOutput<Middlewares>` as conditional types that use `infer` to extract inner and last-middleware output types.",
+      "Implement `compose` and `composeAsync` as fully generic functions that chain two middlewares with no manual type annotations at call sites.",
+      "Implement `runPipeline` to execute middlewares sequentially, returning a typed `PipelineResult` discriminated union that captures both success and per-step failure.",
+      "Define the `Brand` helper and `AuthedContext` branded type, then implement `withAuth` as a middleware that narrows a plain `RequestContext` into an `AuthedContext` or throws."
+    ],
+    "hints": [
+      "For `PipelineOutput`, use a variadic tuple pattern: `Middlewares extends [...infer _Init, infer Last]` to grab only the final element, then extract its output with a second `infer`.",
+      "A branded type is just an intersection with a phantom property: `T & { readonly __brand: B }` — this makes two structurally identical types nominally distinct.",
+      "In `runPipeline`, keep a `current: unknown` variable and iterate with a `for` loop so you can track the step index when catching errors."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript Handbook: Conditional Types",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/conditional-types.html"
+      },
+      {
+        "title": "TypeScript Handbook: Inferring Within Conditional Types",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/conditional-types.html#inferring-within-conditional-types"
+      },
+      {
+        "title": "TypeScript Handbook: Generics",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/generics.html"
+      },
+      {
+        "title": "TypeScript Deep Dive: Branded Types",
+        "url": "https://basarat.gitbook.io/typescript/main-1/nominaltyping"
+      }
+    ]
   }
 ]
