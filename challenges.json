@@ -250,5 +250,41 @@
         "url": "https://basarat.gitbook.io/typescript/main-1/nominaltyping"
       }
     ]
+  },
+  {
+    "date": "2026-02-26",
+    "name": "Typed Product Inventory Aggregator",
+    "difficulty": "Easy",
+    "description": "You're building a back-office tool for an e-commerce warehouse. Raw inventory records arrive as unknown JSON, and you must safely validate them, group them by category, and compute per-category summaries — the challenge is keeping every step fully typed without reaching for `any`.",
+    "snippet": "\n// Key types\nexport type Category = \"electronics\" | \"clothing\" | \"food\" | \"furniture\";\n\nexport interface Product {\n  id: string;\n  name: string;\n  category: Category;\n  priceUsd: number;   // > 0\n  stock: number;      // non-negative integer\n}\n\nexport type Result<T, E> =\n  | { ok: true;  value: T }\n  | { ok: false; error: E };\n\nexport interface CategorySummary {\n  category: Category;\n  productCount: number;\n  totalStock: number;\n  averagePriceUsd: number;\n  cheapestProduct: Pick<Product, \"id\" | \"name\" | \"priceUsd\">;\n}\n\n// Functions to implement\nexport function parseProduct(raw: unknown): Result<Product, string> { ... }\nexport function groupByCategory(products: Product[]): Map<Category, Product[]> { ... }\nexport function summariseCategory(category: Category, products: Product[]): CategorySummary { ... }\nexport function buildInventoryReport(rawRecords: unknown[]): InventoryReport { ... }\n",
+    "goals": [
+      "Implement `parseProduct` to safely narrow `unknown` → `Product` using a `Result` discriminated union — no `any` or `as` allowed.",
+      "Implement `groupByCategory` to bucket valid products into a `Map<Category, Product[]>`.",
+      "Implement `summariseCategory` to compute per-category totals, averages (2 d.p.), and the cheapest product using `Pick<Product, ...>`.",
+      "Implement `buildInventoryReport` to orchestrate the full pipeline: parse all raw records, collect indexed `ParseError`s, aggregate summaries, and return a sorted `InventoryReport`."
+    ],
+    "hints": [
+      "Narrow `unknown` incrementally: first check `typeof raw === 'object' && raw !== null`, then use the `in` operator to confirm each field exists before checking its type or value.",
+      "The `Result<T, E>` union is discriminated on the `ok` boolean — TypeScript will narrow `value` vs `error` automatically inside an `if (result.ok)` block.",
+      "For `Pick<Product, 'id' | 'name' | 'priceUsd'>`, you don't need to construct a new type — just return an object literal with exactly those three keys and TypeScript will enforce the shape."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript – Narrowing",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html"
+      },
+      {
+        "title": "TypeScript – Utility Types (Pick, Record, …)",
+        "url": "https://www.typescriptlang.org/docs/handbook/utility-types.html"
+      },
+      {
+        "title": "TypeScript – Discriminated Unions",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html#discriminated-unions"
+      },
+      {
+        "title": "MDN – Map",
+        "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Map"
+      }
+    ]
   }
 ]
