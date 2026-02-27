@@ -286,5 +286,41 @@
         "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Map"
       }
     ]
+  },
+  {
+    "date": "2026-02-27",
+    "name": "Typed Paginated API Client with Retry & Concurrency",
+    "difficulty": "Hard",
+    "description": "You're building a typed data-ingestion pipeline for an analytics platform. Remote REST endpoints return paginated results, requests can fail transiently, and multiple endpoints must be fetched in parallel — but with a concurrency cap to avoid hammering the servers.",
+    "snippet": "\n// Core result type — discriminated union\nexport type Ok<T>  = { ok: true;  value: T };\nexport type Err<E> = { ok: false; error: E };\nexport type Result<T, E> = Ok<T> | Err<E>;\n\n// Paginated API shape\nexport interface PagedResponse<T> {\n  items:    T[];\n  nextPage: number | null;\n  total:    number;\n}\nexport type FetchPage<T> = (page: number) => Promise<PagedResponse<T>>;\n\n// Typed error hierarchy\nexport type ApiError =\n  | { kind: \"transient\"; message: string; retryAfterMs: number }\n  | { kind: \"permanent\"; message: string; statusCode: number };\n\n// Main orchestrator signature\nexport async function ingestEndpoints<T>(\n  endpoints: ReadonlyArray<EndpointConfig<T>>,\n  concurrencyLimit: number,\n): Promise<{\n  successes: Array<{ id: string; items: T[] }>;\n  failures:  Array<{ id: string; error: ApiError }>;\n}>;\n",
+    "goals": [
+      "Define a fully-typed discriminated-union Result<T,E> and a two-variant ApiError type, then implement ok() and err() constructor helpers.",
+      "Implement withRetry to transparently retry transient ApiErrors up to maxAttempts times while short-circuiting on permanent errors.",
+      "Implement fetchAllPages to sequentially follow the nextPage cursor and fetchWithConcurrencyLimit to run tasks in parallel with a sliding-window concurrency cap.",
+      "Wire all helpers together in ingestEndpoints, bridging the Result world into the FetchPage contract and returning partitioned successes and failures."
+    ],
+    "hints": [
+      "For withRetry, narrow on both result.ok and error.kind — TypeScript will ensure the transient branch has retryAfterMs and the permanent branch has statusCode without extra casting.",
+      "fetchWithConcurrencyLimit is easiest with a running pool: kick off `limit` tasks immediately, then as each one settles, start the next unstarted task — track indices carefully to preserve output order.",
+      "In ingestEndpoints, you need to adapt FetchPage<T> (which returns a plain Promise) to work with withRetry (which expects () => Promise<Result<T,ApiError>>). Create a small local wrapper per page call that maps fetch errors to ApiError results."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript Handbook — Discriminated Unions",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html#discriminated-unions"
+      },
+      {
+        "title": "TypeScript Handbook — Generics",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/generics.html"
+      },
+      {
+        "title": "MDN — Promise.race / concurrency patterns",
+        "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise/race"
+      },
+      {
+        "title": "TypeScript 5.x — const Type Parameters & satisfies",
+        "url": "https://www.typescriptlang.org/docs/handbook/release-notes/typescript-5-0.html"
+      }
+    ]
   }
 ]
