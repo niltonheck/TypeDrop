@@ -322,5 +322,41 @@
         "url": "https://www.typescriptlang.org/docs/handbook/release-notes/typescript-5-0.html"
       }
     ]
+  },
+  {
+    "date": "2026-02-28",
+    "name": "Typed Event Aggregator with Windowed Rollups",
+    "difficulty": "Medium",
+    "description": "You're building the analytics backbone of a real-time dashboard for a SaaS platform. Raw telemetry events (page views, clicks, errors, purchases) stream in continuously, and the dashboard needs per-event-type rollups aggregated over fixed time windows — all with zero `any` and full type safety on every event shape and its aggregated form.",
+    "snippet": "\n// Core event union & kind extraction\ntype TelemetryEvent = PageViewEvent | ClickEvent | ErrorEvent | PurchaseEvent;\ntype EventKind = TelemetryEvent[\"kind\"]; // \"pageView\" | \"click\" | \"error\" | \"purchase\"\n\n// Map each kind to its rollup shape\ntype RollupMap = { [K in EventKind]: /* matching rollup type */ never };\n\n// Generic reducer interface\ninterface Reducer<K extends EventKind> {\n  reduce(acc: RollupMap[K] | undefined, event: ExtractEvent<K>): RollupMap[K];\n}\n\n// Main aggregation function — groups events into time windows and folds them\nfunction aggregateEvents<K extends EventKind>(\n  events: TelemetryEvent[],\n  kind: K,\n  reducer: Reducer<K>,\n  windowMs?: number        // default 60_000 ms\n): Map<string, RollupMap[K]>\n",
+    "goals": [
+      "Define `TelemetryEvent` as a discriminated union and derive `EventKind` and `ExtractEvent<K>` from it using utility/conditional types — no hand-written string literals.",
+      "Build `RollupMap` as a mapped type over `EventKind` that associates each event kind with its rollup shape.",
+      "Implement the generic `Reducer<K>` interface and all four concrete reducers (`pageViewReducer`, `clickReducer`, `errorReducer`, `purchaseReducer`) with correct types.",
+      "Implement `windowKey` and `aggregateEvents` so that events are bucketed by time window and folded through the correct reducer, returning a fully-typed `Map<string, RollupMap[K]>`."
+    ],
+    "hints": [
+      "For `ExtractEvent<K>`, `Extract<TelemetryEvent, { kind: K }>` is the most concise approach — it leverages distributive conditional types built into `Extract`.",
+      "Inside `aggregateEvents`, after filtering with `event.kind === kind`, TypeScript may still need a type assertion-free cast — try a type predicate helper `(e): e is ExtractEvent<K> => e.kind === kind` to keep things clean.",
+      "For `RollupMap`, write `[K in EventKind]: ...` and use a conditional type (or explicit mapping) to select the right rollup type for each key — this is the one place a conditional type inside a mapped type really shines."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript Handbook — Discriminated Unions",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html#discriminated-unions"
+      },
+      {
+        "title": "TypeScript Handbook — Mapped Types",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/mapped-types.html"
+      },
+      {
+        "title": "TypeScript Handbook — Conditional Types",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/conditional-types.html"
+      },
+      {
+        "title": "TypeScript Utility Types — Extract",
+        "url": "https://www.typescriptlang.org/docs/handbook/utility-types.html#extracttype-union"
+      }
+    ]
   }
 ]
