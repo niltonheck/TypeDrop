@@ -358,5 +358,41 @@
         "url": "https://www.typescriptlang.org/docs/handbook/utility-types.html#extracttype-union"
       }
     ]
+  },
+  {
+    "date": "2026-03-01",
+    "name": "Typed Distributed Cache with TTL & Eviction Policies",
+    "difficulty": "Hard",
+    "description": "You're building the caching layer for a high-throughput microservice platform. Each cache namespace has its own value shape, TTL strategy, and eviction policy — and the orchestrator must coordinate reads, writes, and invalidations across multiple namespaces with full compile-time safety on every key-value pair.",
+    "snippet": "// Key types at a glance\n\ntype AppSchema = {\n  users: { id: number; name: string };\n  tokens: string;\n  counters: number;\n};\n\nexport type EvictionPolicy =\n  | { kind: \"lru\"; maxSize: number }\n  | { kind: \"ttl\"; defaultTtlMs: number }\n  | { kind: \"none\" };\n\nexport type NamespaceConfig<V> = {\n  policy: EvictionPolicy;\n  serialize?:   (value: V) => string;\n  deserialize?: (raw: string) => V;\n};\n\nexport type NamespaceConfigs<S extends CacheSchema> = {\n  [K in keyof S]: NamespaceConfig<S[K]>;\n};\n\nexport interface CacheOrchestrator<S extends CacheSchema> {\n  set<K extends keyof S>(ns: K, key: string, value: S[K], ttlMs?: number): void;\n  get<K extends keyof S>(ns: K, key: string): S[K] | undefined;\n  delete<K extends keyof S>(ns: K, key: string): boolean;\n  invalidateNamespace<K extends keyof S>(ns: K): void;\n  stats<K extends keyof S>(ns: K): NamespaceStats;\n}\n\nexport function createCacheOrchestrator<S extends CacheSchema>(\n  configs: NamespaceConfigs<S>\n): CacheOrchestrator<S> { /* TODO */ throw new Error(\"Not implemented\"); }",
+    "goals": [
+      "Define the `EvictionPolicy` discriminated union and `NamespaceConfig<V>` generic with optional serialize/deserialize pair.",
+      "Implement `NamespaceConfigs<S>` as a mapped type so each namespace key binds to the correctly-typed config.",
+      "Implement `createCacheOrchestrator` with per-namespace LRU eviction, lazy TTL expiry, accurate stats counters, and full `CacheOrchestrator<S>` interface compliance.",
+      "Implement the `cacheKey` branded-type helper with runtime length validation."
+    ],
+    "hints": [
+      "A `Map<string, Entry<V>>` preserves insertion order — delete then re-insert a key on every access to cheaply maintain LRU order without a doubly-linked list.",
+      "Narrow the eviction policy with a `switch (policy.kind)` inside `set` and `get` so TypeScript's exhaustiveness checking guides you through each branch.",
+      "The `NamespaceConfigs<S>` mapped type only needs one line: `[K in keyof S]: NamespaceConfig<S[K]>` — the hard part is making sure the orchestrator's internal store is also keyed generically over `keyof S`."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript Mapped Types",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/mapped-types.html"
+      },
+      {
+        "title": "TypeScript Discriminated Unions",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html#discriminated-unions"
+      },
+      {
+        "title": "TypeScript Generics — Keyof & Indexed Access",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/indexed-access-types.html"
+      },
+      {
+        "title": "MDN — Map (insertion-order iteration)",
+        "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Map"
+      }
+    ]
   }
 ]
