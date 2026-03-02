@@ -394,5 +394,41 @@
         "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Map"
       }
     ]
+  },
+  {
+    "date": "2026-03-02",
+    "name": "Typed Contact Book with Safe Parsing & Lookup",
+    "difficulty": "Easy",
+    "description": "You're building a lightweight contact management module for a small business app. Raw contact data arrives as unknown JSON from an import file, and you must validate it into strongly-typed records, build an efficient lookup index, and expose typed query helpers — all without reaching for `any`.",
+    "snippet": "export type PhoneType = \"mobile\" | \"home\" | \"work\";\n\nexport interface PhoneNumber {\n  type: PhoneType;\n  number: string;\n}\n\nexport interface Contact {\n  id: string;\n  firstName: string;\n  lastName: string;\n  email: string;\n  phones: PhoneNumber[]; // at least one entry\n  tags: string[];\n}\n\nexport type Result<T, E> = never; // TODO: define discriminated union\n\nexport type ParseError = never;   // TODO: define discriminated union\n\nexport type ContactIndex = never; // TODO: use Record utility type\n\nexport function parseContact(raw: unknown): Result<Contact, ParseError> { ... }\nexport function buildIndex(contacts: Contact[]): ContactIndex { ... }\nexport function findById(index: ContactIndex, id: string): Contact | undefined { ... }\nexport function filterByTags(index: ContactIndex, requiredTags: string[]): Contact[] { ... }\nexport function searchByName(index: ContactIndex, prefix: string): Contact[] { ... }",
+    "goals": [
+      "Define a generic `Result<T, E>` discriminated union and a `ParseError` discriminated union with at least three variants.",
+      "Implement `parseContact` to safely narrow `unknown` input into a typed `Contact`, returning descriptive `ParseError` values for every invalid case.",
+      "Implement `buildIndex` using the `Record` utility type and `findById` returning `Contact | undefined` without any type assertions.",
+      "Implement `filterByTags` and `searchByName` using typed iteration over the `ContactIndex`."
+    ],
+    "hints": [
+      "A discriminated union needs a shared literal-typed field (e.g. `ok` or `kind`) so TypeScript can narrow between variants in `if`/`switch` blocks.",
+      "To validate `phones` entries, check `Array.isArray` first, then iterate and verify each entry's `type` is one of the three `PhoneType` literals — a `const VALID_PHONE_TYPES` tuple with `includes` (after a cast-free helper) works well here.",
+      "`Object.values(index)` gives you a `Contact[]` you can then `filter` and `sort` without any extra type work."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript Handbook — Discriminated Unions",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html#discriminated-unions"
+      },
+      {
+        "title": "TypeScript Handbook — Generics",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/generics.html"
+      },
+      {
+        "title": "TypeScript Utility Types (Record, Pick, Omit…)",
+        "url": "https://www.typescriptlang.org/docs/handbook/utility-types.html"
+      },
+      {
+        "title": "MDN — Array.prototype.every (used for tag filtering)",
+        "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/every"
+      }
+    ]
   }
 ]
