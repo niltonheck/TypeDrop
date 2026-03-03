@@ -430,5 +430,41 @@
         "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/every"
       }
     ]
+  },
+  {
+    "date": "2026-03-03",
+    "name": "Typed Workflow State Machine",
+    "difficulty": "Medium",
+    "description": "You're building the order-processing engine for a fulfilment platform. Each order moves through a strict lifecycle — from placement to delivery or cancellation — and only certain transitions are legal at any given state. The challenge is encoding that lifecycle entirely in the type system so that illegal transitions are caught at compile time, not at runtime.",
+    "snippet": "// Key types — fill in the TODOs to make this compile\nexport type OrderState =\n  | \"pending\" | \"confirmed\" | \"picking\"\n  | \"shipped\" | \"delivered\" | \"cancelled\";\n\nexport type TransitionMap = {\n  [S in OrderState]: ReadonlyArray<OrderState>; // narrow each value!\n};\n\nexport type LegalTransition<S extends OrderState> = TODO; // indexed into TransitionMap\n\nexport type OrderEvent =\n  | { type: \"CONFIRM\";       orderId: string; timestamp: number }\n  | { type: \"START_PICKING\"; orderId: string; timestamp: number }\n  | { type: \"SHIP\";          orderId: string; timestamp: number; trackingCode: string }\n  | { type: \"DELIVER\";       orderId: string; timestamp: number }\n  | { type: \"CANCEL\";        orderId: string; timestamp: number; reason: string };\n\n// Main functions you must implement:\nexport function buildOrder(id: string, createdAt: number): Order { … }\nexport function transition(order: Order, event: OrderEvent): Order { … }\nexport function getValidNextEvents(order: Order): ReadonlyArray<OrderEvent[\"type\"]> { … }\n",
+    "goals": [
+      "Define `TransitionMap` as a mapped type and derive `LegalTransition<S>` from it using indexed access so illegal states resolve to `never`.",
+      "Model `OrderEvent` as a discriminated union where event-specific fields (trackingCode, reason) only appear on the relevant member.",
+      "Implement `transition` with function overloads, throwing a `TypeError` on any illegal state transition.",
+      "Implement `getValidNextEvents` to return only the event-type strings that are currently legal for the order's state."
+    ],
+    "hints": [
+      "For `LegalTransition<S>`, index into `TransitionMap` with `S` and then use `[number]` to convert the readonly array type into a union.",
+      "Inside `transition`, narrow the event with a `switch (event.type)` — TypeScript will automatically narrow the event shape in each branch, letting you access `trackingCode` or `reason` safely.",
+      "The provided `STATE_LEGAL_EVENTS` constant is keyed by `OrderState` and valued by `ReadonlyArray<OrderEvent[\"type\"]>` — lean on it inside both `transition` (for validation) and `getValidNextEvents` (for the return value)."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript Handbook — Mapped Types",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/mapped-types.html"
+      },
+      {
+        "title": "TypeScript Handbook — Conditional Types",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/conditional-types.html"
+      },
+      {
+        "title": "TypeScript Handbook — Discriminated Unions",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html#discriminated-unions"
+      },
+      {
+        "title": "TypeScript Handbook — Function Overloads",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/functions.html#function-overloads"
+      }
+    ]
   }
 ]
