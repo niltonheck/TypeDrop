@@ -466,5 +466,41 @@
         "url": "https://www.typescriptlang.org/docs/handbook/2/functions.html#function-overloads"
       }
     ]
+  },
+  {
+    "date": "2026-03-04",
+    "name": "Typed Plugin Middleware Chain with Typed Error Hierarchy",
+    "difficulty": "Hard",
+    "description": "You're building the request-processing core of an API gateway. Incoming requests pass through a chain of strongly-typed middleware plugins (auth, rate-limiting, transformation, logging). Each plugin can either pass the request downstream, short-circuit with a typed error, or mutate the request context — and the orchestrator must collect per-plugin results, surface a typed error hierarchy, and guarantee exhaustive handling at every exit point.",
+    "snippet": "// Key types and main function signature\n\nexport type RequestId  = string & { readonly __brand: \"RequestId\" };\nexport type PluginName = string & { readonly __brand: \"PluginName\" };\n\nexport type PluginError =\n  | { kind: \"auth\";       reason: string }\n  | { kind: \"rate_limit\"; retryAfterMs: number }\n  | { kind: \"validation\"; field: string; issue: string }\n  | { kind: \"upstream\";   statusCode: number; body: string };\n\nexport type Result<T, E> =\n  | { ok: true;  value: T }\n  | { ok: false; error: E };\n\nexport interface Plugin {\n  name: PluginName;\n  execute(ctx: RequestContext): Promise<Result<RequestContext, PluginError>>;\n}\n\nexport type ChainResult =\n  | { outcome: \"success\"; finalContext: RequestContext; audit: PluginRecord[] }\n  | { outcome: \"failure\"; failedPlugin: PluginName; error: PluginError; audit: PluginRecord[] };\n\nexport async function runChain(\n  plugins: Plugin[],\n  initialContext: RequestContext\n): Promise<ChainResult> { /* TODO */ }\n",
+    "goals": [
+      "Define the full typed error hierarchy (AuthError, RateLimitError, ValidationError, UpstreamError) as a discriminated union and wire it through Result<T,E> and Plugin.",
+      "Implement runChain to execute plugins sequentially, short-circuit on the first failure, record accurate durationMs per plugin, and mark unexecuted plugins as 'skipped'.",
+      "Implement renderError with an exhaustive switch over all PluginError variants, using a never-assertion in the default branch to guarantee compile-time completeness.",
+      "Implement summariseAudit to aggregate a PluginRecord[] into an AuditSummary — narrowing each record variant to compute counts, total duration, and per-plugin error details."
+    ],
+    "hints": [
+      "A `never`-assertion helper like `function assertNever(x: never): never { throw new Error(...) }` makes the default branch of your switch exhaustive at compile time.",
+      "For PluginRecord, keep `durationMs` only on the `passed` and `failed` variants — the `skipped` variant has no timing to record, which naturally guides your summariseAudit accumulator.",
+      "In runChain, capture `Date.now()` before and after each `await plugin.execute(ctx)` call; store the delta as `durationMs` before deciding which PluginRecord variant to push."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript Handbook — Discriminated Unions",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html#discriminated-unions"
+      },
+      {
+        "title": "TypeScript Handbook — Conditional & Mapped Types",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/types-from-types.html"
+      },
+      {
+        "title": "TypeScript Handbook — Generics",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/generics.html"
+      },
+      {
+        "title": "TypeScript Deep Dive — Branded Types",
+        "url": "https://basarat.gitbook.io/typescript/main-1/nominaltyping"
+      }
+    ]
   }
 ]
