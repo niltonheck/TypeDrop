@@ -502,5 +502,41 @@
         "url": "https://basarat.gitbook.io/typescript/main-1/nominaltyping"
       }
     ]
+  },
+  {
+    "date": "2026-03-05",
+    "name": "Typed Paginated API Client with Result Chaining",
+    "difficulty": "Medium",
+    "description": "You're building the data-fetching layer for an admin dashboard that queries a paginated REST API. Each endpoint returns a different resource shape, and the client must transparently walk pages, accumulate results, and surface typed errors — all without a single `any`.",
+    "snippet": "// Key types\nexport type Ok<T>     = { readonly kind: \"ok\";  readonly value: T };\nexport type Err<E>    = { readonly kind: \"err\"; readonly error: E };\nexport type Result<T, E> = Ok<T> | Err<E>;\n\nexport type ApiError =\n  | { readonly kind: \"network\";   readonly message: string }\n  | { readonly kind: \"not_found\"; readonly resource: string }\n  | { readonly kind: \"parse\";     readonly raw: string };\n\nexport interface Page<T> {\n  readonly items:      T[];\n  readonly nextCursor: string | null;\n  readonly total:      number;\n}\n\nexport type PageFetcher<T> =\n  (cursor: string | null) => Promise<Result<Page<T>, ApiError>>;\n\n// Core functions you must implement:\nexport async function fetchAllPages<T>(\n  fetcher: PageFetcher<T>\n): Promise<Result<T[], ApiError>> { /* TODO */ }\n\nexport function mapResult<T, U, E>(\n  result: Result<T, E>, fn: (value: T) => U\n): Result<U, E> { /* TODO */ }\n\nexport function groupById<T extends { id: string }>(\n  items: T[]\n): ReadonlyMap<string, T> { /* TODO */ }\n",
+    "goals": [
+      "Define and use a discriminated-union Result<T,E> type with Ok and Err variants throughout all functions.",
+      "Implement fetchAllPages to walk paginated cursors sequentially, accumulating items and short-circuiting on the first error.",
+      "Write runtime validators (validateUser, validateAuditLog, validatePage) that narrow unknown to typed structs using only typeof/in guards — no type assertions.",
+      "Implement mapResult, flatMapResult, and pipeResults to enable safe, composable result chaining."
+    ],
+    "hints": [
+      "For validateUser, check typeof on each field individually before constructing the User — the compiler will track the narrowed type for you.",
+      "fetchAllPages should use a while loop driven by nextCursor: start with null, replace it with the cursor from each successful page until it's null again.",
+      "pipeResults can be solved in a single pass with Array.reduce — accumulate values into an Ok([]) and short-circuit to Err on the first Err you encounter."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript Handbook: Narrowing",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html"
+      },
+      {
+        "title": "TypeScript Handbook: Generics",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/generics.html"
+      },
+      {
+        "title": "TypeScript Handbook: Discriminated Unions",
+        "url": "https://www.typescriptlang.org/docs/handbook/typescript-in-5-minutes-func.html#discriminated-unions"
+      },
+      {
+        "title": "MDN: Promise — sequential vs parallel",
+        "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise#sequential_composition"
+      }
+    ]
   }
 ]
