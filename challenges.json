@@ -538,5 +538,41 @@
         "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise#sequential_composition"
       }
     ]
+  },
+  {
+    "date": "2026-03-06",
+    "name": "Typed Real-Time Event Aggregator with Windowed Metrics",
+    "difficulty": "Hard",
+    "description": "You're building the analytics backbone of a live-streaming platform. Raw telemetry events (views, reactions, chat messages, errors) arrive in bursts and must be funnelled through a strongly-typed aggregation pipeline that groups them into fixed time windows, computes per-event-kind statistics, and surfaces a typed Result for every query — all with zero `any`.",
+    "snippet": "\n// Key types and main class signature\n\ntype EventKind = \"view\" | \"reaction\" | \"chat\" | \"error\";\n\n// TODO: define this conditional/mapped type\ntype EventMetrics<K extends EventKind> = never; // ← replace\n\ninterface WindowSnapshot {\n  windowId: WindowId;\n  startTs: TimestampMs;\n  endTs: TimestampMs;\n  metrics: { [K in EventKind]?: EventMetrics<K> };\n}\n\ntype Result<T, E> = { ok: true; value: T } | { ok: false; error: E };\n\ntype AggregatorError =\n  | { kind: \"EMPTY_WINDOW\";    windowId: WindowId }\n  | { kind: \"WINDOW_NOT_FOUND\"; windowId: WindowId }\n  | { kind: \"INVALID_RANGE\";   startTs: TimestampMs; endTs: TimestampMs };\n\nclass EventAggregator {\n  constructor(private readonly windowSizeMs: number) {}\n  ingest(events: readonly TelemetryEvent[]): void { ... }\n  computeWindow(windowId: WindowId): Result<WindowSnapshot, AggregatorError> { ... }\n  queryRange(startTs: TimestampMs, endTs: TimestampMs): Result<WindowSnapshot[], AggregatorError> { ... }\n  getMetricsForKind<K extends EventKind>(windowId: WindowId, kind: K): Result<EventMetrics<K>, AggregatorError> { ... }\n}\n",
+    "goals": [
+      "Define `EventMetrics<K extends EventKind>` as a conditional or mapped type that resolves to the exact metrics interface for each event kind.",
+      "Implement `EventAggregator` — ingest events into fixed time windows, compute per-kind metrics, and surface typed Results for window queries and range queries.",
+      "Implement the generic `getMetricsForKind<K>` so TypeScript infers `EventMetrics<K>` at the call site without any type assertions.",
+      "Implement `renderMetrics` with an exhaustive switch over `EventKind` using `assertNever`, so adding a new kind to the union is a compile-time error."
+    ],
+    "hints": [
+      "For `EventMetrics<K>`, a conditional type chain (`K extends 'view' ? ViewMetrics : K extends 'reaction' ? ...`) is the cleanest approach — TypeScript can then narrow the return type of `getMetricsForKind` without casts.",
+      "Inside `getMetricsForKind`, index `snapshot.metrics[kind]` — because `metrics` is typed as `{ [K in EventKind]?: EventMetrics<K> }`, the lookup already returns `EventMetrics<K> | undefined`, so no assertion is needed.",
+      "For exhaustiveness in `renderMetrics`, switch over the `kind` key of each metrics entry; the `default` branch should call `assertNever(kind)` where `kind: never`."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript Handbook — Conditional Types",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/conditional-types.html"
+      },
+      {
+        "title": "TypeScript Handbook — Mapped Types",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/mapped-types.html"
+      },
+      {
+        "title": "TypeScript Handbook — Narrowing & Exhaustiveness",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html#exhaustiveness-checking"
+      },
+      {
+        "title": "TypeScript Handbook — Generics",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/generics.html"
+      }
+    ]
   }
 ]
