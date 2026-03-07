@@ -574,5 +574,41 @@
         "url": "https://www.typescriptlang.org/docs/handbook/2/generics.html"
       }
     ]
+  },
+  {
+    "date": "2026-03-07",
+    "name": "Typed Job Queue with Retry Logic & Concurrency Limits",
+    "difficulty": "Medium",
+    "description": "You're building the background job runner for a SaaS platform. Jobs arrive with different payloads and priorities, each handler is typed to its payload, and the runner must enforce a concurrency cap, retry failed jobs with exponential back-off, and report a typed summary when the queue drains.",
+    "snippet": "// Key types — core of the challenge\n\nexport type JobKind = \"email\" | \"report\" | \"webhook\";\n\n// Each concrete job locks `kind` and `payload` together\nexport type EmailJob   = Job<EmailPayload>   & { kind: \"email\" };\nexport type ReportJob  = Job<ReportPayload>  & { kind: \"report\" };\nexport type WebhookJob = Job<WebhookPayload> & { kind: \"webhook\" };\nexport type AnyJob     = EmailJob | ReportJob | WebhookJob;\n\n// Resolve the right payload type for each kind (conditional type)\ntype PayloadFor<K extends JobKind> = TODO;\n\n// Registry maps every kind to the correctly-typed handler\nexport type JobRegistry = {\n  [K in JobKind]: JobHandler<PayloadFor<K>>;\n};\n\n// Factory — enforce concurrency cap + retry logic\nexport function createJobRunner(\n  registry: JobRegistry,\n  options: RunnerOptions   // { maxConcurrency, baseDelayMs }\n): JobRunner {             // { enqueue(job), run(): Promise<RunSummary> }\n  throw new Error(\"Not implemented\");\n}",
+    "goals": [
+      "Define a discriminated-union `AnyJob` and a conditional `PayloadFor<K>` type so that `JobRegistry` maps each job kind to a handler that only accepts the matching payload type.",
+      "Implement `createJobRunner` so that `run()` never executes more than `maxConcurrency` jobs simultaneously, using a Promise-slot pool or equivalent pattern.",
+      "Implement exponential back-off retry: on handler failure, wait `baseDelayMs * 2^attemptsMade` ms and retry up to `job.maxRetries` times before recording a final failure.",
+      "Return a fully-typed `RunSummary` from `run()` whose `results` array contains a `JobOutcome` discriminated union for every job processed."
+    ],
+    "hints": [
+      "For `PayloadFor<K>`, write a conditional type that maps `\"email\"` → `EmailPayload`, `\"report\"` → `ReportPayload`, `\"webhook\"` → `WebhookPayload` — then use it inside the mapped `JobRegistry` type.",
+      "To dispatch a job to its handler without a type assertion, narrow on `job.kind` inside a `switch` statement; TypeScript will infer the correct payload type in each branch.",
+      "A simple concurrency pool: keep a `Set` of in-flight Promises; when the set reaches `maxConcurrency`, `await Promise.race(activeSet)` before starting the next job."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript Handbook — Conditional Types",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/conditional-types.html"
+      },
+      {
+        "title": "TypeScript Handbook — Mapped Types",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/mapped-types.html"
+      },
+      {
+        "title": "TypeScript Handbook — Discriminated Unions",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html#discriminated-unions"
+      },
+      {
+        "title": "MDN — Promise.race()",
+        "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise/race"
+      }
+    ]
   }
 ]
