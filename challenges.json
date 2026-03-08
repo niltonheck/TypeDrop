@@ -610,5 +610,41 @@
         "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise/race"
       }
     ]
+  },
+  {
+    "date": "2026-03-08",
+    "name": "Typed Inventory Aggregator",
+    "difficulty": "Easy",
+    "description": "You're building the stock-management module for an e-commerce back-office. Raw inventory records arrive from multiple warehouses and must be validated, grouped by category, and summarised — all with zero `any` and fully typed results.",
+    "snippet": "\n// Key types & main signatures at a glance\n\nexport type Category = \"electronics\" | \"clothing\" | \"food\" | \"furniture\";\n\nexport type Result<T, E> =\n  | { ok: true;  value: T }\n  | { ok: false; error: E };\n\nexport interface InventoryItem extends Omit<RawRecord, \"category\"> {\n  category: Category;           // narrowed from raw string\n}\n\nexport interface CategorySummary {\n  category: Category;\n  totalItems: number;\n  totalQuantity: number;\n  totalValue: number;           // sum of quantity * unitPrice (cents)\n  averageUnitPrice: number;     // rounded mean unitPrice across SKUs\n}\n\n// ── Functions you must implement ──────────────────────────────────────────────\nexport function validateRecord(raw: RawRecord): Result<InventoryItem, ValidationError>;\nexport function partitionRecords(raws: RawRecord[]): { valid: InventoryItem[]; errors: ValidationError[] };\nexport function aggregateByCategory(items: InventoryItem[]): Partial<Record<Category, CategorySummary>>;\nexport function processInventory(raws: RawRecord[]): { summary: Partial<Record<Category, CategorySummary>>; errors: ValidationError[] };\n",
+    "goals": [
+      "Implement `validateRecord` to narrow a `RawRecord` into an `InventoryItem` or return a typed `ValidationError` using a `Result` discriminated union.",
+      "Implement `partitionRecords` to collect all valid items and all errors in a single pass without short-circuiting.",
+      "Implement `aggregateByCategory` to group items and compute per-category statistics (`totalItems`, `totalQuantity`, `totalValue`, `averageUnitPrice`) in a single loop.",
+      "Compose the full pipeline in `processInventory`, returning both the aggregated summary and any validation errors."
+    ],
+    "hints": [
+      "A `Set` or tuple literal like `[\"electronics\", \"clothing\", \"food\", \"furniture\"] as const` makes it easy to check whether a raw string is a valid `Category` — and TypeScript will narrow the type for you after the check.",
+      "For `aggregateByCategory`, use `Array.prototype.reduce` with a `Partial<Record<Category, CategorySummary>>` accumulator so you can build each entry on first encounter and update it on subsequent ones — all in one pass.",
+      "The `Result<T, E>` discriminated union lets you branch on `.ok` without any type assertions — lean on that in `partitionRecords` to route each outcome to the right bucket."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript Utility Types (Pick, Omit, Record)",
+        "url": "https://www.typescriptlang.org/docs/handbook/utility-types.html"
+      },
+      {
+        "title": "TypeScript Narrowing",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html"
+      },
+      {
+        "title": "Discriminated Unions",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html#discriminated-unions"
+      },
+      {
+        "title": "Array.prototype.reduce – MDN",
+        "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/reduce"
+      }
+    ]
   }
 ]
