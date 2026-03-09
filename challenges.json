@@ -646,5 +646,41 @@
         "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/reduce"
       }
     ]
+  },
+  {
+    "date": "2026-03-09",
+    "name": "Typed State Machine Executor with Transition Guards",
+    "difficulty": "Hard",
+    "description": "You're building the order-lifecycle engine for a fulfilment platform. Each order moves through a strict set of states (e.g. `pending → confirmed → shipped → delivered`), and every transition must pass a typed guard before it fires. The engine must enforce exhaustive state/event coverage at the type level, accumulate a typed audit log, and surface a discriminated `Result` for every attempted transition — with zero `any`.",
+    "snippet": "// Core types at a glance\n\ntype OrderState = \"pending\" | \"confirmed\" | \"processing\" | \"shipped\" | \"delivered\" | \"cancelled\";\ntype OrderEvent = \"CONFIRM\" | \"START_PROCESSING\" | \"SHIP\" | \"DELIVER\" | \"CANCEL\";\n\ntype Guard = (ctx: OrderContext) => true | string; // true = allow, string = deny reason\n\ninterface TransitionDef<S extends OrderState> {\n  readonly target: Exclude<OrderState, S>; // can't transition to yourself\n  readonly guards?: readonly Guard[];\n}\n\ntype TransitionMap = {\n  readonly [S in OrderState]?: {\n    readonly [E in OrderEvent]?: TransitionDef<S>;\n  };\n};\n\n// Main class signature\nclass StateMachine {\n  constructor(map: TransitionMap);\n  transition(ctx: OrderContext, currentState: OrderState, event: OrderEvent): TransitionResult;\n  getAuditLog(): readonly AuditEntry[];\n  getAuditLogFor(orderId: OrderId): readonly AuditEntry[];\n}",
+    "goals": [
+      "Define a branded `OrderId` type and a safe factory function using a `unique symbol` brand.",
+      "Implement the `StateMachine` class so it correctly resolves transitions, runs typed guards in order, and appends discriminated `AuditEntry` records to an internal log.",
+      "Implement `replayToState` so it drives the machine through a sequence of events and returns a fully typed `ReplaySummary` with success/failure breakdowns.",
+      "Implement `buildTransitionMap` as a generic dual-constraint helper that preserves literal target types at the call site without any type assertions."
+    ],
+    "hints": [
+      "The `Exclude<OrderState, S>` on `TransitionDef.target` is enforced at the type level — lean on it to see how the generic `S` flows through the mapped type.",
+      "For `buildTransitionMap`, a single `return map` is the entire implementation — the heavy lifting is in the dual generic constraint `T extends TransitionMap` combined with the parameter type `T & TransitionMap`.",
+      "When narrowing `TransitionResult` in `replayToState`, use the `ok` discriminant to update your running state only on success, keeping the final state stable after a failure."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript Handbook – Mapped Types",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/mapped-types.html"
+      },
+      {
+        "title": "TypeScript Handbook – Conditional Types & infer",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/conditional-types.html"
+      },
+      {
+        "title": "TypeScript Handbook – Utility Types (Extract, Exclude, Omit…)",
+        "url": "https://www.typescriptlang.org/docs/handbook/utility-types.html"
+      },
+      {
+        "title": "TypeScript 4.9 – satisfies operator",
+        "url": "https://www.typescriptlang.org/docs/handbook/release-notes/typescript-4-9.html#the-satisfies-operator"
+      }
+    ]
   }
 ]
