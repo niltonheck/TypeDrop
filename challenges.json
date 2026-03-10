@@ -682,5 +682,40 @@
         "url": "https://www.typescriptlang.org/docs/handbook/release-notes/typescript-4-9.html#the-satisfies-operator"
       }
     ]
+  },
+  {
+    "date": "2026-03-10",
+    "name": "Typed Contact Book Merger",
+    "difficulty": "Easy",
+    "description": "You're building the import feature for a personal CRM app. Users can sync contacts from multiple sources (phone, email, LinkedIn), and your job is to validate raw unknown input, merge duplicate contacts by email, and produce a clean, strongly-typed contact list — all with zero `any`.",
+    "snippet": "export type ContactSource = \"phone\" | \"email\" | \"linkedin\";\n\nexport interface Contact {\n  email: string;\n  name: string;\n  phone: string | null;\n  sources: ContactSource[];\n}\n\nexport type ParseResult<T> =\n  | { ok: true; value: T }\n  | { ok: false; error: string };\n\n// Narrows an unknown value to a ContactSource literal\nexport function isContactSource(value: unknown): value is ContactSource { /* TODO */ }\n\n// Validates & normalises a single unknown record\nexport function parseRawContact(raw: unknown): ParseResult<Contact> { /* TODO */ }\n\n// Merges an array of unknown records, deduplicating by email\nexport function mergeContacts(\n  rawRecords: unknown[]\n): { contacts: Contact[]; failures: Array<{ ok: false; error: string }> } { /* TODO */ }",
+    "goals": [
+      "Implement `isContactSource` as a type guard that narrows `unknown` to the `ContactSource` union.",
+      "Implement `parseRawContact` to validate every field of an unknown record and return a typed `ParseResult<Contact>` with normalised values.",
+      "Implement `mergeContacts` to run the parser over all raw records, collect failures, and merge duplicate contacts by email using a `Map` — keeping the first non-null phone and unioning sources."
+    ],
+    "hints": [
+      "A type guard function returns `value is SomeType` — use `===` checks against each literal string to narrow `ContactSource`.",
+      "In `parseRawContact`, check `typeof raw === 'object' && raw !== null && !Array.isArray(raw)` first, then use `'email' in raw` before accessing any property.",
+      "Use `new Map<string, Contact>()` in `mergeContacts` and `new Set(existing.sources)` to deduplicate sources when merging a duplicate email."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript — Narrowing & Type Guards",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html"
+      },
+      {
+        "title": "TypeScript — Discriminated Unions",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html#discriminated-unions"
+      },
+      {
+        "title": "MDN — Map",
+        "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Map"
+      },
+      {
+        "title": "MDN — Set",
+        "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Set"
+      }
+    ]
   }
 ]
