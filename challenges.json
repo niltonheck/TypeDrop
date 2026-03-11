@@ -717,5 +717,41 @@
         "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Set"
       }
     ]
+  },
+  {
+    "date": "2026-03-11",
+    "name": "Typed Paginated API Client with Result Chaining",
+    "difficulty": "Medium",
+    "description": "You're building the data-fetching layer for an admin dashboard that pulls paginated records from a REST API. Each page arrives as raw `unknown` JSON, must be validated into a typed shape, and pages must be lazily fetched until exhausted — all surfaced through a `Result<T, E>` type so callers never face surprise runtime exceptions.",
+    "snippet": "// Key types & main function signature\n\nexport type Result<T, E> =\n  | { ok: true;  value: T }\n  | { ok: false; error: E };\n\nexport type Page<T> = {\n  items:     T[];\n  page:      number;\n  nextPage?: number;\n};\n\ndeclare const ParseErrorBrand: unique symbol;\nexport type ParseError = { message: string; [ParseErrorBrand]: true };\n\ndeclare const FetchErrorBrand: unique symbol;\nexport type FetchError  = { message: string; cause?: unknown; [FetchErrorBrand]: true };\n\n/** Validates raw unknown data into a typed Page<T>. */\nexport function parsePage<T>(\n  raw: unknown,\n  parseItem: (item: unknown) => Result<T, ParseError>\n): Result<Page<T>, ParseError> { /* TODO */ throw 0; }\n\n/** Fetches every page, collects all items, returns Result or first error. */\nexport async function fetchAllPages<T>(\n  fetcher:   (page: number) => Promise<unknown>,\n  parseItem: (item: unknown) => Result<T, ParseError>\n): Promise<Result<T[], FetchError>> { /* TODO */ throw 0; }",
+    "goals": [
+      "Define the generic `Result<T, E>` discriminated union and its `ok()` / `err()` constructor helpers.",
+      "Implement `parsePage<T>` to validate raw `unknown` API responses into a typed `Page<T>`, rejecting bad shapes with a branded `ParseError`.",
+      "Implement `fetchAllPages<T>` to lazily follow `nextPage` links, accumulate items, and surface the first failure as a branded `FetchError`.",
+      "Implement the `mapResult` and `chainResult` combinators to enable type-safe transformation and flat-mapping of `Result` values."
+    ],
+    "hints": [
+      "Branded types use a `unique symbol` as a key — add it to the object type so the brand is structurally unforged.",
+      "In `parsePage`, use `Array.isArray` for the items check and `typeof x === 'number'` for numeric fields — TypeScript will narrow correctly inside those branches.",
+      "In `fetchAllPages`, wrap the `fetcher` call in a `try/catch`; convert a caught `ParseError` to a `FetchError` by reading its `.message` and passing the original as `cause`."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript Handbook — Discriminated Unions",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html#discriminated-unions"
+      },
+      {
+        "title": "TypeScript Handbook — Generics",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/generics.html"
+      },
+      {
+        "title": "TypeScript Handbook — Narrowing (unknown)",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html"
+      },
+      {
+        "title": "MDN — async function / await",
+        "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/async_function"
+      }
+    ]
   }
 ]
