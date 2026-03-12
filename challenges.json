@@ -753,5 +753,41 @@
         "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/async_function"
       }
     ]
+  },
+  {
+    "date": "2026-03-12",
+    "name": "Typed Expense Report Summariser",
+    "difficulty": "Easy",
+    "description": "You're building the finance module for a small business app. Raw expense entries arrive as unknown JSON from a mobile upload, and you must validate them, categorise them, and produce a per-category summary — all with zero `any` and fully typed results.",
+    "snippet": "\n// Core domain types\ntype ExpenseCategory = \"travel\" | \"meals\" | \"software\" | \"hardware\" | \"other\";\n\ninterface Expense {\n  id: string;\n  description: string;\n  amountCents: number;   // integer > 0\n  category: ExpenseCategory;\n  date: string;          // \"YYYY-MM-DD\"\n  submittedBy: string;\n}\n\n// Result discriminated union — your job to define it!\ntype Result<T, E> = /* TODO */;\n\n// Type guard — must narrow to ExpenseCategory\nfunction isExpenseCategory(value: unknown): value is ExpenseCategory { /* TODO */ }\n\n// Validates raw unknown → typed Expense, collecting ALL field errors\nfunction validateExpense(raw: unknown): Result<Expense, ValidationError[]> { /* TODO */ }\n\n// Groups a validated list into a Map keyed by category\nfunction groupByCategory(expenses: Expense[]): Map<ExpenseCategory, Expense[]> { /* TODO */ }\n\n// Orchestrates validation + grouping → final typed report\nfunction processRawExpenses(rawEntries: unknown[]): {\n  report: ExpenseReport;\n  invalid: Array<{ raw: unknown; errors: ValidationError[] }>;\n} { /* TODO */ }\n",
+    "goals": [
+      "Define a generic discriminated-union `Result<T, E>` type and use it as the return type of `validateExpense`.",
+      "Implement `isExpenseCategory` as a proper TypeScript type guard that narrows `unknown` to `ExpenseCategory`.",
+      "Write `validateExpense` so it collects ALL field-level `ValidationError`s in a single pass before returning `ok: false`.",
+      "Wire everything together in `processRawExpenses`, separating valid expenses from invalid ones and building a sorted `ExpenseReport`."
+    ],
+    "hints": [
+      "A discriminated union on a boolean literal (`ok: true` vs `ok: false`) is the cleanest way to model `Result<T, E>` — TypeScript will narrow the type automatically in `if (result.ok)` branches.",
+      "In `validateExpense`, check `typeof raw === 'object' && raw !== null` first, then use `'id' in raw` + `typeof (raw as Record<string, unknown>).id` to access each field safely without `any`.",
+      "`Array.prototype.reduce` over `Map.entries()` is a clean single-pass way to compute `totalCents` and `count` for each `ExpenseSummary` inside `buildReport`."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript Handbook — Narrowing",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html"
+      },
+      {
+        "title": "TypeScript Handbook — Discriminated Unions",
+        "url": "https://www.typescriptlang.org/docs/handbook/typescript-in-5-minutes-func.html#discriminated-unions"
+      },
+      {
+        "title": "MDN — Map",
+        "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Map"
+      },
+      {
+        "title": "TypeScript Handbook — Type Guards & Type Predicates",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html#using-type-predicates"
+      }
+    ]
   }
 ]
