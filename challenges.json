@@ -789,5 +789,41 @@
         "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html#using-type-predicates"
       }
     ]
+  },
+  {
+    "date": "2026-03-13",
+    "name": "Typed Concurrent Task Scheduler with Priority Queues",
+    "difficulty": "Hard",
+    "description": "You're building the background job engine for a data-pipeline platform. Tasks arrive with a priority level and resource tags, must be executed with a concurrency cap per resource group, and every outcome — success, failure, or cancellation — must be surfaced through a fully typed Result hierarchy with zero `any`.",
+    "snippet": "// Key types and main entry-point — enough to understand the challenge\n\ndeclare const __taskIdBrand: unique symbol;\nexport type TaskId = string & { readonly [__taskIdBrand]: true };\n\nexport type Priority = \"low\" | \"normal\" | \"high\" | \"critical\";\n\nexport type TaskError =\n  | { kind: \"timeout\";  durationMs: number }\n  | { kind: \"runtime\";  message: string; cause?: unknown }\n  | { kind: \"overflow\"; queueSize: number };\n\nexport type TaskResult<T> =\n  | { status: \"fulfilled\"; id: TaskId; value: T }\n  | { status: \"rejected\";  id: TaskId; error: TaskError }\n  | { status: \"cancelled\"; id: TaskId; reason: string };\n\nexport interface TaskDefinition<T> {\n  id: TaskId;\n  priority: Priority;\n  resourceGroup: string;\n  run: () => Promise<T>;\n  timeoutMs?: number;\n}\n\nexport interface Scheduler {\n  submit<T>(task: TaskDefinition<T>): Promise<TaskResult<T>>;\n  cancel(id: TaskId): boolean;\n  stats(): SchedulerStats;\n}\n\nexport function createScheduler(config: SchedulerConfig): Scheduler { /* TODO */ }",
+    "goals": [
+      "Define branded TaskId, Priority, TaskError, and TaskResult<T> types with zero `any` and no type casts.",
+      "Implement createScheduler() so tasks are dispatched in priority order while respecting both per-group and global concurrency caps.",
+      "Handle timeout races, runtime rejections, and queue-overflow cancellations — each surfaced as the correct TaskResult variant.",
+      "Derive SchedulerStats.totals via a mapped type over GroupCounts keys so the shape stays in sync automatically."
+    ],
+    "hints": [
+      "A priority queue can be a plain array you re-sort on insert — use the PRIORITY_ORDER weight map to compare entries.",
+      "To race a task against its timeout, wrap both in Promise.race: one resolves with the value, the other rejects after timeoutMs ms.",
+      "Store each queued task alongside its resolve function so that cancel() and overflow can settle the promise from outside the run loop."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript — Branded / Nominal Types",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/types-from-types.html"
+      },
+      {
+        "title": "TypeScript — Mapped Types",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/mapped-types.html"
+      },
+      {
+        "title": "TypeScript — satisfies operator",
+        "url": "https://www.typescriptlang.org/docs/handbook/release-notes/typescript-4-9.html#the-satisfies-operator"
+      },
+      {
+        "title": "MDN — Promise.race()",
+        "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise/race"
+      }
+    ]
   }
 ]
