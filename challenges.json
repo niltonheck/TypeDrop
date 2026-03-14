@@ -825,5 +825,41 @@
         "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise/race"
       }
     ]
+  },
+  {
+    "date": "2026-03-14",
+    "name": "Typed Recipe Ingredient Scaler",
+    "difficulty": "Easy",
+    "description": "You're building the recipe feature for a meal-planning app. Users can scale any recipe up or down by a multiplier, and your job is to parse raw unknown ingredient data, convert quantities to a common unit system, and return a fully typed scaled ingredient list — with zero `any`.",
+    "snippet": "// Key types and main function signatures\n\nexport type VolumeUnit = \"tsp\" | \"tbsp\" | \"cup\" | \"ml\" | \"l\";\nexport type WeightUnit = \"g\" | \"kg\" | \"oz\" | \"lb\";\nexport type CountUnit  = \"whole\" | \"pinch\" | \"slice\";\n\nexport type Unit =\n  | { kind: \"volume\"; unit: VolumeUnit }\n  | { kind: \"weight\"; unit: WeightUnit }\n  | { kind: \"count\";  unit: CountUnit  };\n\nexport type Result<T, E> =\n  | { ok: true;  value: T }\n  | { ok: false; error: E };\n\nexport interface ScaledIngredient {\n  name: string;\n  scaledQuantity: number;  // multiplied & converted to canonical unit\n  canonicalUnit: string;   // \"ml\" | \"g\" | original CountUnit string\n  note?: string;\n}\n\n// Parse one raw unknown value → typed Ingredient or ValidationError\nexport function parseIngredient(raw: unknown): Result<Ingredient, ValidationError>;\n\n// Validate + scale an entire list; short-circuits on first bad entry\nexport function scaleRecipe(\n  rawIngredients: unknown[],\n  multiplier: number\n): Result<ScaledIngredient[], ValidationError>;\n",
+    "goals": [
+      "Define `VolumeUnit`, `WeightUnit`, `CountUnit`, and a discriminated `Unit` union, plus a generic `Result<T,E>` and a discriminated `ValidationError` union.",
+      "Implement `parseIngredient` to validate an `unknown` value into a typed `Ingredient`, returning the correct `ValidationError` variant on any bad field.",
+      "Populate the `Record<VolumeUnit, number>` and `Record<WeightUnit, number>` conversion tables, then use them inside `scaleRecipe` to convert and scale each ingredient to its canonical unit.",
+      "Implement `scaleRecipe` to short-circuit on the first parse failure and return a fully typed `Result<ScaledIngredient[], ValidationError>`."
+    ],
+    "hints": [
+      "A `Record<VolumeUnit, number>` will cause a compile error if you forget any member of the union — use that to your advantage when filling in the conversion tables.",
+      "Inside `scaleRecipe`, narrow `ingredient.unit.kind` with an `if`/`switch` to access the correct sub-type — TypeScript will enforce exhaustiveness and give you the right `unit` field in each branch.",
+      "For `parseIngredient`, build small typed constant arrays like `const VOLUME_UNITS: VolumeUnit[] = [...]` and use `Array.prototype.includes` with a type predicate to validate `unitValue` without casting."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript Handbook — Discriminated Unions",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html#discriminated-unions"
+      },
+      {
+        "title": "TypeScript Handbook — Utility Types (Record)",
+        "url": "https://www.typescriptlang.org/docs/handbook/utility-types.html#recordkeys-type"
+      },
+      {
+        "title": "TypeScript Handbook — Narrowing (typeof / in)",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html"
+      },
+      {
+        "title": "TypeScript Handbook — Generic Types",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/generics.html"
+      }
+    ]
   }
 ]
