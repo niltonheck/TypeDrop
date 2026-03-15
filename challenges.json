@@ -861,5 +861,41 @@
         "url": "https://www.typescriptlang.org/docs/handbook/2/generics.html"
       }
     ]
+  },
+  {
+    "date": "2026-03-15",
+    "name": "Typed Real-Time Event Stream Processor",
+    "difficulty": "Hard",
+    "description": "You're building the analytics backbone for a live dashboard that ingests a heterogeneous stream of server-sent events (user actions, system alerts, and metric snapshots). Each event must be parsed from raw `unknown` input, routed through a typed middleware pipeline, and aggregated into a strongly-typed per-event-kind summary — all with zero `any`.",
+    "snippet": "\n// Core discriminated union\ntype StreamEvent = UserActionEvent | SystemAlertEvent | MetricSnapshotEvent;\n\n// Per-kind middleware — E is bound to the correct event subtype\ntype Middleware<E extends StreamEvent = StreamEvent> = (\n  event: E,\n  next: (event: E) => E | null\n) => E | null;\n\n// Mapped middleware map — keys tied to EventKind, values typed via Extract\ntype KindMiddlewareMap = {\n  [K in EventKind]?: Middleware<Extract<StreamEvent, { kind: K }>>;\n};\n\n// StreamSummary: a mapped type you must define (Requirement 6)\ntype StreamSummary = unknown; // TODO: replace with mapped type over EventKind\n\n// Main orchestrator\nfunction processStream(\n  rawPayloads: unknown[],\n  middlewareMap: KindMiddlewareMap\n): { summary: StreamSummary; parseErrors: ParseError[] } {\n  throw new Error(\"Not implemented\");\n}\n",
+    "goals": [
+      "Implement `parseEvent` to safely narrow `unknown` input into a `StreamEvent` discriminated union, returning typed `Result<StreamEvent, ParseError>` with specific error codes.",
+      "Define `StreamSummary` as a mapped type over `EventKind` using the `KindSummaryMap` helper, then implement `buildSummary` for a single-pass aggregation.",
+      "Implement `runPipeline` using `Extract<StreamEvent, { kind: K }>` to route each event to its correctly-typed middleware without any type assertions.",
+      "Wire everything together in `processStream`, accumulating parse errors and discarding middleware-dropped events before producing the final summary."
+    ],
+    "hints": [
+      "For `StreamSummary`, think `{ [K in EventKind]: KindSummaryMap[K] }` — the mapped type directly indexes your helper map.",
+      "In `runPipeline`, the middleware map value has type `Middleware<Extract<StreamEvent, { kind: typeof event.kind }>>` — narrow the event's kind first, then look it up.",
+      "For `parseEvent`, write a helper like `isObject(v: unknown): v is Record<string, unknown>` to safely access fields before checking their types."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript — Discriminated Unions",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html#discriminated-unions"
+      },
+      {
+        "title": "TypeScript — Mapped Types",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/mapped-types.html"
+      },
+      {
+        "title": "TypeScript — Conditional Types & Extract",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/conditional-types.html#distributive-conditional-types"
+      },
+      {
+        "title": "TypeScript — Utility Types (Record, Extract, etc.)",
+        "url": "https://www.typescriptlang.org/docs/handbook/utility-types.html"
+      }
+    ]
   }
 ]
