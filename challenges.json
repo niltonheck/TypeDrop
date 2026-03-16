@@ -897,5 +897,41 @@
         "url": "https://www.typescriptlang.org/docs/handbook/utility-types.html"
       }
     ]
+  },
+  {
+    "date": "2026-03-16",
+    "name": "Typed Notification Preference Engine",
+    "difficulty": "Medium",
+    "description": "You're building the notification settings module for a SaaS platform. Users configure per-channel delivery rules (email, SMS, push), and your engine must validate raw unknown config payloads, merge them with system-level defaults, and produce a resolved, strongly-typed preference map — surfaced through a `Result<T, E>` type so callers can handle every failure mode explicitly.",
+    "snippet": "// Key types & main function signatures\n\nexport type Channel = \"email\" | \"sms\" | \"push\";\n\nexport interface ChannelOptionMap {\n  email: { enabled: boolean; frequency: \"instant\" | \"daily\" | \"weekly\" };\n  sms:   { enabled: boolean; quietHoursStart: number; quietHoursEnd: number };\n  push:  { enabled: boolean; badge: boolean; sound: boolean };\n}\n\n// Mapped: every channel optional (user overrides)\nexport type UserPreferences    = { [C in Channel]?: ChannelOptionMap[C] };\n// Mapped: every channel required (defaults filled in)\nexport type ResolvedPreferences = { [C in Channel]: ChannelOptionMap[C] };\n\nexport type PreferenceError =\n  | { kind: \"validation_error\"; field: string; message: string }\n  | { kind: \"unknown_channel\"; channel: string };\n\nexport type Result<T, E> = Ok<T> | Err<E>;\n\n// Template literal summary keys: \"email_summary\" | \"sms_summary\" | \"push_summary\"\nexport type ChannelSummaryKey = `${Channel}_summary`;\n\nexport function parsePreferences(raw: unknown): Result<UserPreferences, PreferenceError>;\nexport function mergeWithDefaults(prefs: UserPreferences): ResolvedPreferences;\nexport function resolvePreferences(raw: unknown): Result<ResolvedPreferences, PreferenceError>;\nexport function describeResolved(resolved: ResolvedPreferences): ChannelSummaryMap;\n",
+    "goals": [
+      "Define Ok<T>/Err<E> discriminated union and generic ok()/err() constructors, then use them throughout the module.",
+      "Build ChannelOptionMap, UserPreferences, and ResolvedPreferences using mapped types over the Channel union so the structure is DRY and extensible.",
+      "Implement parsePreferences to safely narrow an unknown payload field-by-field, returning typed PreferenceError variants on every failure path.",
+      "Implement mergeWithDefaults and compose it with parsePreferences inside resolvePreferences, then produce a ChannelSummaryMap via describeResolved using the ChannelSummaryKey template literal type."
+    ],
+    "hints": [
+      "A mapped type `{ [C in Channel]?: ChannelOptionMap[C] }` is all you need for UserPreferences — no need to repeat each channel manually.",
+      "In parsePreferences, narrow the unknown value with `typeof` and `in` checks before reading any property; TypeScript will track the narrowed type for you.",
+      "Use `satisfies ResolvedPreferences` on SYSTEM_DEFAULTS so you get literal-type inference (e.g. `\"daily\"`) while still having the type checked at compile time."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript Mapped Types",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/mapped-types.html"
+      },
+      {
+        "title": "TypeScript Template Literal Types",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/template-literal-types.html"
+      },
+      {
+        "title": "TypeScript Narrowing",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html"
+      },
+      {
+        "title": "TypeScript `satisfies` operator",
+        "url": "https://www.typescriptlang.org/docs/handbook/release-notes/typescript-4-9.html#the-satisfies-operator"
+      }
+    ]
   }
 ]
