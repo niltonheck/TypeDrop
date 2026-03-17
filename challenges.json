@@ -933,5 +933,41 @@
         "url": "https://www.typescriptlang.org/docs/handbook/release-notes/typescript-4-9.html#the-satisfies-operator"
       }
     ]
+  },
+  {
+    "date": "2026-03-17",
+    "name": "Typed Book Club Reading List Builder",
+    "difficulty": "Easy",
+    "description": "You're building the reading list feature for a book club app. Members submit raw book entries from a form, and you must validate them, tag each book with a derived reading status, and produce a sorted, fully typed reading list — with zero `any`.",
+    "snippet": "\nexport type Genre = \"fiction\" | \"non-fiction\" | \"biography\" | \"science\" | \"history\";\nexport type ReadingStatus = \"not-started\" | \"in-progress\" | \"completed\";\n\nexport interface Book {\n  id: string;\n  title: string;\n  author: string;\n  genre: Genre;\n  totalPages: number;\n  pagesRead: number;\n  status: ReadingStatus; // derived — NOT accepted from raw input\n}\n\nexport type Result<T, E> =\n  | { ok: true;  value: T }\n  | { ok: false; error: E };\n\nexport interface ReadingList {\n  books: Book[];                               // sorted A-Z by title\n  summary: Record<ReadingStatus, number>;      // count per status (all keys present)\n  rejected: Array<{ input: unknown; error: BookValidationError }>;\n}\n\n// Main entry point\nexport function buildReadingList(rawEntries: unknown[]): ReadingList { ... }\n",
+    "goals": [
+      "Implement `ok` and `err` generic helpers that construct a discriminated-union `Result<T, E>`.",
+      "Write `isGenre` as a type-predicate function that narrows `unknown` to the `Genre` union.",
+      "Implement `parseBook` to validate every field of an `unknown` input against the `Book` interface, deriving `status` via `deriveStatus` and returning the first `BookValidationError` on failure.",
+      "Implement `buildReadingList` to parse all raw entries, sort valid books case-insensitively by title, and produce a `summary` `Record` with a count for every `ReadingStatus` key — even zeros."
+    ],
+    "hints": [
+      "A type-predicate (`value is Genre`) lets TypeScript narrow the type in the caller's scope — use an array of the valid strings and `.includes()` after a `typeof` check.",
+      "When building the `summary` Record, initialise all three `ReadingStatus` keys to `0` before iterating so no key is ever missing — `Record<ReadingStatus, number>` requires all keys.",
+      "In `parseBook`, check `typeof input === 'object' && input !== null` first, then use `'id' in input` before indexing — this keeps you `any`-free under `strict: true`."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript Handbook — Narrowing",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html"
+      },
+      {
+        "title": "TypeScript Handbook — Utility Types (Record, Pick…)",
+        "url": "https://www.typescriptlang.org/docs/handbook/utility-types.html"
+      },
+      {
+        "title": "TypeScript Handbook — Generics",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/generics.html"
+      },
+      {
+        "title": "MDN — Array.prototype.sort()",
+        "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/sort"
+      }
+    ]
   }
 ]
