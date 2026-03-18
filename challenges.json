@@ -969,5 +969,41 @@
         "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/sort"
       }
     ]
+  },
+  {
+    "date": "2026-03-18",
+    "name": "Typed API Pagination Cursor Engine",
+    "difficulty": "Medium",
+    "description": "You're building the data-fetching layer for an analytics dashboard that loads large datasets from a paginated REST API. Each resource type has its own shape, and the engine must handle cursor-based pagination, typed per-resource response validation, and aggregation into a single fully-typed result — surfaced through a `Result<T, E>` type with zero `any`.",
+    "snippet": "// Core types you'll work with:\n\ntype ResourceMap = {\n  users:    UserRecord;\n  orders:   OrderRecord;\n  products: ProductRecord;\n};\n\ntype ResourceKind = keyof ResourceMap;   // \"users\" | \"orders\" | \"products\"\n\ntype ValidatorRegistry = {\n  [K in ResourceKind]: Validator<ResourceMap[K]>;\n};\n\n// Main functions to implement:\n\nfunction parseRawPage<K extends ResourceKind>(\n  kind: K,\n  raw: unknown,\n  registry: ValidatorRegistry\n): Result<PageResult<K>, PaginationError>;\n\nasync function fetchAllPages<K extends ResourceKind>(\n  kind: K,\n  fetcher: PageFetcher,\n  registry: ValidatorRegistry,\n  maxPages?: number\n): Promise<Result<AggregatedResult<K>, PaginationError>>;\n\nfunction buildValidatorRegistry(): ValidatorRegistry;",
+    "goals": [
+      "Implement `buildValidatorRegistry` with runtime validators that narrow `unknown` to each resource type using only type-safe field checks.",
+      "Implement `parseRawPage` to validate the raw API response shape and each record using the registry, returning the correct discriminated `PaginationError` variant on failure.",
+      "Implement `fetchAllPages` to drive cursor-based pagination, accumulate records across pages, and handle both fetch errors and validation errors through the `Result<T, E>` type.",
+      "Use the mapped type `ValidatorRegistry` and indexed access `ResourceMap[K]` so that every function is fully generic over `ResourceKind` with no `any` or type assertions."
+    ],
+    "hints": [
+      "A mapped type `{ [K in ResourceKind]: Validator<ResourceMap[K]> }` lets you index the registry with a generic `K` and get back the right validator type automatically — lean on that to avoid casting.",
+      "To narrow `unknown` to an object with known keys, check `typeof raw === 'object' && raw !== null` first, then use `'fieldName' in raw` before accessing the property — TypeScript will accept this without assertions.",
+      "In `fetchAllPages`, keep a `cursor: string | null = null` variable, loop with a `while` condition, and break out when `nextCursor` is null or you've hit `maxPages` — wrap the entire fetcher call in a `try/catch`."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript Handbook — Mapped Types",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/mapped-types.html"
+      },
+      {
+        "title": "TypeScript Handbook — Narrowing",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html"
+      },
+      {
+        "title": "TypeScript Handbook — Generics",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/generics.html"
+      },
+      {
+        "title": "TypeScript Utility Types (Extract, Record, etc.)",
+        "url": "https://www.typescriptlang.org/docs/handbook/utility-types.html"
+      }
+    ]
   }
 ]
