@@ -1005,5 +1005,41 @@
         "url": "https://www.typescriptlang.org/docs/handbook/utility-types.html"
       }
     ]
+  },
+  {
+    "date": "2026-03-19",
+    "name": "Typed Task Priority Queue",
+    "difficulty": "Easy",
+    "description": "You're building the task management feature for a lightweight project tool. Users submit raw task entries, and your engine must validate them, assign a computed urgency tier, and serve them back in priority order — all with zero `any`.",
+    "snippet": "\n// Key types & main function signatures:\n\ntype RawPriority = \"low\" | \"medium\" | \"high\";\ntype UrgencyTier = 1 | 2 | 3 | 4 | 5;\ntype TaskStatus  = \"pending\" | \"in-progress\" | \"done\";\n\ninterface Task {\n  id: string;\n  title: string;\n  priority: RawPriority;\n  dueDate: Date;\n  status: TaskStatus;\n  tags: string[];\n  urgencyTier: UrgencyTier; // computed from priority + dueDate\n}\n\ntype Ok<T>       = { ok: true;  value: T };\ntype Err<E>      = { ok: false; error: E };\ntype Result<T,E> = Ok<T> | Err<E>;\n\n// Validate one unknown input → typed Task or a ValidationError\nfunction validateTask(input: unknown): Result<Task, ValidationError> { ... }\n\n// Validate all inputs, collect errors, return sorted Task[]\nfunction buildPriorityQueue(rawInputs: unknown[]): {\n  tasks:  Task[];\n  errors: Array<{ index: number; error: ValidationError }>;\n} { ... }\n",
+    "goals": [
+      "Implement `computeUrgency` to map priority + days-until-due to the correct UrgencyTier using the provided matrix.",
+      "Implement `validateTask` to narrow `unknown` input field-by-field and return a fully typed `Result<Task, ValidationError>` — no `as`, no `any`.",
+      "Implement `buildPriorityQueue` to collect all errors across inputs and return valid tasks sorted by urgencyTier DESC then dueDate ASC.",
+      "Implement `filterByStatus` and `groupByUrgency`, ensuring `groupByUrgency` always returns all five tier keys typed as `Record<UrgencyTier, Task[]>`."
+    ],
+    "hints": [
+      "For `unknown` narrowing, check `typeof field === 'string'` and membership in a const array (e.g. `const PRIORITIES = ['low','medium','high'] as const`) — TypeScript will narrow the type for you.",
+      "A `Result<T,E>` discriminated union is narrowed by checking `.ok`: inside `if (result.ok)` the value is `Ok<T>`, otherwise `Err<E>`.",
+      "To satisfy `Record<UrgencyTier, Task[]>`, initialise the object with all five keys before pushing into it — e.g. `{ 1: [], 2: [], 3: [], 4: [], 5: [] }`."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript Handbook — Narrowing",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html"
+      },
+      {
+        "title": "TypeScript Handbook — Discriminated Unions",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html#discriminated-unions"
+      },
+      {
+        "title": "TypeScript Utility Types — Record",
+        "url": "https://www.typescriptlang.org/docs/handbook/utility-types.html#recordkeys-type"
+      },
+      {
+        "title": "MDN — Array.prototype.sort()",
+        "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/sort"
+      }
+    ]
   }
 ]
