@@ -1041,5 +1041,41 @@
         "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/sort"
       }
     ]
+  },
+  {
+    "date": "2026-03-20",
+    "name": "Typed Workflow State Machine Executor",
+    "difficulty": "Hard",
+    "description": "You're building the automation backbone for a CI/CD platform. Each pipeline is a finite state machine whose transitions are guarded by typed conditions, carry typed payloads, and emit strongly-typed side-effect events — all resolved through a `Result<T, E>` monad with exhaustive error handling and zero `any`.",
+    "snippet": "// Core types and main class signature — no solution code included\n\ntype StateKind = 'idle' | 'queued' | 'running' | 'succeeded' | 'failed' | 'cancelled';\n\ntype WorkflowState<K extends StateKind> = { readonly kind: K } & StatePayloadMap[K];\ntype AnyWorkflowState = { [K in StateKind]: WorkflowState<K> }[StateKind];\n\ntype Guard<\n  From extends StateKind,\n  To extends AllowedTransitions[From][number]\n> = (current: WorkflowState<From>, rawPayload: unknown) => Result<true, TransitionError>;\n\nclass StateMachine {\n  constructor(\n    workflowId: string,\n    initial: WorkflowState<'idle'>,\n    emit: EventEmitter\n  ) { /* TODO */ }\n\n  get state(): AnyWorkflowState { /* TODO */ }\n\n  transition<To extends AllowedTransitions[StateKind][number]>(\n    to: To,\n    rawPayload: unknown,\n    ...guards: ReadonlyArray<Guard<StateKind, To>>\n  ): Result<WorkflowState<To>, TransitionError> { /* TODO */ }\n\n  history(): ReadonlyArray<AnyWorkflowState> { /* TODO */ }\n}\n",
+    "goals": [
+      "Define `WorkflowState<K>` via intersection of a discriminant and a mapped payload lookup, and encode `AllowedTransitions` as a mapped type over `StateKind`.",
+      "Implement `validatePayload` using a `switch` on `StateKind` and `typeof` narrowing to convert `unknown` payloads into typed `StatePayloadMap[K]` values — no `any`, no assertions.",
+      "Implement `StateMachine` with a generic `transition` method that enforces the transition graph, runs variadic guards in sequence, validates the payload, updates state, and emits the correct `WorkflowEvent`.",
+      "Implement `aggregateRuns` in a single `reduce` pass that computes total count, per-final-state breakdown, average duration of succeeded runs, and a sorted unique list of failure reasons."
+    ],
+    "hints": [
+      "For `validatePayload`, a `switch (kind)` gives you a narrowed `K` in each branch — then use `typeof` checks on individual fields and return `err({ kind: 'PayloadValidationError', ... })` on the first mismatch.",
+      "The `AllowedTransitions[From][number]` indexed access type is the key to constraining `To` in both `Guard` and `transition` — make sure `ALLOWED_TRANSITIONS` is typed as `AllowedTransitions` (not inferred) so the literal arrays stay narrow.",
+      "In `aggregateRuns`, accumulate a `Set<string>` for failure reasons inside the reduce, then convert to a sorted array only once at the end — and track `totalDuration` + `succeededCount` separately to compute the average without a second pass."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript — Mapped Types",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/mapped-types.html"
+      },
+      {
+        "title": "TypeScript — Indexed Access Types",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/indexed-access-types.html"
+      },
+      {
+        "title": "TypeScript — Narrowing",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html"
+      },
+      {
+        "title": "TypeScript — Generic Constraints",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/generics.html#generic-constraints"
+      }
+    ]
   }
 ]
