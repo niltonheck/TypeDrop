@@ -1077,5 +1077,41 @@
         "url": "https://www.typescriptlang.org/docs/handbook/2/generics.html#generic-constraints"
       }
     ]
+  },
+  {
+    "date": "2026-03-21",
+    "name": "Typed Expense Report Aggregator",
+    "difficulty": "Easy",
+    "description": "You're building the expense reporting module for a small business finance tool. Employees submit raw expense entries from a form, and your engine must validate them, tag each with a derived reimbursement status, and produce a grouped, fully typed summary — with zero `any`.",
+    "snippet": "\n// Key types & main function signature\n\ntype ExpenseCategory = \"travel\" | \"meals\" | \"software\" | \"equipment\" | \"other\";\n\ntype ReimbursementStatus =\n  | { readonly kind: \"auto_approved\"; readonly approvedAt: Date }\n  | { readonly kind: \"needs_review\"; readonly reason: string }\n  | { readonly kind: \"flagged\"; readonly reason: string; readonly flaggedAmount: number };\n\ntype Result<T, E> =\n  | { readonly ok: true;  readonly value: T }\n  | { readonly ok: false; readonly error: E };\n\ninterface TaggedExpenseEntry extends ExpenseEntry {\n  readonly status: ReimbursementStatus;\n}\n\ninterface ExpenseReport {\n  readonly entries: ReadonlyArray<TaggedExpenseEntry>;\n  readonly sortedByAmount: ReadonlyArray<TaggedExpenseEntry>;\n  readonly categorySummaries: ReadonlyArray<CategorySummary>;\n  readonly grandTotalUSD: number;\n  readonly rejected: ReadonlyArray<{ raw: RawExpenseEntry; error: ValidationError }>;\n}\n\n// --- Functions to implement ---\nfunction validateExpenseEntry(raw: RawExpenseEntry): Result<ExpenseEntry, ValidationError> { ... }\nfunction deriveStatus(entry: ExpenseEntry): ReimbursementStatus { ... }\nfunction buildExpenseReport(raws: ReadonlyArray<RawExpenseEntry>): ExpenseReport { ... }\n",
+    "goals": [
+      "Implement `validateExpenseEntry` to narrow all `unknown` fields into a fully-typed `ExpenseEntry`, returning the first `ValidationError` encountered.",
+      "Implement `deriveStatus` to map an `ExpenseEntry`'s amount to the correct `ReimbursementStatus` discriminated union branch.",
+      "Implement `buildExpenseReport` to validate, tag, sort, and aggregate raw entries into a complete `ExpenseReport` — collecting both valid tagged entries and rejected ones.",
+      "Produce correct `CategorySummary` objects with per-status counts using `Record<ReimbursementStatus[\"kind\"], number>` — with no `any`."
+    ],
+    "hints": [
+      "When narrowing `unknown` fields, use `typeof` checks and `Array.prototype.includes` with a `const` tuple of valid categories to satisfy the type checker without casting.",
+      "For `buildExpenseReport`'s aggregation, a `Map<ExpenseCategory, CategorySummary>` makes grouping and updating per-category totals straightforward in a single pass.",
+      "The `Record<ReimbursementStatus['kind'], number>` in `CategorySummary.byStatus` needs all three keys (`auto_approved`, `needs_review`, `flagged`) initialised to `0` before counting."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript Handbook — Narrowing",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html"
+      },
+      {
+        "title": "TypeScript Handbook — Discriminated Unions",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html#discriminated-unions"
+      },
+      {
+        "title": "TypeScript Utility Types (Record, Pick, Omit…)",
+        "url": "https://www.typescriptlang.org/docs/handbook/utility-types.html"
+      },
+      {
+        "title": "MDN — Date constructor & Date.parse",
+        "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date/Date"
+      }
+    ]
   }
 ]
