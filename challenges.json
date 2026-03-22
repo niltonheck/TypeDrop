@@ -1113,5 +1113,41 @@
         "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date/Date"
       }
     ]
+  },
+  {
+    "date": "2026-03-22",
+    "name": "Typed Notification Dispatch Router",
+    "difficulty": "Medium",
+    "description": "You're building the notification layer for a SaaS platform. Users can subscribe to different channels (email, SMS, push), and your router must validate raw subscription configs, fan out typed messages to each channel's handler, and collect a structured per-channel delivery report — surfaced through a `Result<T, E>` type with zero `any`.",
+    "snippet": "// Core types and main function signatures\n\ntype Result<T, E> = { ok: true; value: T } | { ok: false; error: E };\n\ntype Channel =\n  | { kind: \"email\"; address: string }\n  | { kind: \"sms\";   phone: string }\n  | { kind: \"push\";  deviceToken: string };\n\ntype NotificationMessage =\n  | { kind: \"email\"; subject: string; body: string }\n  | { kind: \"sms\";   text: string }\n  | { kind: \"push\";  title: string; payload: Record<string, string> };\n\n// Mapped over Channel[\"kind\"] — every channel kind gets a delivery slot\ntype DeliveryOutcome = { [K in Channel[\"kind\"]]: { status: DeliveryStatus; detail: string } };\n\n// Each registry slot is narrowed to the exact Channel + Message pair for kind K\ntype HandlerRegistry = { [K in Channel[\"kind\"]]: ChannelHandler<Extract<Channel, { kind: K }>, Extract<NotificationMessage, { kind: K }>> };\n\nfunction validateSubscription(raw: RawSubscription): Result<ValidatedSubscription, DispatchError>;\n\nasync function dispatchNotifications(\n  subscription: ValidatedSubscription,\n  messages: readonly NotificationMessage[],\n  registry: HandlerRegistry\n): Promise<Result<DeliveryOutcome, never>>;\n",
+    "goals": [
+      "Define `Channel`, `NotificationMessage`, and `DispatchError` as discriminated unions with the specified members.",
+      "Define `DeliveryOutcome` as a mapped type keyed over `Channel[\"kind\"]` and `HandlerRegistry` as a mapped type that narrows each handler to its exact channel and message pair using `Extract<>`.",
+      "Implement `validateSubscription` to parse an unknown channel array, silently drop invalid entries, and return a typed `Result` with the appropriate `DispatchError` code.",
+      "Implement `dispatchNotifications` to concurrently invoke per-channel handlers from the registry, record sent/failed/skipped outcomes, and always return `Result<DeliveryOutcome, never>`."
+    ],
+    "hints": [
+      "For `HandlerRegistry`, use `Extract<Channel, { kind: K }>` inside a mapped type to get the exact channel variant for each key — this is what gives each handler its precise parameter types.",
+      "In `validateSubscription`, narrow `raw.channels` step by step: first check `Array.isArray`, then use a type predicate or inline guard to filter each element into a valid `Channel`.",
+      "In `dispatchNotifications`, build one Promise per channel in the subscription, then pass them all to `Promise.all` — each promise resolves to a `[kind, { status, detail }]` tuple you can assemble into a `DeliveryOutcome`."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript Handbook — Discriminated Unions",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html#discriminated-unions"
+      },
+      {
+        "title": "TypeScript Handbook — Mapped Types",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/mapped-types.html"
+      },
+      {
+        "title": "TypeScript Handbook — Conditional Types & Extract",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/conditional-types.html#distributive-conditional-types"
+      },
+      {
+        "title": "MDN — Promise.all",
+        "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise/all"
+      }
+    ]
   }
 ]
