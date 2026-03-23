@@ -1149,5 +1149,41 @@
         "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise/all"
       }
     ]
+  },
+  {
+    "date": "2026-03-23",
+    "name": "Typed Plugin Middleware Chain Executor",
+    "difficulty": "Hard",
+    "description": "You're building the extensibility core for a developer platform where third-party plugins can register typed middleware that transforms a shared request context. Each plugin declares the exact context shape it reads and the shape it writes, and the chain executor must thread them together in order — surfacing typed errors and a full execution trace through a `Result<T, E>` monad with zero `any`.",
+    "snippet": "// Key types — understand these before implementing\n\nexport type Result<T, E> =\n  | { ok: true;  value: T }\n  | { ok: false; error: E };\n\nexport interface BaseContext {\n  readonly requestId: string;\n  meta: Record<string, unknown>;\n}\n\nexport type MiddlewareFn<In extends BaseContext, Out extends In> = (\n  ctx: In\n) => Promise<Result<Out, PluginError>>;\n\nexport interface Plugin<In extends BaseContext, Out extends In> {\n  id: string;\n  timeoutMs: number;\n  run: MiddlewareFn<In, Out>;\n}\n\n// Main entry point\nexport async function executeChain(\n  initCtx: BaseContext,\n  registry: PluginRegistry\n): Promise<ChainResult<BaseContext>>;\n",
+    "goals": [
+      "Define a `Result<T,E>` discriminated union and implement `ok`/`err` constructors, then build a `PluginError` discriminated union covering validation, timeout, and dependency variants.",
+      "Model `Plugin<In, Out>` with a generic constraint `Out extends In` that enforces context-only-grows semantics, and implement `PluginRegistry` with a fluent `register()` builder.",
+      "Implement `executeChain` that runs plugins sequentially, enforces per-plugin timeouts via `Promise.race`, accumulates a `TraceEntry` for every started plugin, and short-circuits on the first error.",
+      "Implement `formatPluginError` with an exhaustive `switch` over `PluginError` kinds, using a `never`-typed default branch so TypeScript proves no variant is unhandled."
+    ],
+    "hints": [
+      "For the timeout race, create a `Promise<Result<never, PluginError>>` that rejects (or resolves to `err(...)`) after `timeoutMs` milliseconds — then `Promise.race` it against the plugin's own promise.",
+      "Store plugins in `PluginRegistry` as `Plugin<BaseContext, BaseContext>[]`; the `register<In, Out>` generic signature is safe to accept because `Plugin<In, Out>` is assignable to `Plugin<BaseContext, BaseContext>` given the covariant/contravariant positions here — but you may need a targeted cast only inside `register`.",
+      "The `never`-typed default in `formatPluginError` looks like: `default: { const _exhaustive: never = error; throw new Error(...); }` — TypeScript will error if you ever add a new `PluginError` variant without handling it."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript Handbook — Discriminated Unions",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html#discriminated-unions"
+      },
+      {
+        "title": "TypeScript Handbook — Generic Constraints",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/generics.html#generic-constraints"
+      },
+      {
+        "title": "MDN — Promise.race()",
+        "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise/race"
+      },
+      {
+        "title": "TypeScript Handbook — Utility Types",
+        "url": "https://www.typescriptlang.org/docs/handbook/utility-types.html"
+      }
+    ]
   }
 ]
