@@ -1221,5 +1221,41 @@
         "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html#discriminated-unions"
       }
     ]
+  },
+  {
+    "date": "2026-03-25",
+    "name": "Typed Product Catalog Filter & Sorter",
+    "difficulty": "Easy",
+    "description": "You're building the browse experience for a small e-commerce storefront. Shoppers can filter products by category, price range, and availability, then sort the results — your engine must validate raw filter inputs and return a fully typed, sorted product list.",
+    "snippet": "export type Category = \"electronics\" | \"clothing\" | \"books\" | \"home\" | \"sports\";\n\nexport type Product = {\n  id: string;\n  name: string;\n  category: Category;\n  priceUsd: number;\n  inStock: boolean;\n  rating: number; // 0–5\n};\n\nexport type RawFilterInput = {\n  category?: string;\n  minPrice?: string;\n  maxPrice?: string;\n  inStockOnly?: string; // \"true\" | \"false\" | anything else\n};\n\nexport type ValidatedFilter = {\n  category?: Category;\n  minPrice?: number;\n  maxPrice?: number;\n  inStockOnly?: boolean;\n};\n\nexport type SortField = \"priceUsd\" | \"rating\" | \"name\";\nexport type SortDirection = \"asc\" | \"desc\";\nexport type SortOptions = { field: SortField; direction: SortDirection };\n\nexport type Result<T, E> =\n  | { ok: true; value: T }\n  | { ok: false; errors: E[] };\n\nexport function validateFilter(raw: RawFilterInput): Result<ValidatedFilter, ValidationError> { ... }\nexport function applyFilter(products: Product[], filter: ValidatedFilter): Product[] { ... }\nexport function sortProducts(products: Product[], options: SortOptions): Product[] { ... }",
+    "goals": [
+      "Implement `validateFilter` to parse a `RawFilterInput` into a `Result<ValidatedFilter, ValidationError>`, collecting all validation errors independently.",
+      "Implement `applyFilter` to apply each field of a `ValidatedFilter` as a composable predicate over a `Product[]`, returning a new array.",
+      "Implement `sortProducts` to sort a `Product[]` by any `SortField` in either direction, using `localeCompare` for strings and numeric comparison for numbers.",
+      "Use the `Result` discriminated union correctly so callers must narrow on `ok` before accessing `value` or `errors`."
+    ],
+    "hints": [
+      "A `Set` or `Array.includes` over the `Category` literal values is the cleanest way to narrow a `string` to `Category` — TypeScript needs the array typed `as const` or compared against a typed tuple.",
+      "Collect ALL validation errors into a local array before deciding whether to return `ok: true` or `ok: false` — that way each field is checked independently.",
+      "For `sortProducts`, index into the product with `options.field` (e.g. `product[options.field]`) — TypeScript will infer the correct union type from `SortField`, letting you branch on string vs. number without casting."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript — Narrowing",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html"
+      },
+      {
+        "title": "TypeScript — Discriminated Unions",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html#discriminated-unions"
+      },
+      {
+        "title": "TypeScript — Utility Types (keyof, Pick, etc.)",
+        "url": "https://www.typescriptlang.org/docs/handbook/utility-types.html"
+      },
+      {
+        "title": "MDN — String.prototype.localeCompare",
+        "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String/localeCompare"
+      }
+    ]
   }
 ]
