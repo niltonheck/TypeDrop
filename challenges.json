@@ -1257,5 +1257,41 @@
         "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String/localeCompare"
       }
     ]
+  },
+  {
+    "date": "2026-03-26",
+    "name": "Typed Job Queue Retry Scheduler",
+    "difficulty": "Medium",
+    "description": "You're building the background job processing layer for a workflow automation platform. Jobs can succeed, fail with a retryable error, or fail fatally — your scheduler must execute them with typed retry policies, collect per-job outcomes, and surface a structured run report through a `Result<T, E>` type with zero `any`.",
+    "snippet": "\n// Core types you must define:\n\ntype Result<T, E> =\n  | { ok: true;  value: T }\n  | { ok: false; error: E };\n\ntype JobError =\n  | { kind: \"retryable\"; message: string; retryAfterMs: number }\n  | { kind: \"fatal\";     message: string; code: string }\n  | { kind: \"timeout\";   message: string; elapsedMs: number };\n\ntype Job<P> = {\n  id:      string;\n  name:    string;\n  payload: P;\n  policy:  RetryPolicy;\n  execute: (payload: P) => Promise<Result<unknown, JobError>>;\n};\n\n// Function signatures you must implement:\n\nasync function scheduleJob<P>(job: Job<P>): Promise<JobOutcome<P>>;\n\nasync function runQueue(jobs: Job<unknown>[]): Promise<RunReport>;\n",
+    "goals": [
+      "Define the `Result<T, E>`, `JobError`, `RetryPolicy`, `Job<P>`, `JobOutcome<P>`, and `RunReport` types with no `any`.",
+      "Implement `scheduleJob<P>` to run a job with per-attempt timeout racing, retry only on `retryable` errors, and a backoff delay between retries.",
+      "Implement `runQueue` to fan out all jobs concurrently with `Promise.all` and fold outcomes into a typed `RunReport`.",
+      "Narrow the `JobError` discriminated union by `kind` to drive control flow — never use type assertions."
+    ],
+    "hints": [
+      "A `while (attempts < policy.maxAttempts)` loop combined with a `break` on non-retryable errors is the cleanest shape for `scheduleJob`.",
+      "Use the provided `withTimeout` helper to race each `execute()` call — its return type is already `Promise<Result<T, JobError>>`, so plug it straight into your loop.",
+      "In `runQueue`, derive `succeeded` and `failed` from `outcomes` with a single `reduce` or `filter` — avoid a separate counter variable."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript Handbook — Discriminated Unions",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html#discriminated-unions"
+      },
+      {
+        "title": "TypeScript Handbook — Generics",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/generics.html"
+      },
+      {
+        "title": "MDN — Promise.race()",
+        "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise/race"
+      },
+      {
+        "title": "MDN — Promise.all()",
+        "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise/all"
+      }
+    ]
   }
 ]
