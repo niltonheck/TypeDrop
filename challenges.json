@@ -1293,5 +1293,41 @@
         "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise/all"
       }
     ]
+  },
+  {
+    "date": "2026-03-27",
+    "name": "Typed Student Grade Book Aggregator",
+    "difficulty": "Easy",
+    "description": "You're building the reporting module for an online learning platform. Teachers submit raw grade entries for students across multiple subjects, and your aggregator must validate the entries, compute per-student summaries, and assign letter grades — all with fully typed inputs and outputs.",
+    "snippet": "/** A score confirmed to be in [0, 100]. */\ntype ValidScore = number & { readonly __brand: \"ValidScore\" };\n\n/** ValidatedEntry — same as RawGradeEntry but score is ValidScore. */\ntype ValidatedEntry = Omit<RawGradeEntry, \"score\"> & { score: ValidScore };\n\ntype LetterGrade = \"A\" | \"B\" | \"C\" | \"D\" | \"F\";\n\ninterface StudentSummary {\n  studentId: string;\n  studentName: string;\n  subjects: string[];       // unique, sorted A→Z\n  averageScore: number;     // rounded to 2 dp\n  letterGrade: LetterGrade;\n}\n\ninterface GradeBookResult {\n  summaries: StudentSummary[];\n  errors: ValidationError[];\n}\n\n// Main function signature:\nfunction aggregateGrades(entries: RawGradeEntry[]): GradeBookResult { ... }",
+    "goals": [
+      "Define a `ValidScore` branded type and a `ValidatedEntry` mapped type that swaps in the brand without re-listing every field.",
+      "Implement `toValidScore` to safely narrow a raw `number` into `ValidScore | null` using a range check — no type assertions.",
+      "Implement `toLetterGrade` that accepts only a `ValidScore` parameter and returns the correct `LetterGrade` band.",
+      "Implement `aggregateGrades` to validate all entries, group by student, compute sorted subjects and rounded averages, and return a typed `GradeBookResult`."
+    ],
+    "hints": [
+      "For the branded type, intersect `number` with a readonly object literal: `number & { readonly __brand: 'ValidScore' }` — then use an explicit cast only inside `toValidScore` where you've already verified the range.",
+      "For `ValidatedEntry`, reach for `Omit<RawGradeEntry, 'score'> & { score: ValidScore }` to surgically replace just the one field.",
+      "When computing `averageScore` (a plain `number`) before calling `toLetterGrade`, you'll need to pass it through `toValidScore` first — think about what to do if it somehow returns `null` (hint: a clamped average can't be out of range, but TypeScript doesn't know that)."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript Handbook — Branded / Nominal Types",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html"
+      },
+      {
+        "title": "TypeScript Handbook — Utility Types (Omit, Pick, etc.)",
+        "url": "https://www.typescriptlang.org/docs/handbook/utility-types.html"
+      },
+      {
+        "title": "TypeScript Handbook — Narrowing & Type Guards",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html#using-type-predicates"
+      },
+      {
+        "title": "MDN — Array.prototype.reduce (for groupBy aggregation)",
+        "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/reduce"
+      }
+    ]
   }
 ]
