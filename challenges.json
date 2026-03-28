@@ -1329,5 +1329,41 @@
         "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/reduce"
       }
     ]
+  },
+  {
+    "date": "2026-03-28",
+    "name": "Typed Event-Sourced State Machine",
+    "difficulty": "Hard",
+    "description": "You're building the order-lifecycle engine for a commerce platform. Orders move through a strict set of states via typed events — your state machine must enforce legal transitions at the type level, fold an event log into the current state, and surface a fully typed `Result<T, E>` for every operation with zero `any`.",
+    "snippet": "// Key types and main function signatures\n\ntype OrderState =\n  | { kind: \"Pending\" }\n  | { kind: \"Confirmed\"; confirmedAt: Date }\n  | { kind: \"Shipped\";   confirmedAt: Date; shippedAt: Date; trackingCode: string }\n  | { kind: \"Delivered\"; confirmedAt: Date; shippedAt: Date; trackingCode: string; deliveredAt: Date }\n  | { kind: \"Cancelled\"; cancelledAt: Date; reason: string };\n\ntype OrderEvent =\n  | { id: EventId; occurredAt: Date; type: \"OrderPlaced\" }\n  | { id: EventId; occurredAt: Date; type: \"OrderConfirmed\" }\n  | { id: EventId; occurredAt: Date; type: \"OrderShipped\";   trackingCode: string }\n  | { id: EventId; occurredAt: Date; type: \"OrderDelivered\" }\n  | { id: EventId; occurredAt: Date; type: \"OrderCancelled\"; reason: string };\n\ntype Result<T, E> = { kind: \"Ok\"; value: T } | { kind: \"Err\"; error: E };\n\n// Applies a single event to the current state, enforcing legal transitions\nfunction applyEvent(\n  currentState: OrderState | null,\n  event: OrderEvent\n): Result<OrderState, MachineError> { /* TODO */ }\n\n// Replays an ordered event log and returns the final state or first error\nfunction foldEvents(\n  events: ReadonlyArray<OrderEvent>\n): Result<OrderState, MachineError> { /* TODO */ }\n\n// Narrows a Result to a specific state variant by its `kind` discriminant\nfunction assertState<K extends OrderState[\"kind\"]>(\n  result: Result<OrderState, MachineError>,\n  kind: K\n): StateByKind<K> | null { /* TODO */ }\n",
+    "goals": [
+      "Define fully typed discriminated unions for `OrderState`, `OrderEvent`, and `MachineError` with the correct structural fields per variant.",
+      "Implement `applyEvent` that validates transitions against `LEGAL_TRANSITIONS` and returns a typed `Result<OrderState, MachineError>` with no `any`.",
+      "Implement `foldEvents` to sequentially replay an event log, short-circuiting on the first error and returning the final folded state.",
+      "Implement `assertState<K>` using the conditional type `StateByKind<K>` to narrow a `Result<OrderState, MachineError>` to a specific state variant without type assertions."
+    ],
+    "hints": [
+      "For `StateByKind<K>`, use `Extract<OrderState, { kind: K }>` — it resolves to exactly the union member whose `kind` matches K.",
+      "In `applyEvent`, a `switch` on `event.type` with exhaustive case handling lets TypeScript narrow both the event shape and the expected prior state simultaneously.",
+      "The `satisfies` operator on `LEGAL_TRANSITIONS` lets you keep the precise literal types of each array while still enforcing the `LegalTransitions` contract."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript Handbook — Discriminated Unions",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html#discriminated-unions"
+      },
+      {
+        "title": "TypeScript Handbook — Conditional Types & Extract",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/conditional-types.html"
+      },
+      {
+        "title": "TypeScript Handbook — The `satisfies` Operator",
+        "url": "https://www.typescriptlang.org/docs/handbook/release-notes/typescript-4-9.html#the-satisfies-operator"
+      },
+      {
+        "title": "TypeScript Handbook — Mapped Types & Record",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/mapped-types.html"
+      }
+    ]
   }
 ]
