@@ -1365,5 +1365,41 @@
         "url": "https://www.typescriptlang.org/docs/handbook/2/mapped-types.html"
       }
     ]
+  },
+  {
+    "date": "2026-03-29",
+    "name": "Typed Recipe Ingredient Scaler",
+    "difficulty": "Easy",
+    "description": "You're building the recipe customization feature for a cooking app. Users can scale any recipe up or down by a multiplier, and your engine must validate raw ingredient inputs, convert between units, and return a fully typed scaled recipe — with zero `any`.",
+    "snippet": "// Key types & main function signatures\n\nexport type Multiplier     = number & { readonly __brand: \"Multiplier\" };\nexport type IngredientName = string & { readonly __brand: \"IngredientName\" };\n\nexport type UnitGroup =\n  | { kind: \"volume\"; unit: VolumeUnit }\n  | { kind: \"weight\"; unit: WeightUnit };\n\nexport type Result<T, E> =\n  | { ok: true;  value: T }\n  | { ok: false; error: E };\n\nexport interface RawIngredient { name: unknown; quantity: unknown; unit: unknown; }\nexport interface Ingredient    { name: IngredientName; quantity: number; unitGroup: UnitGroup; }\nexport interface ScaledIngredient extends Ingredient { readonly scaledBy: Multiplier; }\n\n// --- Functions you must implement ---\nexport function parseIngredient(raw: RawIngredient): Result<Ingredient, ValidationError>;\nexport function scaleIngredient(ingredient: Ingredient, multiplier: Multiplier): ScaledIngredient;\nexport function scaleRecipe(rawIngredients: RawIngredient[], rawMultiplier: number): ScaledRecipeResult;",
+    "goals": [
+      "Define `UnitGroup` as a discriminated union that cleanly separates volume and weight units at the type level.",
+      "Implement `parseIngredient` to narrow all `unknown` fields and return a typed `Result<Ingredient, ValidationError>` with ordered validation.",
+      "Implement `scaleIngredient` to produce a `ScaledIngredient` that records the branded `Multiplier` used.",
+      "Implement `scaleRecipe` to orchestrate validation and scaling across an array of raw inputs, collecting both successes and indexed failures into a `ScaledRecipeResult`."
+    ],
+    "hints": [
+      "To narrow `unknown` to a specific type, use `typeof value === 'string'` or `typeof value === 'number'` guards — TypeScript will narrow the type inside the `if` block.",
+      "A `Set<VolumeUnit>` with a `.has()` check is a clean way to narrow an `unknown` unit string into a `VolumeUnit` — but you'll need to first confirm it's a `string`.",
+      "Branded types like `Multiplier` can only be created via a trusted constructor (like `makeMultiplier`); call it inside `scaleRecipe` to avoid unsafe casts."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript Handbook — Narrowing",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html"
+      },
+      {
+        "title": "TypeScript Handbook — Discriminated Unions",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html#discriminated-unions"
+      },
+      {
+        "title": "TypeScript Handbook — Branded / Opaque Types (Enums & Literal Types)",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/template-literal-types.html"
+      },
+      {
+        "title": "MDN — Set.prototype.has()",
+        "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Set/has"
+      }
+    ]
   }
 ]
