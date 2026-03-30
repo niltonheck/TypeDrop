@@ -1401,5 +1401,41 @@
         "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Set/has"
       }
     ]
+  },
+  {
+    "date": "2026-03-30",
+    "name": "Typed API Response Paginator",
+    "difficulty": "Medium",
+    "description": "You're building the data-fetching layer for an analytics dashboard that consumes a paginated REST API. The client must fetch pages sequentially or in parallel up to a concurrency limit, validate each raw response at runtime, and aggregate all records into a typed `Result<T, E>` — with clean handling for partial failures.",
+    "snippet": "// Key types & main function signature\n\nexport type Result<T, E> =\n  | { ok: true;  value: T }\n  | { ok: false; error: E };\n\nexport type PaginatorError =\n  | { kind: \"validation\"; page: number; reason: string }\n  | { kind: \"fetch\";      page: number; reason: string }\n  | { kind: \"partial\";   errors: PaginatorError[]; records: AnalyticsRecord[] };\n\nexport interface PaginatorConfig {\n  totalPages:  number;\n  concurrency: number; // max in-flight fetches\n}\n\n/** Injected fetcher — never throws, returns Result. */\nexport type FetchPage = (page: number) => Promise<Result<RawEnvelope, string>>;\n\n/** Concurrency-limited task runner — preserves result order. */\nexport async function withConcurrency<T>(\n  tasks: ReadonlyArray<() => Promise<T>>,\n  limit: number\n): Promise<T[]> { /* TODO */ }\n\n/** Fetch, validate, and aggregate all pages into a single Result. */\nexport async function paginateAll(\n  fetchPage: FetchPage,\n  config: PaginatorConfig\n): Promise<Result<AnalyticsRecord[], PaginatorError>> { /* TODO */ }\n",
+    "goals": [
+      "Implement `validateRecord` and `validateEnvelope` to narrow `Record<string, unknown>` into fully typed domain objects, returning a `Result<T, string>` on the first failing field.",
+      "Implement `withConcurrency<T>` to run an array of async tasks with at most `limit` concurrent executions while preserving the original result order.",
+      "Implement `paginateAll` to fetch all pages via the injected `FetchPage`, using `withConcurrency` to respect the concurrency limit, and return a success or partial-failure `Result`.",
+      "Ensure the final success `value` (and the partial `records`) are sorted ascending by `timestamp` string."
+    ],
+    "hints": [
+      "For `withConcurrency`, consider processing tasks in fixed-size batches using `Promise.all` — slice the task array into chunks of size `limit` and await each chunk sequentially.",
+      "In `validateRecord`, use `typeof` guards and `Array.isArray` to narrow each field from `unknown` before assigning — the compiler will reject assignments without explicit narrowing.",
+      "In `paginateAll`, collect both errors and valid records in the same pass so you can return a `{ kind: 'partial' }` error that still carries the successfully parsed records (R4e)."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript — Narrowing",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html"
+      },
+      {
+        "title": "TypeScript — Generics",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/generics.html"
+      },
+      {
+        "title": "MDN — Promise.all",
+        "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise/all"
+      },
+      {
+        "title": "TypeScript — Utility Types",
+        "url": "https://www.typescriptlang.org/docs/handbook/utility-types.html"
+      }
+    ]
   }
 ]
