@@ -1437,5 +1437,41 @@
         "url": "https://www.typescriptlang.org/docs/handbook/utility-types.html"
       }
     ]
+  },
+  {
+    "date": "2026-03-31",
+    "name": "Typed Product Inventory Filter & Sorter",
+    "difficulty": "Easy",
+    "description": "You're building the catalog browsing feature for an e-commerce storefront. Shoppers can filter products by category, availability, and price range, then sort the results — your engine must validate raw catalog inputs and return a fully typed filtered and sorted result with zero `any`.",
+    "snippet": "// Key types and main function signature\n\ntype Category = \"electronics\" | \"clothing\" | \"food\" | \"books\" | \"toys\";\n\ninterface RawProduct { id: unknown; name: unknown; category: unknown; priceUsd: unknown; inStock: unknown; }\ninterface Product    { id: string;  name: string;  category: Category; priceUsd: number;  inStock: boolean; }\n\ntype ValidationOk<T> = { ok: true;  value: T };\ntype ValidationErr   = { ok: false; field: string; reason: string };\ntype ValidationResult<T> = ValidationOk<T> | ValidationErr;\n\ninterface FilterOptions { categories?: Category[]; minPrice?: number; maxPrice?: number; onlyInStock?: boolean; }\ninterface SortOptions   { field: \"priceUsd\" | \"name\"; direction: \"asc\" | \"desc\"; }\ninterface CatalogResult { products: Product[]; errors: Array<{ rawId: unknown; field: string; reason: string }>; }\n\n// Orchestrates validate → filter → sort in one typed pipeline\ndeclare function processCatalog(\n  rawProducts: RawProduct[],\n  filter: FilterOptions,\n  sort: SortOptions\n): CatalogResult;",
+    "goals": [
+      "Implement `validateProduct` to narrow each `unknown` field of a `RawProduct` into a fully-typed `Product`, returning a discriminated-union `ValidationResult<Product>`.",
+      "Implement `filterProducts` to apply up to four independent, ANDed filter conditions from `FilterOptions` without mutating the input array.",
+      "Implement `sortProducts` to sort by `priceUsd` or `name` in either direction, breaking ties by `id` ascending, without mutating the input array.",
+      "Wire all three functions together in `processCatalog`, collecting validation errors and returning a complete `CatalogResult`."
+    ],
+    "hints": [
+      "For `validateProduct`, use `typeof` guards and `Array.includes` to narrow each `unknown` field — define a readonly tuple of valid categories so TypeScript can infer the `Category` type from `.includes()`.",
+      "For `sortProducts`, `Array.prototype.slice()` (or spread) gives you a new array to sort safely; build a comparator that checks the primary field first, then falls back to `id`.",
+      "In `processCatalog`, a single `reduce` (or a `forEach` with two accumulators) lets you split the validated results into the `products` and `errors` arrays in one pass."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript Handbook — Narrowing",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html"
+      },
+      {
+        "title": "TypeScript Handbook — Discriminated Unions",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html#discriminated-unions"
+      },
+      {
+        "title": "MDN — Array.prototype.sort()",
+        "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/sort"
+      },
+      {
+        "title": "TypeScript Handbook — Utility Types",
+        "url": "https://www.typescriptlang.org/docs/handbook/utility-types.html"
+      }
+    ]
   }
 ]
