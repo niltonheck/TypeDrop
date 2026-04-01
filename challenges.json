@@ -1473,5 +1473,41 @@
         "url": "https://www.typescriptlang.org/docs/handbook/utility-types.html"
       }
     ]
+  },
+  {
+    "date": "2026-04-01",
+    "name": "Typed Notification Dispatcher",
+    "difficulty": "Medium",
+    "description": "You're building the notification service for a SaaS platform. The system must dispatch typed notifications across multiple channels (email, SMS, push), fan out deliveries concurrently with a configurable limit, and collect a fully typed per-channel Result for every recipient — with zero `any`.",
+    "snippet": "// Key types & main function signature\n\ntype Brand<T, B extends string> = T & { readonly __brand: B };\ntype RecipientId   = Brand<string, \"RecipientId\">;\ntype NotificationId = Brand<string, \"NotificationId\">;\n\ntype Result<T, E> =\n  | { readonly ok: true;  readonly value: T }\n  | { readonly ok: false; readonly error: E };\n\ntype Notification = EmailNotification | SmsNotification | PushNotification;\n\n// Mapped type — your job to fill in the body:\ntype ChannelSenders = {\n  [K in Notification[\"channel\"]]: ChannelSender<Extract<Notification, { channel: K }>>;\n};\n\ntype DispatchConfig = {\n  readonly concurrencyLimit: number;\n  readonly senders: ChannelSenders;\n};\n\n// Fan out raw payloads → validate → dispatch (concurrency-limited) → summary\nasync function fanOutDispatch(\n  rawPayloads: readonly unknown[],\n  config: DispatchConfig\n): Promise<DispatchSummary>;\n",
+    "goals": [
+      "Define the three-channel discriminated union `Notification` type with branded `id` and `recipientId` fields.",
+      "Implement `validateNotification` to narrow `unknown → Result<Notification, ValidationError>` with per-field checks.",
+      "Implement `dispatch` using the correct `ChannelSender` selected via a type-safe switch on `notification.channel`.",
+      "Implement `fanOutDispatch` to validate all payloads, fan out dispatches in batches of `config.concurrencyLimit`, and return a fully typed `DispatchSummary`."
+    ],
+    "hints": [
+      "For `ChannelSenders`, use a mapped type `{ [K in Notification[\"channel\"]]: ChannelSender<Extract<Notification, { channel: K }>> }` — this lets TypeScript infer the exact sub-type per key.",
+      "In `fanOutDispatch`, slice the validated notifications into chunks of size `concurrencyLimit` and `await Promise.all(chunk.map(...))` per chunk to honour the limit.",
+      "Use a `switch (notification.channel)` with a final `default` branch that calls a `(c: never) => never` helper — this gives you exhaustiveness checking for free."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript – Discriminated Unions",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html#discriminated-unions"
+      },
+      {
+        "title": "TypeScript – Mapped Types",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/mapped-types.html"
+      },
+      {
+        "title": "TypeScript – Conditional Types & Extract",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/conditional-types.html"
+      },
+      {
+        "title": "MDN – Promise.all",
+        "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise/all"
+      }
+    ]
   }
 ]
