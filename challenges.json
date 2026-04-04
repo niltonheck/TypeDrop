@@ -1545,5 +1545,41 @@
         "url": "https://www.typescriptlang.org/docs/handbook/2/generics.html"
       }
     ]
+  },
+  {
+    "date": "2026-04-04",
+    "name": "Typed Workflow State Machine",
+    "difficulty": "Hard",
+    "description": "You're building the order-fulfillment engine for a logistics platform. Every order moves through a strict lifecycle — and your state machine must enforce legal transitions at the type level, accumulate a typed audit log, and return exhaustively-matched `Result<T, E>` outcomes, all with zero `any`.",
+    "snippet": "// Key types and main function signatures\n\nexport type StateName =\n  | \"pending\" | \"confirmed\" | \"picking\"\n  | \"packed\"  | \"shipped\"  | \"delivered\" | \"cancelled\";\n\n// TODO 1 — build this from StatePayloadMap\nexport type OrderState =\n  | { kind: \"pending\";   orderId: string; placedAt: string }\n  | { kind: \"confirmed\"; orderId: string; confirmedAt: string; warehouseId: string }\n  | /* ... all 7 variants */ never;\n\n// TODO 2 — phantom-branded transition\nexport type Transition<From extends StateName, To extends StateName> = never;\n\n// TODO 3 — registry validated with `satisfies`\nexport const TRANSITIONS = { /* \"pending->confirmed\": ..., ... */ } as const;\n\nexport function applyTransition(\n  ctx: MachineContext,\n  input: TransitionInput\n): Result<MachineContext, TransitionError>;\n\nexport function runWorkflow(\n  initialPayload: { orderId: string; placedAt: string },\n  transitions: readonly TransitionInput[]\n): Result<MachineContext, TransitionError>;\n\nexport function summariseMachine(ctx: MachineContext): WorkflowSummary;\n",
+    "goals": [
+      "Define `OrderState` as a discriminated union where each variant's payload is derived from `StatePayloadMap` and the `kind` field is the literal `StateName` key.",
+      "Brand `Transition<From, To>` with phantom type parameters so that transitions between incompatible states are rejected at compile time, and register all legal transitions using `satisfies`.",
+      "Implement `applyTransition` to validate the target state, check the TRANSITIONS registry, verify all required payload fields are present, and return a typed `Result<MachineContext, TransitionError>`.",
+      "Implement `runWorkflow` and `summariseMachine` — the former short-circuits on the first error, the latter produces a `WorkflowSummary` using a single `reduce` pass with no intermediate arrays."
+    ],
+    "hints": [
+      "For the `OrderState` union, try using a mapped type over `StatePayloadMap` and then `[StateName][number]` to distribute it into a flat union.",
+      "A phantom type is just a structural type that includes a field (or intersection) whose type encodes `From` and `To` but is never actually present at runtime — look at how `{ readonly _brand: readonly [From, To] }` can be intersected.",
+      "In `applyTransition`, build a `REQUIRED_FIELDS` lookup (keyed by `StateName`) to know which payload keys to check — you can derive it from `StatePayloadMap` at the type level and mirror it as a runtime constant."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript — Discriminated Unions",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html#discriminated-unions"
+      },
+      {
+        "title": "TypeScript — satisfies operator",
+        "url": "https://www.typescriptlang.org/docs/handbook/release-notes/typescript-4-9.html#the-satisfies-operator"
+      },
+      {
+        "title": "TypeScript — Template Literal Types",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/template-literal-types.html"
+      },
+      {
+        "title": "TypeScript — Mapped Types",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/mapped-types.html"
+      }
+    ]
   }
 ]
