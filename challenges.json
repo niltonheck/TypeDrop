@@ -1509,5 +1509,41 @@
         "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise/all"
       }
     ]
+  },
+  {
+    "date": "2026-04-04",
+    "name": "Typed User Profile Merger",
+    "difficulty": "Easy",
+    "description": "You're building the account-settings feature for a SaaS app. When a user submits a partial profile update, your engine must validate the raw incoming fields, deep-merge them onto the existing profile, and return a fully typed `Result<T, E>` — with zero `any`.",
+    "snippet": "/** Supported social-link platforms. */\ntype Platform = \"github\" | \"twitter\" | \"linkedin\";\n\ninterface SocialLink { platform: Platform; url: string; }\n\ninterface UserProfile {\n  id: string; displayName: string; email: string;\n  bio: string; avatarUrl: string; socials: SocialLink[];\n  updatedAt: string; // system-managed\n}\n\n// All user-editable fields are optional; id & updatedAt are excluded\ntype ProfileUpdate = Omit<Partial<UserProfile>, \"id\" | \"updatedAt\">;\n\ntype Result<T, E> = { ok: true; value: T } | { ok: false; error: E };\n\ntype MergeError =\n  | { kind: \"INVALID_EMAIL\";    provided: string }\n  | { kind: \"INVALID_URL\";      field: string; provided: string }\n  | { kind: \"UNKNOWN_PLATFORM\"; provided: string };\n\ndeclare function mergeProfile(\n  existing: UserProfile,\n  update: ProfileUpdate\n): Result<UserProfile, MergeError>;\n",
+    "goals": [
+      "Define `ProfileUpdate` as a mapped/utility type that makes all user-editable `UserProfile` fields optional while excluding `id` and `updatedAt`.",
+      "Define `MergeError` as a discriminated union with three `kind` variants, each carrying appropriate detail fields.",
+      "Implement the three type-predicate validators (`validateEmail`, `validateHttpsUrl`, `validatePlatform`) with correct narrowing signatures.",
+      "Implement `mergeProfile` to validate all incoming fields in order, return typed `MergeError` on the first failure, and return a new immutable `UserProfile` with a refreshed `updatedAt` on success."
+    ],
+    "hints": [
+      "For `ProfileUpdate`, you only need two built-in utility types composed in a single expression — think about which one makes fields optional and which one removes fields.",
+      "A type predicate has the return type `value is SomeType`; your `validatePlatform` predicate should narrow `string` all the way down to the `Platform` union.",
+      "In `mergeProfile`, validate fields in order and `return` early on the first error — you never need a nested `if/else` tree."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript Utility Types (Partial, Omit, Pick)",
+        "url": "https://www.typescriptlang.org/docs/handbook/utility-types.html"
+      },
+      {
+        "title": "TypeScript Narrowing — Type Predicates",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html#using-type-predicates"
+      },
+      {
+        "title": "TypeScript Discriminated Unions",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html#discriminated-unions"
+      },
+      {
+        "title": "TypeScript Generics",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/generics.html"
+      }
+    ]
   }
 ]
