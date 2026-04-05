@@ -1581,5 +1581,41 @@
         "url": "https://www.typescriptlang.org/docs/handbook/2/mapped-types.html"
       }
     ]
+  },
+  {
+    "date": "2026-04-05",
+    "name": "Typed Event Stream Aggregator",
+    "difficulty": "Medium",
+    "description": "You're building the real-time analytics engine for a live-streaming platform. Raw events arrive as unknown JSON blobs from multiple sources; your engine must validate them, fan out processing concurrently with a limit, and aggregate per-stream statistics into a fully typed report — with zero `any`.",
+    "snippet": "// Core types & main function signature\n\ntype Brand<T, B extends string> = T & { readonly __brand: B };\n\ntype EventId     = Brand<string, \"EventId\">;\ntype StreamId    = Brand<string, \"StreamId\">;\ntype TimestampMs = Brand<number, \"TimestampMs\">;\ntype EventKind   = \"view\" | \"like\" | \"comment\" | \"share\" | \"donation\";\n\ninterface StreamEvent {\n  id: EventId;\n  streamId: StreamId;\n  kind: EventKind;\n  value: number;\n  timestamp: TimestampMs;\n}\n\ntype Result<T, E> =\n  | { ok: true;  value: T }\n  | { ok: false; error: E };\n\ntype EventProcessor = (event: StreamEvent) => Promise<void>;\n\n// --- implement this ---\nasync function aggregateEvents(\n  rawEvents: RawEvent[],\n  processor: EventProcessor,\n  concurrencyLimit?: number,\n): Promise<AggregationReport> { /* TODO */ }",
+    "goals": [
+      "Declare `Brand<T, B>` and apply it to `EventId`, `StreamId`, and `TimestampMs` — then use those branded types throughout `StreamEvent` and `StreamStats`.",
+      "Implement `validateEvent` using a `Result<T, E>` discriminated union and user-defined type guards to narrow every `unknown` field without `as` or `any`.",
+      "Implement `aggregateEvents` to fan out `EventProcessor` calls concurrently up to `concurrencyLimit`, then aggregate per-stream `StreamStats` (counts, totals, firstSeen/lastSeen) into an `AggregationReport`.",
+      "Implement `lookupStream` to convert a plain `string` to a branded `StreamId` via a type guard and return `Result<StreamStats, string>` — no non-null assertions."
+    ],
+    "hints": [
+      "A type guard of the form `function isEventId(x: string): x is EventId` lets you refine a plain string into a branded type without `as` — apply the same pattern for `StreamId` and `TimestampMs`.",
+      "For `Result<T, E>`, a discriminated union on a boolean `ok` field (`{ ok: true; value: T } | { ok: false; error: E }`) gives you exhaustive narrowing with a simple `if (result.ok)` check.",
+      "To respect `concurrencyLimit` without a library, slice the validated events array into chunks of that size and `await Promise.all(chunk.map(processor))` — iterate chunk by chunk sequentially."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript Handbook — Narrowing & Type Guards",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html"
+      },
+      {
+        "title": "TypeScript Handbook — Generics",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/generics.html"
+      },
+      {
+        "title": "MDN — Promise.all",
+        "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise/all"
+      },
+      {
+        "title": "TypeScript Handbook — Utility Types (Record, Pick, etc.)",
+        "url": "https://www.typescriptlang.org/docs/handbook/utility-types.html"
+      }
+    ]
   }
 ]
