@@ -1617,5 +1617,41 @@
         "url": "https://www.typescriptlang.org/docs/handbook/utility-types.html"
       }
     ]
+  },
+  {
+    "date": "2026-04-06",
+    "name": "Typed Contact Book Grouper",
+    "difficulty": "Easy",
+    "description": "You're building the \"All Contacts\" view for a mobile address book app. Raw contact entries arrive from storage as unknown blobs; your engine must validate them, group them by the first letter of their last name, and return a fully typed alphabetical index — with zero `any`.",
+    "snippet": "/** A validated, fully-typed contact record. */\ninterface Contact {\n  id: string;\n  firstName: string;\n  lastName: string;\n  email: string;\n  phone?: string;\n  birthday?: string;\n  tags: string[];\n}\n\ntype ValidationError =\n  | { kind: \"missing_field\"; field: string }\n  | { kind: \"wrong_type\"; field: string; expected: string }\n  | { kind: \"invalid_email\"; value: string };\n\ntype Result<T, E> = { ok: true; value: T } | { ok: false; error: E };\n\n// TODO: define AlphaKey  →  \"A\" | \"B\" | … | \"Z\" | \"#\"\ntype AlphaKey = TODO;\n\n// TODO: define ContactIndex  →  Record<AlphaKey, Contact[]>\ntype ContactIndex = TODO;\n\n// Validate a raw unknown blob into a typed Contact\nfunction validateContact(raw: unknown): Result<Contact, ValidationError> { … }\n\n// Map a Contact to its alphabetical bucket key\nfunction getAlphaKey(contact: Contact): AlphaKey { … }\n\n// Build a complete A–Z + \"#\" index from an array of raw blobs\nfunction buildContactIndex(raws: unknown[]): ContactIndex { … }",
+    "goals": [
+      "Define `AlphaKey` as a union of all 26 uppercase letter strings plus \"#\", and `ContactIndex` as a `Record<AlphaKey, Contact[]>`.",
+      "Implement `validateContact` to narrow an `unknown` blob into a typed `Contact`, returning a discriminated `Result<Contact, ValidationError>` with the first error encountered.",
+      "Implement `getAlphaKey` to map a contact's last name to the correct `AlphaKey` bucket (A–Z or \"#\").",
+      "Implement `buildContactIndex` so every one of the 27 keys is always present, invalid entries are silently skipped, and each bucket is sorted by `lastName` then `firstName`."
+    ],
+    "hints": [
+      "For `AlphaKey`, you can write it as an explicit union `\"A\" | \"B\" | ... | \"Z\" | \"#\"` — or use a mapped type over a tuple of letters with `infer` if you want a stretch challenge.",
+      "In `validateContact`, narrow `raw` step-by-step: first check `typeof raw === 'object' && raw !== null`, then use `'id' in raw` before accessing each field — TypeScript will track the narrowed type for you.",
+      "To guarantee all 27 keys exist in `buildContactIndex`, initialise the accumulator with `Object.fromEntries(expectedKeys.map(k => [k, []]))` and cast it with `satisfies ContactIndex` rather than `as`."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript Handbook — Narrowing",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html"
+      },
+      {
+        "title": "TypeScript Handbook — Template Literal Types",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/template-literal-types.html"
+      },
+      {
+        "title": "TypeScript Handbook — Utility Types (Record)",
+        "url": "https://www.typescriptlang.org/docs/handbook/utility-types.html#recordkeys-type"
+      },
+      {
+        "title": "TypeScript 4.9 — satisfies operator",
+        "url": "https://www.typescriptlang.org/docs/handbook/release-notes/typescript-4-9.html#the-satisfies-operator"
+      }
+    ]
   }
 ]
