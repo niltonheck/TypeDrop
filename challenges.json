@@ -1653,5 +1653,41 @@
         "url": "https://www.typescriptlang.org/docs/handbook/release-notes/typescript-4-9.html#the-satisfies-operator"
       }
     ]
+  },
+  {
+    "date": "2026-04-07",
+    "name": "Typed Query Plan Optimizer",
+    "difficulty": "Hard",
+    "description": "You're building the query execution layer for an in-browser analytics engine. Raw query descriptors arrive as unknown JSON; your optimizer must validate them, build a typed expression tree, walk it with a recursive visitor, and return a fully typed execution plan with cost estimates — with zero `any`.",
+    "snippet": "\n// Core types and main entry point\n\nexport type Expr =\n  | { kind: \"literal\"; value: string | number | boolean | null }\n  | { kind: \"column\";  table: string; name: string }\n  | { kind: \"binary\";  op: BinaryOp; left: Expr; right: Expr }\n  | { kind: \"agg\";     fn: AggFn;    source: ColumnRef }\n  | { kind: \"case\";    whens: ReadonlyArray<{ when: Expr; then: Expr }>; else: Expr };\n\nexport type QueryNode =\n  | { op: \"scan\";    table: string; alias: string }\n  | { op: \"filter\";  predicate: Expr; child: QueryNode }\n  | { op: \"project\"; outputs: ReadonlyArray<{ alias: string; expr: Expr }>; child: QueryNode }\n  | { op: \"join\";    condition: Expr; left: QueryNode; right: QueryNode }\n  | { op: \"agg\";     groupBy: ReadonlyArray<ColumnRef>; aggregates: ReadonlyArray<{ alias: string; expr: AggExpr }>; child: QueryNode };\n\nexport interface ExprVisitor<R> {\n  visitLiteral(e: LiteralExpr): R;\n  visitColumn (e: ColumnRef):   R;\n  visitBinary (e: BinaryExpr):  R;\n  visitAgg    (e: AggExpr):     R;\n  visitCase   (e: CaseExpr):    R;\n}\n\n// Main entry point — parse, plan, and cost an unknown query descriptor\nexport function optimize(raw: unknown): Result<ExecutionPlan, OptimizerError>;\n",
+    "goals": [
+      "Define the `Expr` and `QueryNode` discriminated union types and the generic `ExprVisitor<R>` interface.",
+      "Implement `walkExpr` with an exhaustive switch so TypeScript catches any missing branch at compile time.",
+      "Implement `parseExpr` and `parseQueryNode` to safely validate unknown blobs into fully typed trees, returning `Result<T, ParseError>`.",
+      "Implement `estimateRows`, `buildPlan`, and the top-level `optimize` function, propagating errors and accumulating large-table warnings correctly."
+    ],
+    "hints": [
+      "Use a `switch (expr.kind)` with a `default: satisfies never` (or an exhaustive helper) to guarantee every Expr variant is handled in `walkExpr`.",
+      "In `parseExpr` and `parseQueryNode`, narrow `unknown` step-by-step: check `typeof`, then `'kind' in raw`, then check specific string values before casting to the target type.",
+      "The `totalCost` in `optimize` is the sum of `estimatedRows` across every node in the `PlanNode` tree — write a small private recursive helper that mirrors the structure of `PlanNode`."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript Handbook — Narrowing",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html"
+      },
+      {
+        "title": "TypeScript Handbook — Discriminated Unions",
+        "url": "https://www.typescriptlang.org/docs/handbook/typescript-in-5-minutes-func.html#discriminated-unions"
+      },
+      {
+        "title": "TypeScript Handbook — Generics",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/generics.html"
+      },
+      {
+        "title": "TypeScript 5.x — `satisfies` operator",
+        "url": "https://www.typescriptlang.org/docs/handbook/release-notes/typescript-4-9.html#the-satisfies-operator"
+      }
+    ]
   }
 ]
