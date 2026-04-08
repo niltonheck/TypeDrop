@@ -1689,5 +1689,41 @@
         "url": "https://www.typescriptlang.org/docs/handbook/release-notes/typescript-4-9.html#the-satisfies-operator"
       }
     ]
+  },
+  {
+    "date": "2026-04-08",
+    "name": "Typed Shopping Cart Summarizer",
+    "difficulty": "Easy",
+    "description": "You're building the checkout screen for an e-commerce app. Raw cart items arrive from local storage as unknown blobs; your engine must validate them, apply typed discount rules, and return a fully typed order summary — with zero `any`.",
+    "snippet": "// Key types & main function signature\n\ntype Category = \"electronics\" | \"clothing\" | \"food\" | \"books\";\n\ninterface CartItem {\n  id: string; name: string; category: Category;\n  priceUsd: number; quantity: number;\n}\n\ntype Discount =\n  | { kind: \"flat\";           amountUsd: number }\n  | { kind: \"percent\";        percent: number   }\n  | { kind: \"buyNGetOneFree\"; category: Category; n: number };\n\ntype Result<T, E> = { ok: true; value: T } | { ok: false; error: E };\n\ninterface OrderSummary {\n  lines: SummaryLine[];\n  subtotalUsd: number;\n  discountAmountUsd: number;\n  totalUsd: number;\n  itemCount: number;\n}\n\n// Validate one unknown blob → CartItem\ndeclare function validateCartItem(raw: unknown): Result<CartItem, string>;\n\n// Compute total discount across all discount rules\ndeclare function calculateDiscount(\n  items: CartItem[], subtotal: number, discounts: Discount[]\n): number;\n\n// Full pipeline: validate → build lines → apply discounts → summarize\ndeclare function summarizeCart(\n  rawItems: unknown[], discounts: Discount[]\n): Result<OrderSummary, CartValidationError>;",
+    "goals": [
+      "Implement `validateCartItem` to safely narrow an `unknown` blob into a fully typed `CartItem`, returning a `Result<CartItem, string>` on any validation failure.",
+      "Implement `calculateDiscount` to exhaustively handle all three `Discount` variants — including the `buyNGetOneFree` per-category logic — and clamp the result to the subtotal.",
+      "Implement `summarizeCart` to orchestrate validation, line building, and discount application, returning a `Result<OrderSummary, CartValidationError>` with the correct error index on the first invalid item.",
+      "Ensure all discriminated-union branches are exhaustively matched and no `any` or `as` type assertions are used anywhere."
+    ],
+    "hints": [
+      "Use a `switch (discount.kind)` with all three branches — TypeScript will narrow the type inside each case automatically.",
+      "To check that a value belongs to the `Category` union at runtime, call `VALID_CATEGORIES.has(value as Category)` — but first confirm `typeof value === 'string'` so strict mode is satisfied without a raw cast.",
+      "For `buyNGetOneFree`, filter `items` by `category`, then use `Math.floor(totalQty / (n + 1))` and `Math.min(...prices)` to compute the free-item value."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript – Narrowing",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html"
+      },
+      {
+        "title": "TypeScript – Discriminated Unions",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html#discriminated-unions"
+      },
+      {
+        "title": "TypeScript – Utility Types (Pick, Omit, Record…)",
+        "url": "https://www.typescriptlang.org/docs/handbook/utility-types.html"
+      },
+      {
+        "title": "MDN – Array.prototype.reduce()",
+        "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/reduce"
+      }
+    ]
   }
 ]
