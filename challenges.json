@@ -1725,5 +1725,41 @@
         "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/reduce"
       }
     ]
+  },
+  {
+    "date": "2026-04-09",
+    "name": "Typed API Pagination Crawler",
+    "difficulty": "Medium",
+    "description": "You're building the data-sync layer for a SaaS dashboard that must pull all records from a paginated REST API. Pages arrive as unknown JSON; your crawler must validate each page, fetch all pages concurrently up to a limit, and aggregate the results into a fully typed report — with zero `any`.",
+    "snippet": "// Key types & main function signature\n\nexport type ProductCategory = \"electronics\" | \"clothing\" | \"food\" | \"books\";\n\nexport interface Product {\n  id: string; name: string;\n  category: ProductCategory; priceUsd: number; inStock: boolean;\n}\n\nexport type Ok<T>  = { ok: true;  value: T };\nexport type Err<E> = { ok: false; error: E };\nexport type Result<T, E> = Ok<T> | Err<E>;\n\nexport type CrawlError =\n  | { kind: \"network\";    message: string }\n  | { kind: \"validation\"; page: number; message: string }\n  | { kind: \"timeout\";    page: number };\n\nexport type CategoryReport = Record<ProductCategory, CategoryStats>;\n\nexport interface CrawlReport {\n  totalProducts: number; totalPages: number;\n  byCategory: CategoryReport; errors: CrawlError[];\n}\n\nexport type PageFetcher = (page: number) => Promise<unknown>;\n\nexport async function crawlAllPages(\n  fetcher: PageFetcher,\n  concurrencyLimit: number = 3\n): Promise<Result<CrawlReport, CrawlError>> { /* TODO */ }\n",
+    "goals": [
+      "Implement `isProductCategory`, `validateProduct`, and `validateRawPage` as strict runtime type guards that narrow `unknown` to typed domain values.",
+      "Implement `withConcurrencyLimit<T>` to run async tasks in parallel up to a fixed concurrency cap while preserving result order.",
+      "Implement `crawlAllPages` to discover total pages from page 1, fetch remaining pages concurrently, and aggregate all valid products into a `CrawlReport` keyed by all four `ProductCategory` values.",
+      "Surface every failure — network rejections and page validation errors — as typed `CrawlError` entries inside `CrawlReport.errors`, never as thrown exceptions."
+    ],
+    "hints": [
+      "A `Record<ProductCategory, CategoryStats>` must include all four keys — initialise them all to `{ count: 0, totalValueUsd: 0, inStockCount: 0 }` before iterating products.",
+      "For `withConcurrencyLimit`, maintain a running count of active promises and a queue index; use a recursive 'slot' pattern rather than `Promise.all` on all tasks at once.",
+      "In `validateProduct` and `validateRawPage`, narrow `unknown` step-by-step with `typeof` and `Array.isArray` checks — the compiler will track each narrowing for you without any assertions."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript — Narrowing",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html"
+      },
+      {
+        "title": "TypeScript — Utility Types (Record, Pick, Omit…)",
+        "url": "https://www.typescriptlang.org/docs/handbook/utility-types.html"
+      },
+      {
+        "title": "MDN — Promise.allSettled",
+        "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise/allSettled"
+      },
+      {
+        "title": "TypeScript — Generics",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/generics.html"
+      }
+    ]
   }
 ]
