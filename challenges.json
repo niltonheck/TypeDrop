@@ -1761,5 +1761,41 @@
         "url": "https://www.typescriptlang.org/docs/handbook/2/generics.html"
       }
     ]
+  },
+  {
+    "date": "2026-04-10",
+    "name": "Typed Task Queue Scheduler",
+    "difficulty": "Easy",
+    "description": "You're building the background job runner for a productivity app. Raw task definitions arrive from a local database as unknown blobs; your scheduler must validate them, sort them by priority and deadline, and return a fully typed execution plan — with zero `any`.",
+    "snippet": "\n// Key types and main function signature\n\nexport type Priority = \"low\" | \"medium\" | \"high\";\n\nexport interface Task {\n  id: string;\n  title: string;\n  priority: Priority;\n  deadline: string;         // ISO-8601 e.g. \"2026-04-15\"\n  estimatedMinutes: number; // positive integer\n}\n\nexport type Result<T, E> =\n  | { ok: true;  value: T }\n  | { ok: false; error: E };\n\nexport type ValidationError =\n  | { kind: \"missing_field\";  field: string }\n  | { kind: \"invalid_type\";   field: string; expected: string }\n  | { kind: \"invalid_value\";  field: string; message: string };\n\nexport type ScheduleRank = number & { readonly __brand: \"ScheduleRank\" };\n\nexport interface ExecutionPlan {\n  scheduled: { task: Task; rank: ScheduleRank }[];\n  totalEstimatedMinutes: number;\n  generatedAt: string;\n}\n\n// Entry point — validate, rank, sort, and plan\nexport function scheduleTasks(\n  rawTasks: unknown[],\n  now?: string\n): ExecutionPlan { /* TODO */ }\n",
+    "goals": [
+      "Define PRIORITY_WEIGHTS using the `satisfies` operator so every Priority key is present and all values are numbers.",
+      "Implement `validateTask` to safely narrow `unknown` → `Result<Task, ValidationError>`, returning the first validation error found.",
+      "Implement `computeRank` to produce a branded `ScheduleRank` using the priority weight formula.",
+      "Implement `scheduleTasks` to validate, rank, sort, re-number, and aggregate all valid tasks into a typed `ExecutionPlan`."
+    ],
+    "hints": [
+      "For `validateTask`, check `typeof raw === 'object' && raw !== null` first, then use `'field' in raw` guards to safely access each property.",
+      "The `satisfies` operator lets you keep a concrete literal type while still checking the shape — put it right after the object literal: `{ ... } satisfies Record<Priority, number>`.",
+      "To brand a plain number as `ScheduleRank`, the one allowed cast site is the return of `computeRank`: `return computedNumber as ScheduleRank`."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript — satisfies operator",
+        "url": "https://www.typescriptlang.org/docs/handbook/release-notes/typescript-4-9.html#the-satisfies-operator"
+      },
+      {
+        "title": "TypeScript — Narrowing",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html"
+      },
+      {
+        "title": "TypeScript — Utility Types (Record, Pick, Omit…)",
+        "url": "https://www.typescriptlang.org/docs/handbook/utility-types.html"
+      },
+      {
+        "title": "TypeScript — Branded / Nominal Types pattern",
+        "url": "https://www.typescriptlang.org/play#example/nominal-typing"
+      }
+    ]
   }
 ]
