@@ -1797,5 +1797,41 @@
         "url": "https://www.typescriptlang.org/play#example/nominal-typing"
       }
     ]
+  },
+  {
+    "date": "2026-04-11",
+    "name": "Typed Event Sourcing Ledger",
+    "difficulty": "Hard",
+    "description": "You're building the audit-log replay engine for a fintech platform. Raw domain events arrive as unknown JSON streams; your engine must validate them, fold them into a strongly-typed account ledger via a discriminated-union event bus, and expose a typed projection API — with zero `any`.",
+    "snippet": "// Key types + main function signatures at a glance\n\nexport type EventId   = string & { readonly _brand: \"EventId\" };\nexport type AccountId = string & { readonly _brand: \"AccountId\" };\n\nexport type DomainEvent =\n  | AccountOpened | MoneyDeposited | MoneyWithdrawn | AccountClosed;\n\nexport type Result<T, E> =\n  | { ok: true;  value: T }\n  | { ok: false; error: E };\n\nexport type AccountProjection = {\n  accountId:  AccountId;\n  ownerName:  string;\n  balance:    number;\n  status:     \"open\" | \"closed\";\n  eventCount: number;\n  openedAt:   string;\n  closedAt:   string | null;\n};\n\n// Parse a raw unknown blob → typed DomainEvent or ValidationError\nexport function parseDomainEvent(raw: unknown): Result<DomainEvent, ValidationError>;\n\n// Fold one event onto a projection (or null for first event)\nexport function applyEvent(\n  projection: AccountProjection | null,\n  event: DomainEvent\n): Result<AccountProjection, ValidationError>;\n\n// Process a whole stream, collect projections + errors\nexport function buildLedger(rawEvents: unknown[]): LedgerReport;\n\n// Single-pass aggregate over all projections\nexport function summariseLedger(report: LedgerReport): LedgerSummary;",
+    "goals": [
+      "Define all branded types, discriminated-union events, and a generic Result<T,E> type with zero `any`.",
+      "Implement fail-fast runtime validators that narrow `unknown` inputs to fully-typed `DomainEvent` values.",
+      "Implement `applyEvent` with exhaustive discriminated-union matching and business-rule enforcement (e.g., no overdrafts).",
+      "Implement `buildLedger` and `summariseLedger` — the latter must aggregate all fields in a single pass over the accounts Map."
+    ],
+    "hints": [
+      "For branded types, an intersection like `string & { readonly _brand: \"EventId\" }` lets you keep string assignability while blocking accidental mixing — use a helper cast only in your validators where you've already confirmed the raw value is a string.",
+      "In `applyEvent`, a `switch (event.type)` over the discriminated union gives you exhaustive narrowing for free — TypeScript will tell you if you miss a branch.",
+      "For the single-pass `summariseLedger`, use `Array.from(report.accounts.values()).reduce(...)` and accumulate all fields (open count, closed count, total balance, max balance, most-active ID) in one reducer accumulator object."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript Handbook — Discriminated Unions",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html#discriminated-unions"
+      },
+      {
+        "title": "TypeScript Handbook — Generics",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/generics.html"
+      },
+      {
+        "title": "TypeScript Handbook — keyof & Mapped Types",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/mapped-types.html"
+      },
+      {
+        "title": "MDN — Map (with typed keys in TS)",
+        "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Map"
+      }
+    ]
   }
 ]
