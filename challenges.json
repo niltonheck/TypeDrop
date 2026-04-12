@@ -1833,5 +1833,41 @@
         "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Map"
       }
     ]
+  },
+  {
+    "date": "2026-04-12",
+    "name": "Typed Notification Dispatcher",
+    "difficulty": "Medium",
+    "description": "You're building the notification delivery layer for a team collaboration app. Raw notification payloads arrive from a message broker as unknown blobs; your dispatcher must validate them, route them through a registry of typed channel handlers, and return a fully typed delivery report — with zero `any`.",
+    "snippet": "// Core types + main function signature preview\n\nexport type ChannelKind = \"email\" | \"sms\" | \"push\" | \"webhook\";\n\n// Each channel has its own payload shape (discriminated by `channel`)\nexport type NotificationPayload =\n  | EmailPayload | SmsPayload | PushPayload | WebhookPayload;\n\n// Mapped type: each ChannelKind → handler for the *matching* payload\nexport type ChannelHandlerMap = {\n  [K in ChannelKind]: (payload: Extract<NotificationPayload, { channel: K }>) => Promise<DeliveryResult>;\n};\n\nexport interface DispatchReport {\n  total: number; sent: number; failed: number; skipped: number;\n  results: DeliveryResult[];\n}\n\n// Validate unknown blob → typed payload or null\nexport function validatePayload(raw: unknown): NotificationPayload | null { /* TODO */ return null; }\n\n// Concurrently dispatch all payloads, aggregate into a DispatchReport\nexport async function dispatchAll(\n  rawPayloads: unknown[],\n  handlers: ChannelHandlerMap\n): Promise<DispatchReport> { /* TODO */ return { total:0, sent:0, failed:0, skipped:0, results:[] }; }",
+    "goals": [
+      "Define `NotificationPayload` as a discriminated union and `ChannelHandlerMap` as a mapped type that pairs each `ChannelKind` with its exact payload variant.",
+      "Implement `validatePayload` to narrow an `unknown` blob to a `NotificationPayload` using type guards — no `as` or `any`.",
+      "Implement `dispatchAll` to concurrently dispatch all valid payloads via `Promise.allSettled`, capturing failures without short-circuiting, and return a typed `DispatchReport`.",
+      "Implement `createHandlerRegistry` to merge partial handler overrides with a default 'skipped' fallback, returning a complete `ChannelHandlerMap`."
+    ],
+    "hints": [
+      "For `ChannelHandlerMap`, try `{ [K in ChannelKind]: (p: Extract<NotificationPayload, { channel: K }>) => Promise<DeliveryResult> }` — `Extract` pulls the exact union member for each key.",
+      "In `validatePayload`, start with `if (typeof raw !== 'object' || raw === null) return null`, then use `'to' in raw` and `typeof (raw as Record<string, unknown>).to === 'string'` style checks to drill down safely.",
+      "`Promise.allSettled` never rejects — check each result's `.status` field (`'fulfilled'` vs `'rejected'`) to build your `DeliveryResult` without a try/catch around the whole batch."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript — Discriminated Unions",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html#discriminated-unions"
+      },
+      {
+        "title": "TypeScript — Mapped Types",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/mapped-types.html"
+      },
+      {
+        "title": "TypeScript — Conditional Types & Extract",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/conditional-types.html"
+      },
+      {
+        "title": "MDN — Promise.allSettled()",
+        "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise/allSettled"
+      }
+    ]
   }
 ]
