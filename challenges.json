@@ -1869,5 +1869,41 @@
         "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise/allSettled"
       }
     ]
+  },
+  {
+    "date": "2026-04-13",
+    "name": "Typed Workflow Orchestrator",
+    "difficulty": "Hard",
+    "description": "You're building the execution engine for a low-code automation platform. Raw workflow definitions arrive as unknown JSON blobs from a database; your orchestrator must validate them, compile them into a strongly-typed execution graph, run steps through a typed middleware pipeline with retry logic, and surface a discriminated-union result per step — with zero `any`.",
+    "snippet": "// Core types and main orchestrator signature\n\ntype Result<T, E> =\n  | { readonly ok: true;  value: T }\n  | { readonly ok: false; error: E };\n\ntype WorkflowStep = HttpStep | TransformStep | ConditionStep | NotifyStep;\n\n// TODO 2: Define this as a mapped type\ntype HandlerRegistry = /* mapped over WorkflowStep[\"kind\"] */ unknown;\n\ntype MiddlewareFn = (\n  step: WorkflowStep,\n  next: () => Promise<Result<unknown, ExecutionError>>\n) => Promise<Result<unknown, ExecutionError>>;\n\n// Main entry point — parse, compose, execute, report\ndeclare function runWorkflow(\n  raw: unknown,\n  registry: HandlerRegistry,\n  middlewares?: readonly MiddlewareFn[]\n): Promise<Result<WorkflowReport, OrchestratorError>>;\n",
+    "goals": [
+      "Define `HandlerRegistry` as a mapped type over `WorkflowStep[\"kind\"]` using `Extract` to bind each key to the correct `StepHandler` generic instantiation.",
+      "Implement `parseWorkflowDef` to validate unknown input into a fully-typed `WorkflowDef`, checking all structural invariants and returning the first `ValidationError` encountered.",
+      "Implement `composeMiddleware` to chain an array of `MiddlewareFn` wrappers around a terminal handler, preserving outermost-first execution order.",
+      "Implement `runWorkflow` to parse, dispatch, retry, branch on conditions, collect `StepOutcome` records, and return a typed `WorkflowReport` — handling every discriminated step kind exhaustively."
+    ],
+    "hints": [
+      "For `HandlerRegistry`, try: `{ [K in WorkflowStep[\"kind\"]]: StepHandler<Extract<WorkflowStep, { kind: K }>> }` — the mapped type does the narrowing for you.",
+      "In `composeMiddleware`, build the chain from the inside out using `reduceRight` so that the first middleware in the array becomes the outermost wrapper.",
+      "In `withRetry`, thread the attempt index through a recursive async helper rather than a `for` loop — it makes the exponential back-off calculation cleaner and avoids mutable state."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript Handbook — Mapped Types",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/mapped-types.html"
+      },
+      {
+        "title": "TypeScript Handbook — Conditional Types & Extract",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/conditional-types.html"
+      },
+      {
+        "title": "TypeScript Handbook — Narrowing & Type Guards",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html"
+      },
+      {
+        "title": "MDN — Promise & async/await patterns",
+        "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise"
+      }
+    ]
   }
 ]
