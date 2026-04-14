@@ -1905,5 +1905,41 @@
         "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise"
       }
     ]
+  },
+  {
+    "date": "2026-04-14",
+    "name": "Typed Feature Flag Evaluator",
+    "difficulty": "Medium",
+    "description": "You're building the feature-flag evaluation engine for a product experimentation platform. Raw flag configurations arrive from a remote config service as unknown JSON; your engine must validate them, evaluate each flag against a typed user context, and return a strongly-typed rollout report — with zero `any`.",
+    "snippet": "// Core domain types + main function signature\n\ntype Audience = \"internal\" | \"beta\" | \"public\";\ntype Operator = \"eq\" | \"neq\" | \"in\" | \"not_in\" | \"gte\" | \"lte\";\n\ninterface UserContext {\n  userId: string; email: string; plan: string;\n  country: string; accountAgeDays: number; audience: Audience;\n}\n\ntype FlagVariant =\n  | { kind: \"boolean\"; enabled: boolean }\n  | { kind: \"string\";  variant: string  }\n  | { kind: \"number\";  variant: number  };\n\ntype FlagResult =\n  | { status: \"matched\"; flagId: string; rule: TargetingRule; variant: FlagVariant }\n  | { status: \"default\"; flagId: string; variant: FlagVariant }\n  | { status: \"invalid\"; flagId: string; error: string };\n\ninterface EvaluationReport {\n  userId: string; evaluatedAt: string;\n  results: FlagResult[];\n  summary: { total: number; matched: number; defaulted: number; invalid: number };\n}\n\n// Entry point — validate raw blobs, evaluate rules, return typed report\nfunction evaluateFlags(rawFlags: unknown[], user: UserContext): EvaluationReport { ... }\n",
+    "goals": [
+      "Implement `isAudience`, `isOperator`, and `isVariantKind` as proper type-guard functions that narrow `unknown` to their respective union types.",
+      "Implement `parseFlagVariant`, `parseTargetingRule`, and `parseFeatureFlag` to safely validate raw `unknown` JSON into typed domain objects, throwing descriptive errors on bad input.",
+      "Implement `evaluateRule` to correctly evaluate all six operators (`eq`, `neq`, `in`, `not_in`, `gte`, `lte`) against a `UserContext`.",
+      "Implement `evaluateFlags` to orchestrate validation, audience gating, rule matching, and aggregate the results into a fully typed `EvaluationReport` with accurate summary counts."
+    ],
+    "hints": [
+      "Use an `as const` array (e.g. `const VALID_AUDIENCES = [...] as const`) combined with `.includes()` to implement membership-check type guards without `any` — you may need a small cast on the `includes` call since TS widens the array type; consider `(arr as readonly unknown[]).includes(value)`.",
+      "In `parseFlagVariant`, switch on `kind` after validating it with `isVariantKind` — TypeScript will narrow the discriminated union branch for you inside each `case`.",
+      "In `evaluateFlags`, the audience gate rule is: a flag is eligible if `flag.audience === 'public'` OR `flag.audience === user.audience`; anything else resolves to `status: 'default'` before rules are even checked."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript Handbook — Narrowing & Type Guards",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html"
+      },
+      {
+        "title": "TypeScript Handbook — Discriminated Unions",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html#discriminated-unions"
+      },
+      {
+        "title": "TypeScript Handbook — keyof Type Operator",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/keyof-types.html"
+      },
+      {
+        "title": "TypeScript Handbook — Utility Types (Extract, Record, etc.)",
+        "url": "https://www.typescriptlang.org/docs/handbook/utility-types.html"
+      }
+    ]
   }
 ]
