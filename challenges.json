@@ -1941,5 +1941,41 @@
         "url": "https://www.typescriptlang.org/docs/handbook/utility-types.html"
       }
     ]
+  },
+  {
+    "date": "2026-04-15",
+    "name": "Typed CSV Report Parser",
+    "difficulty": "Easy",
+    "description": "You're building the data-import pipeline for a sales analytics dashboard. Raw CSV text arrives from uploaded files as plain strings; your parser must validate each row, transform it into a strongly-typed record, and return a typed parse report — with zero `any`.",
+    "snippet": "// Core domain types + main function signature\n\nexport type Region = \"NA\" | \"EU\" | \"APAC\" | \"LATAM\";\n\nexport interface SaleRecord {\n  id: string;\n  region: Region;\n  product: string;\n  quantity: number;\n  unitPrice: number;\n  saleDate: Date;\n}\n\n// Generic column descriptor — T defaults to string\nexport interface ColumnSchema<T = string> {\n  header: string;\n  parse: (raw: string) => T;        // may throw on bad input\n  validate: (value: T) => string | null; // null = valid\n}\n\n// Discriminated union for per-row parse outcome\nexport type RowResult =\n  | { ok: true;  value: SaleRecord }\n  | { ok: false; rowIndex: number; raw: string; errors: string[] };\n\n// Main entry point\nexport function parseCSV(csv: string): ParseReport { /* TODO */ }\n",
+    "goals": [
+      "Define the `RowResult` discriminated union and complete the `ParseReport` interface, including using `Extract<>` for the `failures` field.",
+      "Implement the generic `ColumnSchema<T>` interface and fill in all six `SALE_COLUMNS` entries with correct parse and validate logic, using `satisfies`.",
+      "Implement `parseRow` to validate cell counts, catch parse errors, collect validation errors, and return the correct `RowResult` variant.",
+      "Implement `parseCSV` (header validation, blank-line skipping, report assembly) and `revenueByRegion` (per-region sum via `Record<Region, number>`, zero-initialised, rounded to 2 dp)."
+    ],
+    "hints": [
+      "The `failures` field type in `ParseReport` should use `Extract<RowResult, { ok: false }>[]` — let TypeScript derive the narrowed type rather than duplicating it.",
+      "For `SALE_COLUMNS`, each entry has its own concrete `T`; annotate the array with `satisfies ReadonlyArray<ColumnSchema<unknown>>` so TypeScript checks each entry without widening individual `parse` return types.",
+      "Inside `parseRow`, iterate over `schemas` with an index; wrap each `schema.parse(cells[i])` in a try/catch and only call `schema.validate` if parsing succeeded — then decide `ok: true` or `ok: false` at the end."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript – Discriminated Unions",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html#discriminated-unions"
+      },
+      {
+        "title": "TypeScript – Generic Interfaces",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/generics.html#generic-interfaces"
+      },
+      {
+        "title": "TypeScript – satisfies operator",
+        "url": "https://www.typescriptlang.org/docs/handbook/release-notes/typescript-4-9.html#the-satisfies-operator"
+      },
+      {
+        "title": "TypeScript – Extract<Type, Union> utility type",
+        "url": "https://www.typescriptlang.org/docs/handbook/utility-types.html#extracttype-union"
+      }
+    ]
   }
 ]
