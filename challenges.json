@@ -1977,5 +1977,41 @@
         "url": "https://www.typescriptlang.org/docs/handbook/utility-types.html#extracttype-union"
       }
     ]
+  },
+  {
+    "date": "2026-04-16",
+    "name": "Typed API Rate Limiter",
+    "difficulty": "Medium",
+    "description": "You're building the outbound API gateway for a SaaS integration platform. Multiple services make concurrent requests to third-party APIs with different rate limits; your gateway must validate raw endpoint configurations, enforce per-client token-bucket limits, execute requests with typed results, and return a structured dispatch report — with zero `any`.",
+    "snippet": "// Key types and main function signature\n\ntype TokenCount  = number & { readonly __brand: \"TokenCount\" };\ntype ClientId    = string & { readonly __brand: \"ClientId\" };\ntype EndpointUrl = string & { readonly __brand: \"EndpointUrl\" };\n\ninterface EndpointConfig {\n  readonly url:       EndpointUrl;\n  readonly method:    \"GET\" | \"POST\" | \"PUT\" | \"PATCH\" | \"DELETE\";\n  readonly rateLimit: TokenCount;\n  readonly windowMs:  number;\n}\n\ninterface ApiRequest<TPayload> {\n  readonly requestId: string;\n  readonly clientId:  ClientId;\n  readonly endpoint:  EndpointConfig;\n  readonly payload:   TPayload;\n}\n\ntype RequestResult<TPayload, TResponse> =\n  | { status: \"fulfilled\";    requestId: string; clientId: ClientId; payload: TPayload; response: TResponse; tokensRemaining: number }\n  | { status: \"rate_limited\"; requestId: string; clientId: ClientId; payload: TPayload; retryAfterMs: number }\n  | { status: \"rejected\";     requestId: string; clientId: ClientId; payload: TPayload; error: string };\n\ntype FetchFn<TPayload, TResponse> = (req: ApiRequest<TPayload>) => Promise<TResponse>;\n\n// --- Main entry point ---\nasync function dispatchBatch<TPayload, TResponse>(\n  requests:  ReadonlyArray<ApiRequest<TPayload>>,\n  fetchFn:   FetchFn<TPayload, TResponse>,\n  registry:  RateLimiterRegistry\n): Promise<DispatchReport<TPayload, TResponse>>\n",
+    "goals": [
+      "Implement runtime brand constructors (`makeTokenCount`, `makeClientId`, `makeEndpointUrl`) that validate and narrow `unknown` inputs to nominal branded types.",
+      "Build a `TokenBucket` class with typed getters and a `tryConsume()` method, plus a `RateLimiterRegistry` that manages one bucket per (clientId × endpointUrl) pair.",
+      "Implement `validateEndpointConfig` that parses an `unknown` blob into a fully-typed `EndpointConfig`, throwing descriptive `TypeError`s for any violation.",
+      "Implement `dispatchBatch` using `Promise.allSettled` to concurrently dispatch all requests through the registry, returning a typed `DispatchReport` with per-client fulfillment counts."
+    ],
+    "hints": [
+      "Branded types are just intersection types — your brand constructors do the runtime guard and then `return value as TokenCount` (the one place a cast is justified: inside the constructor whose sole job is establishing the invariant).",
+      "For `dispatchBatch`, consume the token *before* calling `fetchFn`; wrap the `fetchFn` call in a try/catch inside the `Promise.allSettled` worker so a rejected fetch still lands in `allSettled` as fulfilled (with a `rejected` result), keeping order stable.",
+      "Build `clientSummary` in a single `reduce` pass over the results array, using a `Map<ClientId, number>` — then wrap it in a `ReadonlyMap` cast when returning."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript — Branded / Nominal Types",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/types-from-types.html"
+      },
+      {
+        "title": "Promise.allSettled — MDN",
+        "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise/allSettled"
+      },
+      {
+        "title": "TypeScript — Generics",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/generics.html"
+      },
+      {
+        "title": "TypeScript — Narrowing (unknown)",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html"
+      }
+    ]
   }
 ]
