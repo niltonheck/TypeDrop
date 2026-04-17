@@ -2013,5 +2013,41 @@
         "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html"
       }
     ]
+  },
+  {
+    "date": "2026-04-17",
+    "name": "Typed Query Plan Builder",
+    "difficulty": "Hard",
+    "description": "You're building the query planning layer for an in-memory analytics engine. Raw query descriptors arrive as unknown JSON from a REST API; your planner must validate them, compile them into a strongly-typed execution plan through a composable operator pipeline, execute each operator with typed intermediate results, and surface a discriminated-union outcome per stage — with zero `any`.",
+    "snippet": "// Key types and main orchestrator signature\n\ntype OperatorExecutor<O extends PlanOperator> =\n  (operator: O, rows: ReadonlyArray<Row>, registry: TableRegistry)\n    => Result<ReadonlyArray<Row>, QueryError>;\n\ntype ExecutorRegistry = {\n  [K in OperatorKind]: OperatorExecutor<Extract<PlanOperator, { kind: K }>>;\n};\n\n// Discriminated operator union (one variant shown):\ninterface FilterOperatorNode { readonly kind: \"filter\"; readonly clause: FilterClause; }\ninterface ScanOperator       { readonly kind: \"scan\";   readonly table: TableName; }\n// … + project | groupBy | sort | limit\n\n// Top-level orchestrator — compose all four stages:\nfunction runQuery(\n  raw: unknown,\n  registry: TableRegistry\n): Result<QueryReport, QueryError>;\n",
+    "goals": [
+      "Define `OperatorExecutor<O>` as a generic function type constrained to `PlanOperator` variants, and `ExecutorRegistry` as a mapped type using `Extract` to pair each `OperatorKind` key with its correctly-typed executor.",
+      "Implement `validateQuery` to safely narrow `unknown` input into a `ValidatedQuery`, branding all field and table name strings, and returning typed `QueryError` discriminants on every violation.",
+      "Implement `buildPlan` to compile a `ValidatedQuery` into an ordered `ExecutionPlan`, enforcing the groupBy-select compatibility rule and emitting only the operators that apply.",
+      "Implement `executePlan` to fold over the plan's operator array, dispatch each operator through the `ExecutorRegistry`, collect per-stage metrics, and short-circuit on the first execution error."
+    ],
+    "hints": [
+      "For `ExecutorRegistry`, the mapped type key `K` extends `OperatorKind` — use `Extract<PlanOperator, { kind: K }>` as the type argument to `OperatorExecutor<…>` so each executor is narrowed to its exact operator variant.",
+      "Inside `executePlan`, a `switch (operator.kind)` over the discriminant lets TypeScript narrow `operator` to the specific variant, allowing you to index `executors[operator.kind]` with the correctly-typed argument without any cast.",
+      "Brand `FieldName` and `TableName` by writing a runtime-validated helper (e.g. `toFieldName(s: string): FieldName`) that asserts the non-empty invariant before returning `s as FieldName` — keep the cast inside the helper so the rest of the code stays assertion-free."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript Handbook — Mapped Types",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/mapped-types.html"
+      },
+      {
+        "title": "TypeScript Handbook — Conditional Types & Extract",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/conditional-types.html"
+      },
+      {
+        "title": "TypeScript Handbook — Narrowing (type predicates & discriminated unions)",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html"
+      },
+      {
+        "title": "TypeScript Handbook — Generics (constraints)",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/generics.html#generic-constraints"
+      }
+    ]
   }
 ]
