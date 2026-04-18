@@ -2049,5 +2049,41 @@
         "url": "https://www.typescriptlang.org/docs/handbook/2/generics.html#generic-constraints"
       }
     ]
+  },
+  {
+    "date": "2026-04-18",
+    "name": "Typed Notification Router",
+    "difficulty": "Medium",
+    "description": "You're building the notification dispatch layer for a multi-channel messaging platform. Raw notification payloads arrive as unknown JSON from a message queue; your router must validate them, fan-out to the correct typed channel handlers, and produce a structured per-recipient delivery report — with zero `any`.",
+    "snippet": "// Core discriminated union — channel is the discriminant\ntype NotificationPayload =\n  | { channel: \"email\";   to: string; subject: string; body: string }\n  | { channel: \"sms\";     to: string; body: string }\n  | { channel: \"push\";    deviceToken: string; title: string; body: string }\n  | { channel: \"webhook\"; url: string; eventType: string; data: Record<string, string | number | boolean> };\n\n// Generic handler constrained to one variant\ntype ChannelHandler<T extends NotificationPayload> = (payload: T) => Promise<DeliveryResult>;\n\n// Mapped registry — Extract picks the right variant per key\ntype HandlerRegistry = {\n  [K in NotificationPayload[\"channel\"]]: ChannelHandler<\n    Extract<NotificationPayload, { channel: K }>\n  >;\n};\n\n// Validate unknown → NotificationPayload or throw\nfunction validatePayload(raw: unknown): NotificationPayload { ... }\n\n// Fan-out to handlers concurrently, aggregate into a report\nasync function routeNotifications(\n  rawPayloads: unknown[],\n  registry: HandlerRegistry\n): Promise<DispatchReport> { ... }\n",
+    "goals": [
+      "Implement `validatePayload` to narrow `unknown` → `NotificationPayload` with channel-specific field rules, throwing descriptive errors on any violation.",
+      "Define the `HandlerRegistry` mapped type so each channel key maps to a `ChannelHandler` typed to the exact matching `NotificationPayload` variant via `Extract<>`.",
+      "Implement `routeNotifications` to validate and fan-out all payloads concurrently with `Promise.allSettled`, capturing both validation and handler errors as `DeliveryFailure`.",
+      "Implement `createRegistry` as a one-liner using the `satisfies` operator so the caller's object is type-checked against `HandlerRegistry` without widening its inferred type."
+    ],
+    "hints": [
+      "For the `HandlerRegistry` mapped type, `[K in NotificationPayload[\"channel\"]]` gives you each channel string as a key — pair it with `Extract<NotificationPayload, { channel: K }>` to get the exact variant.",
+      "In `validatePayload`, a `switch` on the `channel` field after confirming it's a string lets TypeScript narrow subsequent field checks — no type assertions needed.",
+      "`Promise.allSettled` returns `PromiseSettledResult<T>[]`; check `.status === 'fulfilled'` vs `'rejected'` to safely extract values or error messages for the report."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript Handbook — Discriminated Unions",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html#discriminated-unions"
+      },
+      {
+        "title": "TypeScript Handbook — Mapped Types",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/mapped-types.html"
+      },
+      {
+        "title": "TypeScript Utility Types — Extract",
+        "url": "https://www.typescriptlang.org/docs/handbook/utility-types.html#extracttype-union"
+      },
+      {
+        "title": "MDN — Promise.allSettled",
+        "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise/allSettled"
+      }
+    ]
   }
 ]
