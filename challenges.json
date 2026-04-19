@@ -2085,5 +2085,41 @@
         "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise/allSettled"
       }
     ]
+  },
+  {
+    "date": "2026-04-19",
+    "name": "Typed Workflow Orchestrator",
+    "difficulty": "Hard",
+    "description": "You're building the workflow execution engine for a low-code automation platform. Raw workflow definitions arrive as unknown JSON from a user-facing editor; your orchestrator must validate them, compile each step into a strongly-typed execution graph, run steps with concurrency limits and retry logic, and emit a discriminated-union result per step — with zero `any`.",
+    "snippet": "\n// Key types at a glance\n\ntype WorkflowStep =\n  | HttpStep        // { kind: \"http\";      url, method, body?, dependsOn }\n  | TransformStep   // { kind: \"transform\"; expression, dependsOn }\n  | ConditionStep   // { kind: \"condition\"; predicate, thenStepId, elseStepId, dependsOn }\n  | DelayStep;      // { kind: \"delay\";     ms, dependsOn }\n\n// Mapped type: each step kind → a strongly-typed async handler\ntype StepHandlerMap = {\n  [K in WorkflowStep[\"kind\"]]: (\n    step: Extract<WorkflowStep, { kind: K }>,\n    ctx: ExecutionContext\n  ) => Promise<unknown>;\n};\n\n// Result monad used throughout\ntype Result<T, E> = { ok: true; value: T } | { ok: false; error: E };\n\n// Main entry point\nasync function runWorkflow(\n  rawWorkflow: unknown,       // validated at runtime\n  handlers:    StepHandlerMap,\n  config:      ExecutorConfig // { concurrency, maxRetries, retryBaseMs }\n): Promise<ExecutionReport>\n",
+    "goals": [
+      "Implement `validateStep` and `validateWorkflow` to narrow `unknown` JSON into the `WorkflowStep` discriminated union and `Workflow` type using the `Result<T,E>` pattern — with zero `as` casts in your logic.",
+      "Implement `topoSort` using Kahn's algorithm to produce a dependency-respecting execution order and return `Err` on cycle detection.",
+      "Implement `orchestrate` to execute steps concurrently (up to `config.concurrency`), skip steps whose dependencies failed, handle `ConditionStep` branch skipping, and retry failing steps with exponential back-off.",
+      "Implement `runWorkflow` as the public entry point that composes validation and orchestration, returning a well-formed `ExecutionReport` even when validation fails."
+    ],
+    "hints": [
+      "For `StepHandlerMap`, write `[K in WorkflowStep[\"kind\"]]` and use `Extract<WorkflowStep, { kind: K }>` to get the exact step type for each handler — this is the core mapped-type trick.",
+      "In `orchestrate`, maintain a `Set<StepId>` of completed/failed steps and a queue; on each tick, dispatch all steps whose `dependsOn` are fully resolved, then `await Promise.race` to stay within the concurrency limit.",
+      "For retry back-off, a simple `await new Promise(r => setTimeout(r, config.retryBaseMs * 2 ** attempt))` inside a loop is all you need — track `attempts` to populate `StepFailure`."
+    ],
+    "docs": [
+      {
+        "title": "TS Handbook — Mapped Types",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/mapped-types.html"
+      },
+      {
+        "title": "TS Handbook — Conditional Types & Extract",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/conditional-types.html"
+      },
+      {
+        "title": "TS Handbook — Narrowing",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html"
+      },
+      {
+        "title": "MDN — Promise.race",
+        "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise/race"
+      }
+    ]
   }
 ]
