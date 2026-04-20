@@ -2121,5 +2121,41 @@
         "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise/race"
       }
     ]
+  },
+  {
+    "date": "2026-04-20",
+    "name": "Typed Event Stream Aggregator",
+    "difficulty": "Medium",
+    "description": "You're building the real-time analytics backend for a product telemetry platform. Raw event objects arrive as `unknown` from a WebSocket feed; your aggregator must validate them, route them to per-event-type handlers, and produce a strongly-typed session summary — with zero `any`.",
+    "snippet": "// Key types and main function signature preview\n\nexport type EventKind =\n  | \"page_view\" | \"button_click\" | \"error\" | \"purchase\" | \"session_end\";\n\n// Discriminated union — one member shown as example:\n// { kind: \"purchase\"; sessionId: string; timestamp: number;\n//   orderId: string; amountCents: number; currency: string }\nexport type TelemetryEvent = /* your discriminated union */ never;\n\nexport type SessionSummary = {\n  sessionId      : string;\n  pageViews      : string[];\n  clicks         : Record<string, number>;\n  errors         : Array<{ code: number; message: string; fatal: boolean }>;\n  totalSpentCents: number;\n  currencies     : Set<string>;\n  endedAt        : number | null;\n};\n\nexport type EventHandlerMap =\n  { [K in EventKind]: (event: Extract<TelemetryEvent, { kind: K }>) => void };\n\nexport function parseTelemetryEvent(raw: unknown): TelemetryEvent | null { /* TODO */ return null; }\n\nexport function aggregateSession(\n  sessionId : string,\n  rawEvents : unknown[],\n): AggregationReport { /* TODO */ return null!; }",
+    "goals": [
+      "Define a discriminated union `TelemetryEvent` with 5 variants sharing `sessionId` and `timestamp` fields.",
+      "Implement `parseTelemetryEvent` as a type-guard that narrows `unknown` to `TelemetryEvent | null` using narrowing only — no `as`.",
+      "Build an `EventHandlerMap` mapped type and `createHandlerMap` factory that routes each event kind to a handler mutating a `SessionSummary`.",
+      "Implement `aggregateSession` that parses, filters by session ID, routes events, and returns a fully-typed `AggregationReport`."
+    ],
+    "hints": [
+      "A mapped type `{ [K in EventKind]: (e: Extract<TelemetryEvent, { kind: K }>) => void }` lets TypeScript verify every kind has a handler — and gives each handler a narrowed event type for free.",
+      "In `parseTelemetryEvent`, check `typeof raw === 'object' && raw !== null` first, then use `'url' in raw` style checks for each variant — the compiler will narrow the type at each step.",
+      "Track `kindCounts` as `Record<EventKind, number>` initialised with all five keys set to `0`; updating it inside `aggregateSession` (not inside the handlers) keeps the report logic clean."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript Handbook — Discriminated Unions",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html#discriminated-unions"
+      },
+      {
+        "title": "TypeScript Handbook — Mapped Types",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/mapped-types.html"
+      },
+      {
+        "title": "TypeScript Utility Types — Extract",
+        "url": "https://www.typescriptlang.org/docs/handbook/utility-types.html#extracttype-union"
+      },
+      {
+        "title": "TypeScript Handbook — Narrowing (type guards)",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html"
+      }
+    ]
   }
 ]
