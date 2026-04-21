@@ -2157,5 +2157,41 @@
         "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html"
       }
     ]
+  },
+  {
+    "date": "2026-04-21",
+    "name": "Typed Schema Migration Engine",
+    "difficulty": "Hard",
+    "description": "You're building the schema migration engine for a multi-tenant database platform. Raw migration manifests arrive as `unknown` JSON from a CI/CD pipeline; your engine must validate them, compile each migration into a strongly-typed dependency graph, execute migrations in topological order with concurrency limits and rollback support, and emit a discriminated-union result per migration — with zero `any`.",
+    "snippet": "\n// Key types & main orchestrator signature\n\nexport type MigrationId = string & { readonly __brand: \"MigrationId\" };\n\nexport type MigrationResult =\n  | { status: \"applied\";    id: MigrationId; durationMs: number }\n  | { status: \"skipped\";    id: MigrationId; reason: string }\n  | { status: \"failed\";     id: MigrationId; error: ExecutionError }\n  | { status: \"rolledBack\"; id: MigrationId; error: ExecutionError };\n\nexport type EngineReport =\n  | { outcome: \"success\";         results: MigrationResult[]; totalMs: number }\n  | { outcome: \"partial_failure\"; results: MigrationResult[]; totalMs: number; firstFailure: MigrationId }\n  | { outcome: \"validation_error\"; errors: ValidationError[] }\n  | { outcome: \"graph_error\";      error: GraphError };\n\nexport type ExecutorFn = (\n  id: MigrationId,\n  sql: string,\n  direction: \"up\" | \"down\"\n) => Promise<{ ok: true } | { ok: false; reason: string }>;\n\n/** Validates → compiles graph → executes waves → returns structured report. */\nexport async function runEngine(\n  rawManifest: unknown,\n  executor: ExecutorFn,\n  options?: Partial<EngineOptions>\n): Promise<EngineReport> { /* TODO */ }\n",
+    "goals": [
+      "Implement `validateManifest` to narrow `unknown` input into `ValidMigration[]`, accumulating ALL `ValidationError`s (field errors, duplicates, unknown deps) without short-circuiting, and brand valid ids as `MigrationId` without using `as`.",
+      "Implement `compileGraph` to build a typed dependency graph, detect cycles with a path-reporting DFS or Kahn's algorithm, and produce topologically sorted `waves` of concurrently-runnable migrations.",
+      "Implement `runMigrations` to process waves sequentially with bounded concurrency (`Promise.allSettled`), skip already-applied migrations, and on failure optionally roll back all applied migrations in reverse order — emitting a discriminated-union `MigrationResult` per migration.",
+      "Wire everything together in `runEngine` with proper `Partial<EngineOptions>` default-filling and correct `EngineReport` propagation from each stage."
+    ],
+    "hints": [
+      "For branding `MigrationId` without `as`, write a type predicate `function isMigrationId(s: string): s is MigrationId` that validates the string, then call it inside `validateManifest` — the narrowed type flows automatically.",
+      "Kahn's algorithm (in-degree queue) naturally produces topological waves: all nodes with in-degree 0 form wave 0; decrement neighbors and collect the next zero-in-degree batch for wave 1, and so on — cycle detection is free (remaining non-zero in-degree nodes).",
+      "Track applied migrations in a local `MigrationId[]` (push on success); on rollback iterate with `.reverse()` and call the executor with `direction: \"down\"` — `Promise.allSettled` ensures you capture every settled result even when some reject."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript Handbook — Narrowing",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html"
+      },
+      {
+        "title": "TypeScript Handbook — Template Literal & Branded Types",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/template-literal-types.html"
+      },
+      {
+        "title": "MDN — Promise.allSettled()",
+        "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise/allSettled"
+      },
+      {
+        "title": "TypeScript Deep Dive — Discriminated Unions",
+        "url": "https://basarat.gitbook.io/typescript/type-system/discriminated-unions"
+      }
+    ]
   }
 ]
