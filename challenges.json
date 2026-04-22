@@ -2193,5 +2193,41 @@
         "url": "https://basarat.gitbook.io/typescript/type-system/discriminated-unions"
       }
     ]
+  },
+  {
+    "date": "2026-04-22",
+    "name": "Typed API Response Cache",
+    "difficulty": "Medium",
+    "description": "You're building the caching layer for a typed REST API client used across a large frontend monorepo. Raw responses arrive as `unknown` from fetch; your cache must validate them, store them with TTL-aware entries, and serve requests through a stale-while-revalidate strategy — with zero `any`.",
+    "snippet": "// Core types and main class signature\n\nexport type Result<T, E extends string = string> =\n  | { ok: true; value: T }\n  | { ok: false; error: E };\n\nexport type Validator<T> = (raw: unknown) => Result<T, string>;\n\nexport type CacheEntry<T> = { /* value, storedAt, ttl */ };\n\nexport type CacheStatus<T> =\n  | { status: \"hit\";   value: T }\n  | { status: \"stale\"; value: T }\n  | { status: \"miss\" };\n\nexport type RevalidationResult<T> =\n  | { revalidated: true;  key: string; value: T }\n  | { revalidated: false; key: string; error: string };\n\nexport class TypedCache<T> {\n  constructor(\n    private readonly defaultTtl: number,\n    private readonly validator: Validator<T>\n  ) {}\n\n  set(key: string, raw: unknown, ttl?: number): Result<T, string> { ... }\n  get(key: string): CacheStatus<T> { ... }\n  delete(key: string): boolean { ... }\n  async revalidate(key: string, fetchFn: FetchFn): Promise<RevalidationResult<T>> { ... }\n  async getOrFetch(key: string, fetchFn: FetchFn): Promise<Result<T, string>> { ... }\n  purgeExpired(): number { ... }\n}",
+    "goals": [
+      "Define `CacheEntry<T>`, `CacheStatus<T>`, and `RevalidationResult<T>` as fully-typed discriminated unions and generic types.",
+      "Implement `buildValidator` using a mapped-type `shape` parameter that narrows `unknown` to `T` without `any` or type assertions.",
+      "Implement all six `TypedCache<T>` methods (`set`, `get`, `delete`, `revalidate`, `getOrFetch`, `purgeExpired`) with correct TTL logic and typed return values.",
+      "Ensure every code path is covered by the discriminant checks so TypeScript's exhaustiveness analysis is satisfied."
+    ],
+    "hints": [
+      "For `CacheStatus<T>`, give each variant a `status` string literal field — TypeScript will use it as the discriminant when you narrow with `if (s.status === 'hit')`.",
+      "In `buildValidator`, iterate over `Object.keys(shape)` and cast the key as `keyof T` — the mapped-type constraint on `shape` gives you the predicate for each field without needing `any`.",
+      "In `getOrFetch`, check the result of `this.get(key)` first: only skip the fetch when `status === 'hit'`; treat both `'miss'` and `'stale'` as needing a fresh fetch."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript Handbook — Discriminated Unions",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html#discriminated-unions"
+      },
+      {
+        "title": "TypeScript Handbook — Mapped Types",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/mapped-types.html"
+      },
+      {
+        "title": "TypeScript Handbook — Generics",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/generics.html"
+      },
+      {
+        "title": "MDN — Map object",
+        "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Map"
+      }
+    ]
   }
 ]
