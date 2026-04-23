@@ -2229,5 +2229,41 @@
         "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Map"
       }
     ]
+  },
+  {
+    "date": "2026-04-23",
+    "name": "Typed Shopping Cart Aggregator",
+    "difficulty": "Easy",
+    "description": "You're building the order summary engine for a small e-commerce storefront. Raw cart line items arrive as `unknown` JSON from the client; your engine must validate them, apply typed discount rules, and produce a strongly-typed order summary — with zero `any`.",
+    "snippet": "// Key types you'll work with:\n\ntype Category = \"electronics\" | \"clothing\" | \"food\" | \"books\";\n\ntype DiscountRule =\n  | { kind: \"percentage\"; percent: number; category?: Category }\n  | { kind: \"fixed\"; amountOff: number; minimumSubtotal: number };\n\ntype Result<T, E> = /* TODO */ never;\n\ntype CartValidationError =\n  | { kind: \"empty_cart\" }\n  | { kind: \"invalid_item\"; index: number; reason: string }\n  | { kind: \"invalid_discount\"; index: number; reason: string };\n\n// Main entry point:\nfunction buildOrderSummary(\n  rawItems: unknown[],\n  rawDiscounts: unknown[]\n): Result<OrderSummary, CartValidationError>\n",
+    "goals": [
+      "Define a generic `Result<T, E>` discriminated union and use it as the return type for all three functions.",
+      "Implement `parseLineItem` to validate an `unknown` value into a `LineItem` with a computed subtotal, returning typed errors on failure.",
+      "Implement `validateDiscount` to validate an `unknown` value into a `DiscountRule`, branching correctly on the `kind` discriminant.",
+      "Implement `buildOrderSummary` to validate all inputs, apply ordered discount rules, and produce a fully-typed `OrderSummary`."
+    ],
+    "hints": [
+      "Start with `Result<T, E>` — it's a two-member discriminated union on an `ok` boolean field; all three functions return it.",
+      "To check if a value belongs to a union like `Category`, declare a `const VALID_CATEGORIES` tuple and use `Array.prototype.includes` with a type predicate.",
+      "In `buildOrderSummary`, compute per-category subtotals with a `Record<Category, number>` accumulator before finding `topCategory`."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript Handbook — Discriminated Unions",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html#discriminated-unions"
+      },
+      {
+        "title": "TypeScript Handbook — Narrowing (typeof / in / user-defined guards)",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html"
+      },
+      {
+        "title": "TypeScript Handbook — Generics",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/generics.html"
+      },
+      {
+        "title": "MDN — Array.prototype.includes",
+        "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/includes"
+      }
+    ]
   }
 ]
