@@ -2265,5 +2265,41 @@
         "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/includes"
       }
     ]
+  },
+  {
+    "date": "2026-04-24",
+    "name": "Typed Permission Policy Evaluator",
+    "difficulty": "Hard",
+    "description": "You're building the authorization engine for a multi-tenant SaaS platform. Raw policy documents arrive as `unknown` JSON from an admin dashboard; your engine must validate them, compile each rule into a strongly-typed decision graph, evaluate access requests against matching policies using precedence logic, and emit a discriminated-union verdict per request — with zero `any`.",
+    "snippet": "// Key types & main evaluator signature — challenge preview\n\ntype Verdict =\n  | { readonly decision: \"allow\";          readonly matchedRule: RuleMatch }\n  | { readonly decision: \"deny\";           readonly matchedRule: RuleMatch }\n  | { readonly decision: \"deny-no-match\"                                   }\n  | { readonly decision: \"deny-condition\"; readonly matchedRule: RuleMatch;\n      readonly failures: ReadonlyArray<ConditionFailure> };\n\ntype RuleMatch = {\n  readonly policyId: PolicyId;\n  readonly ruleId:   string;\n  readonly effect:   \"allow\" | \"deny\";\n  readonly priority: number;\n};\n\n// Parse raw unknown JSON into a validated, branded Policy\nfunction parsePolicy(raw: unknown): Result<Policy, ValidationError> { … }\n\n// Evaluate a single access request against all applicable policies\nfunction evaluate(ctx: RequestContext, store: IPolicyStore): Verdict { … }\n\n// Evaluate many requests, returning parallel results\nfunction evaluateBatch(\n  requests: ReadonlyArray<RequestContext>,\n  store: IPolicyStore,\n): ReadonlyArray<BatchResult> { … }\n",
+    "goals": [
+      "Implement `parsePolicy` to validate raw `unknown` JSON into a fully branded, strongly-typed `Policy` using a fail-fast `Result<T, E>` monad — no `any`, no type assertions.",
+      "Implement `evaluateCondition` with an exhaustive discriminated-union switch that returns a typed `ConditionFailure` or `null`, covering all four condition kinds.",
+      "Implement `evaluate` to fetch applicable policies from the typed `PolicyStore`, select the single highest-priority matching rule, evaluate its conditions, and return the correct discriminated-union `Verdict`.",
+      "Implement `formatVerdict` with an exhaustive switch (guarded by a `never` check) that produces human-readable output for all four `Verdict` variants."
+    ],
+    "hints": [
+      "For branded types without `any` or `as`, look into using a generic identity function constrained to the brand shape — `function brand<B extends Brand<string, string>>(s: string): B` won't compile; think about what *does* work at the call site under `strict: true`.",
+      "Your `evaluateCondition` switch must handle every `Condition` kind — add a `default: (c: never) => ...` branch and TypeScript will tell you if you've missed one.",
+      "In `evaluate`, collect *all* condition failures for the top rule before deciding — don't short-circuit on the first failure, so the `deny-condition` verdict includes the full `failures` array."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript Handbook — Narrowing",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html"
+      },
+      {
+        "title": "TypeScript Handbook — Conditional Types & infer",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/conditional-types.html"
+      },
+      {
+        "title": "TypeScript Handbook — Mapped Types",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/mapped-types.html"
+      },
+      {
+        "title": "TypeScript Handbook — Template Literal Types",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/template-literal-types.html"
+      }
+    ]
   }
 ]
