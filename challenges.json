@@ -2301,5 +2301,41 @@
         "url": "https://www.typescriptlang.org/docs/handbook/2/template-literal-types.html"
       }
     ]
+  },
+  {
+    "date": "2026-04-25",
+    "name": "Typed Job Queue Processor",
+    "difficulty": "Medium",
+    "description": "You're building the background job processing engine for a task automation platform. Raw job payloads arrive as `unknown` from a message broker; your processor must validate them, dispatch each job to a strongly-typed handler, enforce per-job-type retry policies, and produce a discriminated-union result per job — with zero `any`.",
+    "snippet": "// Key types and main function signatures\n\nexport type Job = SendEmailJob | ResizeImageJob | GenerateReportJob;\n\nexport type JobResult<J extends Job> = JobSuccess<J> | JobFailure<J>;\n\n// Mapped type: each kind maps to the handler for THAT specific subtype\nexport type HandlerMap = {\n  [K in Job[\"kind\"]]: JobHandler<Extract<Job, { kind: K }>>;\n};\n\n// Validate unknown → Job (throws TypeError on bad input)\nexport function parseJob(raw: unknown): Job { /* TODO */ }\n\n// Retry-aware executor\nexport async function processJob<J extends Job>(\n  job: J,\n  handler: JobHandler<J>,\n  policy: RetryPolicy,\n): Promise<JobResult<J>> { /* TODO */ }\n\n// Top-level entry point: parse → dispatch → result\nexport async function dispatch(\n  raw: unknown,\n  handlers: HandlerMap,\n): Promise<JobResult<Job>> { /* TODO */ }",
+    "goals": [
+      "Define the `Job` discriminated union, `JobResult<J>` generic, `JobHandler<J>` alias, and the distributive `HandlerMap` mapped type.",
+      "Implement `parseJob` to safely narrow `unknown` → `Job` with field-level validation and zero type assertions.",
+      "Implement `processJob` with attempt tracking, wall-clock timing, fixed-backoff retry logic, and correct `JobSuccess`/`JobFailure` return types.",
+      "Implement `dispatch` to orchestrate parsing, handler/policy lookup by `job.kind`, and result propagation — keeping all types sound."
+    ],
+    "hints": [
+      "For `HandlerMap`, use `Extract<Job, { kind: K }>` inside the mapped type to get the exact subtype for each key — this makes each handler precisely typed.",
+      "In `parseJob`, use `in` operator narrowing and `typeof` checks to validate each field without ever reaching for `as`.",
+      "Track `const start = Date.now()` before the retry loop and compute `durationMs` only once at the end — both success and failure paths need it."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript: Discriminated Unions",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html#discriminated-unions"
+      },
+      {
+        "title": "TypeScript: Mapped Types",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/mapped-types.html"
+      },
+      {
+        "title": "TypeScript: `satisfies` operator",
+        "url": "https://www.typescriptlang.org/docs/handbook/release-notes/typescript-4-9.html#the-satisfies-operator"
+      },
+      {
+        "title": "TypeScript: Conditional Types & `Extract`",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/conditional-types.html"
+      }
+    ]
   }
 ]
