@@ -2337,5 +2337,41 @@
         "url": "https://www.typescriptlang.org/docs/handbook/2/conditional-types.html"
       }
     ]
+  },
+  {
+    "date": "2026-04-26",
+    "name": "Typed Real-Time Metrics Aggregator",
+    "difficulty": "Hard",
+    "description": "You're building the telemetry ingestion pipeline for a distributed observability platform. Raw metric events arrive as `unknown` from multiple instrumentation agents; your engine must validate them, route each event to a strongly-typed aggregator strategy, perform single-pass windowed aggregation with concurrency-safe flushing, and emit a discriminated-union report per metric series — with zero `any`.",
+    "snippet": "// Core types & main engine signature — real-world telemetry pipeline\n\ntype Brand<T, B extends string> = T & { readonly [__brand]: B };\ndeclare const __brand: unique symbol;\n\nexport type MetricName  = Brand<string, \"MetricName\">;\nexport type AgentId     = Brand<string, \"AgentId\">;\nexport type WindowMs    = Brand<number, \"WindowMs\">;\nexport type SeriesKey   = `${MetricName}::${AgentId}`;\n\nexport type RawMetricEvent =\n  | { kind: \"counter\";   name: string; agentId: string; value: number;                timestampMs: number }\n  | { kind: \"gauge\";     name: string; agentId: string; value: number;                timestampMs: number }\n  | { kind: \"histogram\"; name: string; agentId: string; buckets: number[];            timestampMs: number }\n  | { kind: \"summary\";   name: string; agentId: string; quantiles: [number, number][]; timestampMs: number };\n\n// ValidatedEvent<K> — branded version of the matching RawMetricEvent member\nexport type ValidatedEvent<K extends RawMetricEvent[\"kind\"]> = /* TODO */;\n\n// AggregatorStrategy — typed per metric kind\nexport interface AggregatorStrategy<K extends RawMetricEvent[\"kind\"]> {\n  ingest(event: ValidatedEvent<K>): void;\n  flush(windowMs: WindowMs): Promise<Extract<AggregationResult, { kind: K }> | null>;\n}\n\n// Main engine\nexport class MetricsAggregator {\n  constructor(registry: StrategyRegistry, windowMs: WindowMs) { /* TODO */ }\n  ingest(raw: unknown): ValidationResult { /* TODO */ }\n  flushAll(): Promise<FlushReport[]>     { /* TODO */ }\n  activeSeries(): SeriesKey[]            { /* TODO */ }\n}\n",
+    "goals": [
+      "Define `ValidatedEvent<K>` using `Extract` and field remapping to replace `name`, `agentId`, and `timestampMs` with their branded counterparts while preserving all other payload fields.",
+      "Implement `validateEvent` to safely narrow `unknown` → `RawMetricEvent` → `ValidatedEvent<K>` with full kind-specific payload checks and no `as`/`any` (except the single provided brand helper).",
+      "Implement all four `AggregatorStrategy` classes (`CounterStrategy`, `GaugeStrategy`, `HistogramStrategy`, `SummaryStrategy`) with correct aggregation logic and return types constrained by `Extract<AggregationResult, { kind: K }>`.",
+      "Implement `MetricsAggregator` to route validated events to per-series strategy instances, concurrently flush all series via `Promise.all`, clear state after flushing, and emit discriminated `FlushReport` results including error capture."
+    ],
+    "hints": [
+      "For `ValidatedEvent<K>`, start with `Extract<RawMetricEvent, { kind: K }>` then use the `Omit` + intersection pattern to swap out `name`, `agentId`, and `timestampMs` for their branded types.",
+      "For the `StrategyRegistry` mapped type, iterate over `RawMetricEvent[\"kind\"]` with `{ [K in RawMetricEvent[\"kind\"]]: () => AggregatorStrategy<K> }` — this gives you a factory per kind with the K correctly bound.",
+      "In `flushAll`, wrap each `strategy.flush(windowMs)` call in a `.then(...).catch(...)` chain before passing to `Promise.all` so individual failures become `{ status: \"error\" }` reports rather than rejecting the whole batch."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript Handbook — Conditional Types & infer",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/conditional-types.html"
+      },
+      {
+        "title": "TypeScript Handbook — Mapped Types",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/mapped-types.html"
+      },
+      {
+        "title": "TypeScript Handbook — Template Literal Types",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/template-literal-types.html"
+      },
+      {
+        "title": "MDN — Promise.all",
+        "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise/all"
+      }
+    ]
   }
 ]
