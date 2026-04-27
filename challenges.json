@@ -2373,5 +2373,41 @@
         "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise/all"
       }
     ]
+  },
+  {
+    "date": "2026-04-27",
+    "name": "Typed Notification Router",
+    "difficulty": "Easy",
+    "description": "You're building the notification dispatch layer for a productivity app. Raw notification payloads arrive as `unknown` from a webhook endpoint; your router must validate them, fan them out to strongly-typed per-channel handlers, and collect a discriminated-union delivery report per notification — with zero `any`.",
+    "snippet": "// Key types & main function signatures\n\nexport type EmailNotification = {\n  channel: \"email\";\n  to: string;\n  subject: string;\n  body: string;\n};\nexport type SmsNotification  = { channel: \"sms\";  to: string; message: string };\nexport type PushNotification = { channel: \"push\"; deviceToken: string; title: string; body: string };\n\nexport type Notification = EmailNotification | SmsNotification | PushNotification;\n\n// status:\"delivered\" carries sentAt; status:\"failed\" carries reason\nexport type DeliveryReport = never; // TODO — replace with discriminated union\n\nexport function parseNotification(raw: unknown): Notification { … }\nexport function routeNotification(n: Notification): DeliveryReport { … }\nexport function processAll(raws: unknown[]): DeliveryReport[] { … }",
+    "goals": [
+      "Define the `Notification` discriminated union with channel-specific fields for email, sms, and push variants.",
+      "Implement `parseNotification` to narrow `unknown` → `Notification` using type guards, throwing `ValidationError` on invalid input.",
+      "Define the `DeliveryReport` discriminated union and implement `routeNotification` with an exhaustive switch that the compiler enforces.",
+      "Implement `processAll` to parse and route a batch, converting parse failures into `{ status: 'failed', channel: 'unknown' }` reports."
+    ],
+    "hints": [
+      "A helper like `isRecord(v: unknown): v is Record<string, unknown>` makes nested property checks safe without `as`.",
+      "For an exhaustive switch, add a `default` branch that passes the value to a `(x: never) => never` helper — the compiler will error if any variant is unhandled.",
+      "Use `Notification[\"channel\"] | \"unknown\"` as the type for the `channel` field in `DeliveryReport` to cover the parse-failure fallback."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript — Narrowing",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html"
+      },
+      {
+        "title": "TypeScript — Discriminated Unions",
+        "url": "https://www.typescriptlang.org/docs/handbook/typescript-in-5-minutes-func.html#discriminated-unions"
+      },
+      {
+        "title": "TypeScript — Indexed Access Types",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/indexed-access-types.html"
+      },
+      {
+        "title": "MDN — instanceof operator",
+        "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/instanceof"
+      }
+    ]
   }
 ]
