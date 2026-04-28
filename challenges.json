@@ -2409,5 +2409,41 @@
         "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/instanceof"
       }
     ]
+  },
+  {
+    "date": "2026-04-28",
+    "name": "Typed API Rate-Limiter Middleware Chain",
+    "difficulty": "Hard",
+    "description": "You're building the gateway middleware layer for a multi-tenant REST API platform. Raw inbound requests arrive as `unknown` from the network edge; your engine must validate them, route each request through a composable chain of strongly-typed rate-limiter strategies (token bucket, sliding window, concurrency cap), and emit a discriminated-union decision — with zero `any`.",
+    "snippet": "// Key types and main entry point — challenge.ts (preview)\n\ntype TenantId  = string & { readonly __brand: \"TenantId\" };\ntype RouteKey  = string & { readonly __brand: \"RouteKey\" };\ntype TimestampMs = number & { readonly __brand: \"TimestampMs\" };\n\ntype RateLimiterStrategy =\n  | { readonly type: \"TOKEN_BUCKET\";    readonly config: TokenBucketConfig;    state: TokenBucketState    }\n  | { readonly type: \"SLIDING_WINDOW\";  readonly config: SlidingWindowConfig;  state: SlidingWindowState  }\n  | { readonly type: \"CONCURRENCY_CAP\"; readonly config: ConcurrencyCapConfig; state: ConcurrencyCapState };\n\ntype Result<T, E> =\n  | { readonly ok: true;  readonly value: T }\n  | { readonly ok: false; readonly error: E };\n\ntype GatewayError =\n  | { readonly kind: \"VALIDATION_FAILED\"; inner: ValidationError }\n  | { readonly kind: \"RATE_LIMITED\";      inner: RateLimitError  }\n  | { readonly kind: \"MIDDLEWARE_PANIC\";  message: string        };\n\n// Main entry point — validate raw input, then run the middleware chain\nfunction processRequest(\n  raw: unknown,\n  chain: MiddlewareChain          // RateLimiterStrategy[]\n): Result<\"ALLOWED\", GatewayError> { /* TODO */ }\n",
+    "goals": [
+      "Implement branded-type constructors for `TenantId`, `RouteKey`, and `TimestampMs` without using `as` or `any`.",
+      "Implement `validateRequest` to narrow `unknown` input into a fully typed `ApiRequest`, returning a discriminated-union `Result` for every failure mode.",
+      "Implement `evaluateStrategy` with correct per-strategy state mutation (token refill, timestamp ring-buffer eviction, concurrency counter) and typed `RateLimitError` results.",
+      "Wire `processRequest`, `runChain`, `releaseSlot`, and `lookupChain` together so the full gateway pipeline — validation → chain evaluation → typed verdict — works end-to-end."
+    ],
+    "hints": [
+      "For branded constructors without `as`, try a generic helper `function brand<T extends string | number>(v: T): T & { readonly __brand: unique symbol }` — but note each brand needs its own unique symbol; a per-type `satisfies` on the return annotation is the cleanest escape hatch.",
+      "In `evaluateStrategy`, exhaustive narrowing on `strategy.type` in a `switch` statement lets TypeScript infer the exact config and state shapes in each branch — no extra type guards needed.",
+      "For `validateRequest`'s `meta` field, use `Object.entries` + `Array.prototype.reduce` to rebuild a `Record<string, string>` dropping non-string values, keeping the function free of `any`."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript Handbook — Narrowing",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html"
+      },
+      {
+        "title": "TypeScript Handbook — Mapped Types",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/mapped-types.html"
+      },
+      {
+        "title": "TypeScript Handbook — Generics",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/generics.html"
+      },
+      {
+        "title": "TypeScript 4.9 — `satisfies` operator",
+        "url": "https://www.typescriptlang.org/docs/handbook/release-notes/typescript-4-9.html#the-satisfies-operator"
+      }
+    ]
   }
 ]
