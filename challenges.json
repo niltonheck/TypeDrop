@@ -2445,5 +2445,41 @@
         "url": "https://www.typescriptlang.org/docs/handbook/release-notes/typescript-4-9.html#the-satisfies-operator"
       }
     ]
+  },
+  {
+    "date": "2026-04-29",
+    "name": "Typed Shopping Cart Aggregator",
+    "difficulty": "Easy",
+    "description": "You're building the order summary engine for an e-commerce storefront. Raw cart payloads arrive as `unknown` from a client-side checkout form; your engine must validate them, compute per-line totals with applied discounts, and return a strongly-typed order summary — with zero `any`.",
+    "snippet": "// Core types and main function signature\n\ntype Discount =\n  | { kind: \"percentage\"; rate: number }   // e.g. 0.1 = 10%\n  | { kind: \"fixed\"; amount: number };     // absolute deduction per item\n\ntype CartItem = {\n  id: string;\n  name: string;\n  quantity: number;        // positive integer\n  unitPrice: number;       // >= 0\n  discount?: Discount;\n};\n\ntype CartResult =\n  | { kind: \"success\"; summary: OrderSummary }\n  | { kind: \"error\"; error: CartValidationError };\n\n// Validate an unknown payload and produce a typed order summary\nfunction processCart(raw: unknown): CartResult { /* TODO */ }\n",
+    "goals": [
+      "Define `Discount`, `CartItem`, `LineTotal`, `OrderSummary`, `CartValidationError`, and `CartResult` types as specified in the requirements.",
+      "Implement `applyDiscount` using exhaustive discriminated-union narrowing on `Discount`, clamping the result to a minimum of 0.",
+      "Implement `parseCartItem` to validate an `unknown` value into a `CartItem`, throwing a typed `CartValidationError` on any invalid field.",
+      "Implement `processCart` to parse an `unknown` array, aggregate line totals into an `OrderSummary`, and return a `CartResult` discriminated union."
+    ],
+    "hints": [
+      "Use a `switch` on `discount.kind` (or `if`/`else` with narrowing) inside `applyDiscount` — TypeScript will enforce exhaustiveness if you add a `never` check in the default branch.",
+      "In `parseCartItem`, narrow `raw` step-by-step: first check `typeof raw === 'object' && raw !== null`, then use `'id' in raw` guards before accessing properties — no `as` needed.",
+      "The `CartValidationError` you throw inside `parseCartItem` is a plain object, not an `Error` instance — catch it in `processCart` and check its `kind` to wrap it in a `CartResult`."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript Handbook — Narrowing",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html"
+      },
+      {
+        "title": "TypeScript Handbook — Discriminated Unions",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html#discriminated-unions"
+      },
+      {
+        "title": "TypeScript Handbook — Unknown type",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/functions.html#unknown"
+      },
+      {
+        "title": "MDN — Array.isArray()",
+        "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/isArray"
+      }
+    ]
   }
 ]
