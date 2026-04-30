@@ -2481,5 +2481,41 @@
         "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/isArray"
       }
     ]
+  },
+  {
+    "date": "2026-04-30",
+    "name": "Typed Paginated API Client",
+    "difficulty": "Medium",
+    "description": "You're building the data-fetching layer for an analytics dashboard that consumes a paginated REST API. Raw page responses arrive as `unknown` from the network; your client must validate each page, lazily accumulate results with a configurable concurrency limit, and surface a discriminated-union outcome per fetch — with zero `any`.",
+    "snippet": "// Key types and main function signature\n\ninterface PageResponse<T> {\n  items:    T[];\n  page:     number;\n  pageSize: number;\n  total:    number;\n}\n\ntype FetchResult<T> =\n  | { status: \"ok\";      page: number; items: T[]   }\n  | { status: \"invalid\"; page: number; error: string }\n  | { status: \"failed\";  page: number; error: string };\n\ninterface FetchAllOptions  { concurrency: number; }\ninterface FetchAllSummary<T> {\n  results:      FetchResult<T>[];\n  items:        T[];\n  successCount: number;\n  failureCount: number;\n}\n\n// Core entry point — fetches all pages with bounded concurrency\ndeclare function fetchAllPages<T>(\n  fetcher:   (page: number) => Promise<unknown>,\n  validator: (item: unknown) => item is T,\n  options:   FetchAllOptions\n): Promise<FetchAllSummary<T>>;",
+    "goals": [
+      "Define `PageResponse<T>` and the three-variant `FetchResult<T>` discriminated union with correct generic typing.",
+      "Implement `validatePageResponse` to structurally narrow an `unknown` payload and apply a per-item type guard, returning descriptive error messages.",
+      "Implement `fetchPage` to wrap an async fetcher, delegate to `validatePageResponse`, and catch rejections into a `'failed'` result.",
+      "Implement `fetchAllPages` to discover pagination from page 1, then fetch remaining pages in concurrency-bounded batches using `Promise.all`, and assemble a typed `FetchAllSummary<T>`."
+    ],
+    "hints": [
+      "To narrow `unknown` to an object shape without `any`, use `typeof x === 'object' && x !== null` and then index via `(x as Record<string, unknown>).field` — this is the one structural cast the TS compiler accepts under strict mode.",
+      "For concurrency batching, slice the array of remaining page numbers into chunks of size `options.concurrency` and `await Promise.all(chunk.map(...))` sequentially in a loop.",
+      "When accumulating items in page order, sort (or build) your `FetchAllSummary.items` array by the `page` field on each 'ok' result rather than insertion order, since parallel batches may resolve out of order."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript — Narrowing (unknown & type guards)",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html"
+      },
+      {
+        "title": "TypeScript — Generics",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/generics.html"
+      },
+      {
+        "title": "MDN — Promise.all",
+        "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise/all"
+      },
+      {
+        "title": "TypeScript — Discriminated Unions",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html#discriminated-unions"
+      }
+    ]
   }
 ]
