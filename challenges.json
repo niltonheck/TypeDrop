@@ -2517,5 +2517,41 @@
         "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html#discriminated-unions"
       }
     ]
+  },
+  {
+    "date": "2026-05-01",
+    "name": "Typed Workflow Orchestrator",
+    "difficulty": "Hard",
+    "description": "You're building the execution engine for a low-code automation platform. User-defined workflow definitions arrive as `unknown` from a configuration store; your orchestrator must validate them, topologically sort their steps into dependency-respecting execution stages, run each stage with typed retry/timeout policies, and emit a discriminated-union execution report per step — with zero `any`.",
+    "snippet": "// Key types & main entry-point — enough context to understand the challenge\n\nexport type StepId = string & { readonly __brand: \"StepId\" };\nexport type StepContext = Readonly<Record<StepId, unknown>>;\nexport type StepHandler = (ctx: StepContext) => Promise<unknown>;\n\nexport type StepReport =\n  | { kind: \"success\"; stepId: StepId; output: unknown; attempts: number; durationMs: number }\n  | { kind: \"failure\"; stepId: StepId; error: string;  attempts: number; durationMs: number }\n  | { kind: \"skipped\"; stepId: StepId; reason: \"dependency_failed\" };\n\nexport interface WorkflowReport {\n  workflowId: string;\n  status: \"completed\" | \"partial_failure\";\n  stepReports: StepReport[];\n  totalDurationMs: number;\n}\n\nexport type HandlerRegistry = Record<StepId, StepHandler>;\n\n// Validate raw unknown → typed def, build stages, execute, report\nexport async function orchestrate(\n  rawDef: unknown,\n  registry: HandlerRegistry\n): Promise<WorkflowReport> {\n  throw new Error(\"Not implemented\");\n}",
+    "goals": [
+      "Implement `validateWorkflow` to parse `unknown` input into a typed `WorkflowDef`, rejecting missing fields, unknown dependencies, and cyclic graphs — using a `ValidationResult<T>` return type with no throws.",
+      "Implement `buildExecutionStages` using Kahn's BFS topological sort to bucket `StepDef`s into sequentially-ordered, concurrently-executable stages.",
+      "Implement `withTimeout`, `withRetry`, and `executeStep` so every step attempt is individually raced against a `Promise<never>` timeout and retried with exponential back-off — with all errors captured as `StepFailure` (never thrown out of `executeStep`).",
+      "Implement `executeStage` and `orchestrate` to run stages sequentially, steps within a stage concurrently, propagate failure via a `ReadonlySet<StepId>` to skip downstream steps, and assemble a fully-typed `WorkflowReport`."
+    ],
+    "hints": [
+      "For cycle detection in `validateWorkflow`, a DFS with three node colours (white/grey/black) is the classic approach — or you can re-use Kahn's algorithm: if the topological sort doesn't consume all nodes, a cycle exists.",
+      "`withTimeout` should return `Promise<never>` — a promise that only ever rejects. `Promise.race([handlerCall(), withTimeout(...)])` gives you a timed attempt that resolves to `unknown` on success.",
+      "In `executeStage`, collect per-step results with `Promise.all`, but be careful: steps marked as skipped must short-circuit before the handler is called, and context must be updated only after all concurrent results are in."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript — Branded / Nominal Types",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/template-literal-types.html"
+      },
+      {
+        "title": "TypeScript — Utility Types (Record, Readonly, etc.)",
+        "url": "https://www.typescriptlang.org/docs/handbook/utility-types.html"
+      },
+      {
+        "title": "MDN — Promise.race()",
+        "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise/race"
+      },
+      {
+        "title": "MDN — Promise.all()",
+        "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise/all"
+      }
+    ]
   }
 ]
