@@ -2553,5 +2553,41 @@
         "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise/all"
       }
     ]
+  },
+  {
+    "date": "2026-05-02",
+    "name": "Typed Event RSVP Aggregator",
+    "difficulty": "Easy",
+    "description": "You're building the guest-management layer for an event-planning app. Raw RSVP payloads arrive as `unknown` from a public form endpoint; your aggregator must validate them, tally attendance per event, and return a strongly-typed summary — with zero `any`.",
+    "snippet": "/** Possible responses a guest can submit. */\ntype RsvpStatus = \"attending\" | \"declined\" | \"maybe\";\n\n/** A validated RSVP from a single guest. */\ninterface Rsvp {\n  readonly guestName: string;\n  readonly eventId:   string;\n  readonly status:    RsvpStatus;\n  readonly plusOnes:  number;   // ≥ 0; defaults to 0 if absent\n}\n\ntype RsvpValidationError =\n  | \"MISSING_GUEST_NAME\" | \"MISSING_EVENT_ID\"\n  | \"INVALID_STATUS\"     | \"INVALID_PLUS_ONES\"\n  | \"NOT_AN_OBJECT\";\n\ntype Result<T, E extends string = string> =\n  | { readonly ok: true;  readonly value: T }\n  | { readonly ok: false; readonly error: E };\n\n// ── Functions you must implement ──────────────────────────────\ndeclare function validateRsvp(payload: unknown): Result<Rsvp, RsvpValidationError>;\ndeclare function buildEventSummary(eventId: string, rsvps: readonly Rsvp[]): EventSummary;\ndeclare function aggregateRsvps(payloads: readonly unknown[]): AggregationReport;",
+    "goals": [
+      "Implement `validateRsvp` to narrow `unknown` payloads into typed `Rsvp` values, returning the correct `RsvpValidationError` code for each failure mode.",
+      "Implement `buildEventSummary` to compute `attendingCount`, `declinedCount`, `maybeCount`, and `totalAttending` (primary guest + plusOnes) from a list of validated RSVPs.",
+      "Implement `aggregateRsvps` to validate all payloads, group valid RSVPs by `eventId`, produce one `EventSummary` per event, and collect all failures — never throwing.",
+      "Use only `readonly` properties, discriminated-union narrowing, and utility types — no `any`, `as`, or `!`."
+    ],
+    "hints": [
+      "Use `typeof payload === 'object' && payload !== null` as your first guard before narrowing individual fields with `'guestName' in payload`.",
+      "A small helper like `const STATUSES: readonly RsvpStatus[] = [...]` plus `.includes()` lets you validate the status union without casting.",
+      "Build a `Record<string, Rsvp[]>` accumulator inside `aggregateRsvps` using a plain `for` loop or `Array.reduce` — then call `buildEventSummary` on each bucket."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript Handbook — Narrowing",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html"
+      },
+      {
+        "title": "TypeScript Handbook — Discriminated Unions",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html#discriminated-unions"
+      },
+      {
+        "title": "TypeScript Utility Types (Record, Readonly, etc.)",
+        "url": "https://www.typescriptlang.org/docs/handbook/utility-types.html"
+      },
+      {
+        "title": "MDN — Array.prototype.reduce()",
+        "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/reduce"
+      }
+    ]
   }
 ]
