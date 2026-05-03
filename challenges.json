@@ -2589,5 +2589,41 @@
         "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/reduce"
       }
     ]
+  },
+  {
+    "date": "2026-05-03",
+    "name": "Typed In-Memory Search Index",
+    "difficulty": "Medium",
+    "description": "You're building the client-side search layer for a documentation site. Raw document payloads arrive as `unknown` from a local JSON bundle; your engine must validate them, build an inverted index over configurable fields, and return strongly-typed ranked results — with zero `any`.",
+    "snippet": "// Key types & main class signature\n\ninterface IndexConfig<F extends string> {\n  fields: readonly F[];\n  fieldWeights?: Partial<Record<F, number>>;\n}\n\ninterface SearchHit {\n  id: string;\n  score: number;\n  fields: Record<string, string>;\n}\n\ntype SearchResult =\n  | { kind: \"results\"; hits: SearchHit[]; query: string }\n  | { kind: \"empty\"; query: string };\n\ntype ValidationResult =\n  | { kind: \"ok\"; document: IndexedDocument }\n  | { kind: \"error\"; reason: string; raw: unknown };\n\n// ── Your main entry point ────────────────────────────────────\nclass SearchIndex<F extends string> {\n  constructor(config: IndexConfig<F>) { /* TODO */ }\n  add(raw: unknown): ValidationResult  { /* TODO */ }\n  search(query: string): SearchResult  { /* TODO */ }\n  size(): number                       { /* TODO */ }\n}",
+    "goals": [
+      "Implement `ExtractFields<C>` and `WeightMap<F>` using `infer` and built-in utility types.",
+      "Implement `validateDocument` to narrow `unknown` → `IndexedDocument` and return a discriminated-union `ValidationResult` — no `any` or `as`.",
+      "Implement `tokenise` to lower-case, split, and filter a string into clean tokens.",
+      "Implement the full `SearchIndex<F>` class: build a weighted inverted index on `add`, and return ranked `SearchResult` discriminated-union hits on `search`."
+    ],
+    "hints": [
+      "For `validateDocument`, use `typeof` and `in` operator checks to narrow `unknown` step by step — TypeScript will track the type for you without needing `as`.",
+      "In the `SearchIndex` constructor, build the `WeightMap<F>` by spreading a default-weight object over `config.fieldWeights` — `Object.fromEntries` paired with `config.fields.map` keeps it type-safe.",
+      "The inverted index maps `token → Map<docId, weightedCount>` — when indexing, multiply the raw term-frequency by the field's weight before storing."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript — Conditional Types & infer",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/conditional-types.html"
+      },
+      {
+        "title": "TypeScript — Utility Types (Record, Required, Partial, Pick)",
+        "url": "https://www.typescriptlang.org/docs/handbook/utility-types.html"
+      },
+      {
+        "title": "TypeScript — Narrowing (typeof, in, discriminated unions)",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html"
+      },
+      {
+        "title": "MDN — Map (keyed collections)",
+        "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Map"
+      }
+    ]
   }
 ]
