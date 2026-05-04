@@ -2625,5 +2625,41 @@
         "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Map"
       }
     ]
+  },
+  {
+    "date": "2026-05-04",
+    "name": "Typed Expense Report Builder",
+    "difficulty": "Easy",
+    "description": "You're building the expense-reporting layer for a travel management app. Raw expense entries arrive as `unknown` from an employee submission form; your engine must validate them, group them by category, and return a strongly-typed report summary — with zero `any`.",
+    "snippet": "export type ExpenseCategory =\n  | \"travel\" | \"meals\" | \"accommodation\" | \"equipment\" | \"other\";\n\nexport interface ExpenseEntry {\n  id: string;\n  employeeId: string;\n  category: ExpenseCategory;\n  amountCents: number;   // positive integer, in cents\n  date: string;          // \"YYYY-MM-DD\"\n  description: string;\n}\n\nexport type CategorySummary = Record<\n  ExpenseCategory,\n  { totalCents: number; count: number }\n>;\n\nexport interface ExpenseReport {\n  entries: ExpenseEntry[];\n  categorySummary: CategorySummary;\n  grandTotalCents: number;\n  failures: ValidationFailure[];\n}\n\n// Your main entry point:\nexport function buildExpenseReport(rawEntries: unknown[]): ExpenseReport {\n  // TODO\n  throw new Error(\"Not implemented\");\n}",
+    "goals": [
+      "Implement `isExpenseCategory` as a type predicate that narrows `unknown` to `ExpenseCategory`.",
+      "Implement `validateExpenseEntry` to validate all required fields of a raw unknown payload and return a discriminated-union `ValidationResult`.",
+      "Implement `buildExpenseReport` to validate every raw entry, group valid ones into a `CategorySummary` (all five keys always present), and compute the grand total.",
+      "Ensure every `ExpenseCategory` key exists in `categorySummary` even when no entries belong to that category."
+    ],
+    "hints": [
+      "A type predicate has the form `(value: unknown): value is SomeType` — use it on `isExpenseCategory` so the compiler trusts the narrowing downstream.",
+      "Seed your `categorySummary` object by iterating over a const array of all five `ExpenseCategory` values before processing any entries — this guarantees every key is present.",
+      "When checking `amountCents`, combine `typeof x === 'number'`, `x > 0`, and `Math.trunc(x) === x` to satisfy the positive-integer requirement without casting."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript Handbook – Narrowing & Type Predicates",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html#using-type-predicates"
+      },
+      {
+        "title": "TypeScript Handbook – Discriminated Unions",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html#discriminated-unions"
+      },
+      {
+        "title": "TypeScript Utility Types – Record<K, V>",
+        "url": "https://www.typescriptlang.org/docs/handbook/utility-types.html#recordkeys-type"
+      },
+      {
+        "title": "MDN – Set.prototype.has()",
+        "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Set/has"
+      }
+    ]
   }
 ]
