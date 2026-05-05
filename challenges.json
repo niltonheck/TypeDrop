@@ -2661,5 +2661,41 @@
         "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Set/has"
       }
     ]
+  },
+  {
+    "date": "2026-05-05",
+    "name": "Typed Notification Dispatcher",
+    "difficulty": "Medium",
+    "description": "You're building the notification layer for a multi-channel SaaS platform. Raw notification payloads arrive as `unknown` from an internal message bus; your dispatcher must validate them, route each to the correct typed handler via a discriminated union, execute all handlers with a per-channel retry policy, and return a strongly-typed dispatch report — with zero `any`.",
+    "snippet": "\n// Core discriminated union\nexport type NotificationPayload =\n  | EmailPayload | SmsPayload | PushPayload | WebhookPayload;\n\n// Mapped type over the union's discriminant — no hardcoded keys\nexport type ChannelRegistry = {\n  [K in NotificationPayload[\"channel\"]]: RetryPolicy;\n};\n\n// Handler map: each channel key → correctly-narrowed handler\nexport type HandlerMap = {\n  [K in NotificationPayload[\"channel\"]]: ChannelHandler<\n    Extract<NotificationPayload, { channel: K }>\n  >;\n};\n\n// Main entry points\nexport function validatePayload(raw: unknown): ValidationResult { ... }\n\nexport async function dispatchOne(\n  raw: unknown,\n  handlers: HandlerMap,\n  registry: ChannelRegistry\n): Promise<DispatchOutcome> { ... }\n\nexport async function dispatchBatch(\n  raws: unknown[],\n  handlers: HandlerMap,\n  registry: ChannelRegistry\n): Promise<DispatchOutcome[]> { ... }\n",
+    "goals": [
+      "Define `NotificationPayload` as a discriminated union and derive `ChannelRegistry` and `HandlerMap` from it using mapped types and `Extract` — no hardcoded string keys.",
+      "Implement `validatePayload` to narrow `unknown` → `NotificationPayload` with per-channel rules, returning a typed `ValidationResult` discriminated union.",
+      "Implement `dispatchOne` to validate, route to the correct handler, and retry up to `maxAttempts` times with `delayMs` spacing, returning a `DispatchOutcome`.",
+      "Implement `dispatchBatch` to concurrently dispatch all payloads via `Promise.all`, capturing every failure as a `DispatchFailure` without ever throwing."
+    ],
+    "hints": [
+      "For `HandlerMap`, map over `NotificationPayload[\"channel\"]` and use `Extract<NotificationPayload, { channel: K }>` inside the mapped type to get the right payload subtype per key — no union narrowing needed at the call site.",
+      "In `dispatchOne`, use a `for` loop up to `maxAttempts`, wrap each handler call in try/catch, and `await` a `sleep(delayMs)` between failures; the handler call must be typed through the `HandlerMap` index.",
+      "In `validatePayload`, first check `typeof raw === 'object' && raw !== null && 'channel' in raw` before narrowing — then use a `switch` on the `channel` field with per-case field checks to keep TypeScript happy without assertions."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript — Mapped Types",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/mapped-types.html"
+      },
+      {
+        "title": "TypeScript — Extract Utility Type",
+        "url": "https://www.typescriptlang.org/docs/handbook/utility-types.html#extracttype-union"
+      },
+      {
+        "title": "TypeScript — Discriminated Unions & Narrowing",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html#discriminated-unions"
+      },
+      {
+        "title": "MDN — Promise.all",
+        "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise/all"
+      }
+    ]
   }
 ]
