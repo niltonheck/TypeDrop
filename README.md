@@ -1,117 +1,45 @@
-<p align="center">
-  <img src="misc/typedrop-logo.png" alt="TypeDrop" width="400">
-</p>
-<p align="center">A new TypeScript challenge every day. AI-generated, open source, zero setup.</p>
+# Typed Notification Dispatcher
 
-## What is this?
+**Difficulty:** Medium
 
-TypeDrop delivers a fresh TypeScript challenge daily — focused on the **type system**, not algorithms. Each challenge drops at 6:00 UTC with:
+## Scenario
 
-- A real-world scenario (API clients, data pipelines, state machines...)
-- Type stubs and function signatures to implement
-- A test harness to validate your solution
-- Goals, hints, and links to relevant docs
+You're building the notification layer for a multi-channel SaaS platform. Raw notification payloads arrive as `unknown` from an internal message bus; your dispatcher must validate them, route each to the correct typed handler via a discriminated union, execute all handlers with a per-channel retry policy, and return a strongly-typed dispatch report — with zero `any`.
 
-Open it in StackBlitz or CodeSandbox, or clone locally. No login, no setup.
+## How to solve
 
-## How it works
+1. Open `challenge.ts`
+2. Implement the types and functions marked with `TODO`
+3. Verify your solution using one of the methods below
 
-```
-┌────────────────┐     ┌────────────────┐     ┌────────────────┐
-│  Daily cron    │────▶│  Claude API    │────▶│  Git push      │
-│  (GH Actions)  │     │  (tool_use)    │     │  branch + site │
-└────────────────┘     └────────────────┘     └────────────────┘
-```
+### In CodeSandbox (recommended)
 
-1. A GitHub Actions cron job runs daily at 6:00 UTC
-2. It calls the Anthropic API (Claude Sonnet 4.6) with a structured tool schema to generate the challenge
-3. Challenge files are pushed to a `challenge/YYYY-MM-DD` branch
-4. The site (`index.html`) is updated with today's challenge and deployed to GitHub Pages
-5. Users click "Open in CodeSandbox" which loads the branch directly in an online IDE
+1. Click the **Open Devtool** icon in the top-right corner (or press `Ctrl + \``)
+2. In the Devtools panel, click **Type Check + Run Tests** to validate your solution
+3. For `console.log` output and assertion results, open your **browser DevTools** (`F12` > Console tab)
 
-## Challenge format
+### Locally
 
-Each challenge branch contains:
-
-| File | Purpose |
-|------|---------|
-| `challenge.ts` | Type stubs, function signatures, TODO markers |
-| `challenge.test.ts` | Mock data + `console.assert` checks |
-| `README.md` | Scenario, requirements, evaluation checklist |
-| `tsconfig.json` | Strict mode config |
-| `package.json` | TypeScript + tsx for running tests |
-
-Verify your solution:
 ```bash
 npm install
 npm test    # runs tsc --noEmit && tsx challenge.test.ts
 ```
 
-## Topics covered
+## Evaluation Checklist
 
-Challenges combine 3-5 of these areas, with the focus always on **typing over algorithms**:
 
-- **Type system**: generics, conditional types, mapped types, `infer`, `satisfies`, branded types, template literals
-- **Concurrency**: Promise.all/allSettled/race, concurrency limits, AbortController
-- **Parsing & Validation**: runtime narrowing, Result types, schema validation patterns
-- **Data structures**: trees, LRU caches, queues — with proper generic typing
-- **Patterns**: builder, strategy, middleware chains, state machines, event emitters
-- **Error handling**: Result/Either monads, typed error hierarchies, exhaustive matching
+| Skill Exercised | Where in Code |
+|---|---|
+| Discriminated union (`NotificationPayload`) | TODO 1 — union of 4 channel payload types |
+| Mapped type over union discriminant (`ChannelRegistry`) | TODO 2 — `{ [K in NotificationPayload["channel"]]: RetryPolicy }` |
+| Generic type alias (`ChannelHandler<P>`) | TODO 3 — `(payload: P) => Promise<void>` |
+| Mapped type + `Extract` utility type (`HandlerMap`) | TODO 4 — maps each channel key to its narrowed handler type |
+| `unknown` → typed narrowing / runtime validation | TODO 5 — `validatePayload` with per-channel guards |
+| Result/discriminated-union error type (`ValidationResult`) | TODO 5 — `{ ok: true, value }` / `{ ok: false, error }` |
+| Async retry logic with typed outcomes (`DispatchOutcome`) | TODO 6 — `dispatchOne` with attempt counting |
+| `Promise.all` for concurrent batch execution | TODO 7 — `dispatchBatch` |
 
-## Tech stack
 
-- **Site**: Static HTML/CSS, GitHub Pages
-- **Fonts**: [0xProto](https://github.com/0xType/0xProto) (body), [Permanent Marker](https://fonts.google.com/specimen/Permanent+Marker) (title)
-- **Syntax highlighting**: [Prism.js](https://prismjs.com/)
-- **Sandbox**: [StackBlitz](https://stackblitz.com/) / [CodeSandbox](https://codesandbox.io/) (via URL scheme)
-- **AI generation**: [Anthropic Claude API](https://docs.anthropic.com/) with structured tool_use
-- **CI/CD**: GitHub Actions
+## Bonus
 
-## Running locally
-
-```bash
-# Clone the repo
-git clone https://github.com/niltonheck/TypeDrop.git
-cd TypeDrop
-
-# Install dependencies
-npm install
-
-# Set your API key
-echo "ANTHROPIC_API_KEY=sk-ant-..." > .env
-
-# Generate a challenge
-npm run generate
-
-# Inject it into the site
-npm run inject
-
-# Open index.html in your browser
-```
-
-Requires Node.js >= 20.6.0.
-
-## Project structure
-
-```
-├── index.html                          # Main site
-├── archive.html                        # Past challenges
-├── style.css                           # Dark theme
-├── challenges.json                     # Challenge metadata
-├── misc/                               # Favicon, assets
-├── scripts/
-│   ├── generate.ts                     # AI challenge generation
-│   └── inject.ts                       # Stamps challenge into HTML
-├── .github/workflows/
-│   └── generate-challenge.yml          # Daily cron + deploy
-├── LICENSE                             # MIT
-└── package.json
-```
-
-## License
-
-MIT — see [LICENSE](LICENSE).
-
----
-
-Built with love and [Claude](https://claude.ai) by [@niltonheck](https://github.com/niltonheck)
+Extend `DispatchOutcome` to include a `durationMs` field measuring wall-clock time per dispatch, and update both `dispatchOne` and `dispatchBatch` to populate it without changing any existing type signatures.
