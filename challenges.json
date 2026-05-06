@@ -2697,5 +2697,41 @@
         "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise/all"
       }
     ]
+  },
+  {
+    "date": "2026-05-06",
+    "name": "Typed Product Inventory Filter",
+    "difficulty": "Easy",
+    "description": "You're building the catalog layer for an e-commerce storefront. Raw product entries arrive as `unknown` from a third-party supplier feed; your engine must validate them, apply typed filter criteria, and return a strongly-typed filtered inventory summary — with zero `any`.",
+    "snippet": "// Core types and main function signature\n\ntype Category    = \"electronics\" | \"clothing\" | \"books\" | \"home\" | \"sports\";\ntype StockStatus = \"in_stock\" | \"low_stock\" | \"out_of_stock\";\n\ninterface Product {\n  id: string;          name: string;\n  category: Category;  priceUsd: number;\n  stockStatus: StockStatus;\n  rating: number;      tags: string[];\n}\n\n// TODO: define these two types ↓\ntype ProductFilters  = Record<string, never>; // replace me\ntype InventorySummary = Record<string, never>; // replace me\n\n// Entry point you must implement:\nfunction filterInventory(\n  rawProducts: unknown[],\n  filters: ProductFilters\n): InventorySummary { ... }",
+    "goals": [
+      "Define `ProductFilters` with optional fields for category, stockStatus, maxPriceUsd, minRating, and tags.",
+      "Define `InventorySummary` with a filtered product array, total count, and an exhaustive per-Category breakdown.",
+      "Implement `parseProduct(raw: unknown): Product | null` that validates every field and returns null for any invalid input.",
+      "Implement `filterInventory` that discards invalid raws, applies all active filters, and returns a complete InventorySummary."
+    ],
+    "hints": [
+      "For `categoryBreakdown`, initialize a `Record<Category, number>` by mapping over a const array of all Category values before counting.",
+      "In `parseProduct`, narrow `raw` step-by-step: check `typeof raw === 'object'`, then `raw !== null`, then use `'id' in raw` before accessing properties — no `as` needed.",
+      "Make `ProductFilters` a plain interface with all optional fields; `maxPriceUsd` and `minRating` are their own fields, not keys of `Product`."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript — Narrowing",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html"
+      },
+      {
+        "title": "TypeScript — Union Types",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/everyday-types.html#union-types"
+      },
+      {
+        "title": "TypeScript — Record<K,V> Utility Type",
+        "url": "https://www.typescriptlang.org/docs/handbook/utility-types.html#recordkeys-type"
+      },
+      {
+        "title": "MDN — Array.prototype.every()",
+        "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/every"
+      }
+    ]
   }
 ]
