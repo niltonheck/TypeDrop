@@ -2733,5 +2733,41 @@
         "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/every"
       }
     ]
+  },
+  {
+    "date": "2026-05-07",
+    "name": "Typed Job Queue Scheduler",
+    "difficulty": "Medium",
+    "description": "You're building the background-job layer for a workflow automation platform. Raw job definitions arrive as `unknown` from a user-facing API; your scheduler must validate them, assign each job to a typed priority lane, execute lanes with a configurable concurrency limit, and return a strongly-typed execution report — with zero `any`.",
+    "snippet": "\n// Key types & main entry point — challenge.ts (preview)\n\nexport type Priority = \"high\" | \"normal\" | \"low\";\n\nexport interface Job {\n  id: string;\n  name: string;\n  priority: Priority;\n  durationMs: number;\n  payload: Record<string, string | number | boolean>;\n}\n\nexport type PriorityQueues = Record<Priority, Job[]>;\n\nexport type JobResult =\n  | { status: \"success\"; jobId: string; jobName: string; durationMs: number }\n  | { status: \"failure\"; jobId: string; jobName: string; reason: string };\n\nexport type JobRunner = (job: Job) => Promise<\n  Extract<JobResult, { status: \"success\" }>\n>;\n\n// Your four tasks:\nexport function validateJob(raw: unknown): Job | null { /* TODO */ }\nexport function buildQueues(rawJobs: unknown[]): PriorityQueues { /* TODO */ }\nexport async function executeLane(\n  jobs: Job[], runner: JobRunner, concurrency: number\n): Promise<JobResult[]> { /* TODO */ }\nexport async function runScheduler(\n  rawJobs: unknown[], runner: JobRunner, concurrency?: number\n): Promise<SchedulerReport> { /* TODO */ }\n",
+    "goals": [
+      "Implement `validateJob` to safely narrow an `unknown` value into a typed `Job`, returning `null` for any schema violation.",
+      "Implement `buildQueues` to validate an array of unknowns and bucket valid jobs into a `PriorityQueues` Record by priority lane.",
+      "Implement `executeLane` to run jobs with a sliding-window concurrency limit, capturing both successes and failures without propagating rejections.",
+      "Implement `runScheduler` to orchestrate the full pipeline — validate, queue, execute lanes sequentially in priority order, and return a typed `SchedulerReport`."
+    ],
+    "hints": [
+      "For `executeLane`, maintain an in-flight `Set` of Promises and use a drain loop — or process jobs in fixed-size chunks with `Promise.allSettled` — to respect the concurrency cap while preserving result order.",
+      "In `validateJob`, check `payload` values with `Object.entries` and verify each value's type with `typeof` — remember that `typeof null === 'object'`, so guard against that first.",
+      "Use the `status` discriminant on `JobResult` to narrow inside `runScheduler` when tallying `succeeded`, `failed`, and `totalSuccessfulDurationMs` — no type assertions needed."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript — Narrowing",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html"
+      },
+      {
+        "title": "TypeScript — Utility Types (Record, Extract)",
+        "url": "https://www.typescriptlang.org/docs/handbook/utility-types.html"
+      },
+      {
+        "title": "MDN — Promise.allSettled()",
+        "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise/allSettled"
+      },
+      {
+        "title": "TypeScript — Discriminated Unions",
+        "url": "https://www.typescriptlang.org/docs/handbook/typescript-in-5-minutes-func.html#discriminated-unions"
+      }
+    ]
   }
 ]
