@@ -2769,5 +2769,41 @@
         "url": "https://www.typescriptlang.org/docs/handbook/typescript-in-5-minutes-func.html#discriminated-unions"
       }
     ]
+  },
+  {
+    "date": "2026-05-08",
+    "name": "Typed Recipe Nutrition Aggregator",
+    "difficulty": "Easy",
+    "description": "You're building the nutrition-analysis layer for a meal-planning app. Raw recipe payloads arrive as `unknown` from a third-party food database API; your engine must validate them, aggregate per-serving nutrition totals, and return a strongly-typed nutrition summary — with zero `any`.",
+    "snippet": "\n// Key types at a glance:\n\ninterface NutritionPer100g {\n  calories: number; protein: number;\n  fat: number; carbs: number; fiber: number;\n}\ninterface Recipe {\n  id: string; title: string; servings: number;\n  ingredients: Array<{ name: string; grams: number; nutrition: NutritionPer100g }>;\n}\ninterface RecipeSummary {\n  id: string; title: string; servings: number;\n  perServing: NutritionPer100g;\n  topContributors: Array<{ name: string; totalCalories: number; percentOfRecipeCalories: number }>;\n}\ntype ValidationError =\n  | { kind: \"MISSING_FIELD\";  field: string }\n  | { kind: \"WRONG_TYPE\";     field: string; expected: string }\n  | { kind: \"OUT_OF_RANGE\";   field: string; min: number; max: number }\n  | { kind: \"EMPTY_ARRAY\";    field: string };\ntype Result<T, E> = { ok: true; value: T } | { ok: false; error: E };\n\n// --- Signatures to implement ---\nfunction validateRecipe(raw: unknown): Result<Recipe, ValidationError> { ... }\nfunction aggregateNutrition(recipe: Recipe): RecipeSummary { ... }\nfunction processRecipes(rawPayloads: unknown[]): RecipeSummary[] { ... }\n",
+    "goals": [
+      "Implement `validateRecipe` to narrow `unknown` payloads into typed `Recipe` objects using a discriminated-union `ValidationError` — no `any` allowed.",
+      "Implement `aggregateNutrition` to scale per-100g nutrition values by ingredient weight, sum across all ingredients, divide by servings, and build a sorted `topContributors` list.",
+      "Implement `processRecipes` to run the full validate → skip-invalid → aggregate pipeline over an array of unknown payloads, returning only valid `RecipeSummary` results.",
+      "Keep all types strict: use the `Result<T, E>` wrapper correctly and ensure TypeScript can narrow both the `ok: true` and `ok: false` branches at every call site."
+    ],
+    "hints": [
+      "For `validateRecipe`, use `typeof` checks and `Array.isArray` to narrow each field of the `unknown` object — a small helper like `isObject(v: unknown): v is Record<string, unknown>` will prevent repetition.",
+      "The `Result<T, E>` union narrows automatically: after `if (result.ok)` TypeScript knows `result.value` exists; after `if (!result.ok)` it knows `result.error` exists — rely on that instead of casting.",
+      "In `aggregateNutrition`, compute each ingredient's scaled calories as `(ingredient.nutrition.calories * ingredient.grams) / 100` before summing, then use `Math.round(value * 100) / 100` (or `parseFloat(value.toFixed(2))`) for consistent 2-decimal rounding."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript Handbook — Narrowing",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html"
+      },
+      {
+        "title": "TypeScript Handbook — Discriminated Unions",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html#discriminated-unions"
+      },
+      {
+        "title": "TypeScript Handbook — Generics",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/generics.html"
+      },
+      {
+        "title": "MDN — Array.prototype.reduce()",
+        "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/reduce"
+      }
+    ]
   }
 ]
