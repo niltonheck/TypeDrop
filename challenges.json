@@ -2805,5 +2805,41 @@
         "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/reduce"
       }
     ]
+  },
+  {
+    "date": "2026-05-09",
+    "name": "Typed Streaming ETL Pipeline",
+    "difficulty": "Hard",
+    "description": "You're building the data-ingestion layer for a real-time analytics platform. Raw event batches arrive as `unknown` from multiple upstream sources; your pipeline must validate them, transform each event through a typed middleware chain, fan-out to per-topic async sinks with a concurrency limit, and return a strongly-typed pipeline execution report — with zero `any`.",
+    "snippet": "// Key types and main entry point — challenge.ts (preview)\n\ntype Brand<T, B extends string> = T & { readonly __brand: B };\nexport type EventId   = Brand<string, \"EventId\">;\nexport type TopicName = Brand<string, \"TopicName\">;\n\nexport type Result<T, E> =\n  | { readonly ok: true;  readonly value: T }\n  | { readonly ok: false; readonly error: E };\n\nexport type Middleware<\n  TIn  extends Record<string, unknown>,\n  TOut extends Record<string, unknown>\n> = (event: TransformedEvent<TIn>) => Promise<Result<TransformedEvent<TOut>, PipelineError>>;\n\n// Your job: make this recursive conditional type validate chain compatibility\nexport type MiddlewareChain<\n  MS extends readonly Middleware<Record<string, unknown>, Record<string, unknown>>[]\n> = /* TODO */ unknown;\n\nexport async function runPipeline<Topics extends TopicName>(\n  rawBatch: ReadonlyArray<unknown>,\n  config: PipelineConfig<Topics>\n): Promise<PipelineReport> {\n  // TODO — validate → transform → fan-out → report\n  throw new Error(\"not implemented\");\n}",
+    "goals": [
+      "Implement `makeEventId`, `makeTopicName`, and `makeSourceId` using a `Result`-returning branded-type constructor — no `as` or `any` allowed.",
+      "Define `MiddlewareChain<MS>` as a recursive conditional type that resolves to the final output payload type when every adjacent middleware pair is compatible, and `never` otherwise.",
+      "Implement `validateEvent`, `runMiddlewares`, and `fanOutToSinks` so that validation, sequential middleware execution with short-circuit, and concurrency-limited sink fan-out all work correctly.",
+      "Wire everything together in `runPipeline` to produce a fully accurate `PipelineReport` with correct counts and per-topic breakdown."
+    ],
+    "hints": [
+      "For `MiddlewareChain`, write a helper type `InferMiddlewareOut<M>` using `infer` to extract the `TOut` type from a single `Middleware<TIn, TOut>`, then recurse over the tuple checking that `InferMiddlewareOut<MS[N]>` extends the `TIn` of `MS[N+1]`.",
+      "To enforce the concurrency limit in `fanOutToSinks` without a library, maintain an in-flight counter and a queue of pending tasks — resolve the next queued task each time an in-flight one completes.",
+      "Branded types can be constructed safely by returning `ok(raw as EventId)` only inside the dedicated `makeEventId` function — this is the one place where a cast is acceptable because the function itself IS the runtime guard."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript Handbook — Conditional Types & infer",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/conditional-types.html"
+      },
+      {
+        "title": "TypeScript Handbook — Mapped Types",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/mapped-types.html"
+      },
+      {
+        "title": "TypeScript Handbook — Generics",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/generics.html"
+      },
+      {
+        "title": "MDN — Promise.allSettled",
+        "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise/allSettled"
+      }
+    ]
   }
 ]
