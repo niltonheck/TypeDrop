@@ -2841,5 +2841,41 @@
         "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise/allSettled"
       }
     ]
+  },
+  {
+    "date": "2026-05-10",
+    "name": "Typed User Session Aggregator",
+    "difficulty": "Easy",
+    "description": "You're building the analytics layer for a SaaS dashboard. Raw session events arrive as `unknown` from a client-side tracking SDK; your engine must validate them, group them by user, and return a strongly-typed per-user session summary — with zero `any`.",
+    "snippet": "/** Pages a user can visit inside the app. */\ntype PageName = \"home\" | \"dashboard\" | \"settings\" | \"billing\" | \"logout\";\n\n/** Discriminated-union result type. */\ntype Result<T> = { ok: true; value: T } | { ok: false; error: string };\n\n/** Per-page visit counts. */\ntype PageVisitMap = Record<PageName, number>;\n\n/** Per-user aggregated summary. */\ninterface UserSessionSummary {\n  userId: string;\n  totalSessions: number;\n  totalDurationSeconds: number;\n  avgDurationSeconds: number;   // rounded to 2 decimal places\n  pageVisits: PageVisitMap;\n  mostVisitedPage: PageName;\n}\n\n// Validate a single raw event from the tracking SDK\ndeclare function validateSessionEvent(raw: unknown): Result<SessionEvent>;\n\n// Aggregate an array of raw events into a full SessionReport\ndeclare function aggregateSessions(rawEvents: unknown[]): SessionReport;",
+    "goals": [
+      "Implement `validateSessionEvent` to narrow `unknown` into a typed `SessionEvent`, returning a discriminated-union `Result<SessionEvent>`.",
+      "Implement `aggregateSessions` to validate every raw event, collect errors, and group valid events by `userId`.",
+      "Compute per-user statistics — total sessions, total/average duration, page-visit counts, and most-visited page — using only typed accumulators.",
+      "Return a `SessionReport` with valid/invalid counts, sorted summaries, and all collected error messages."
+    ],
+    "hints": [
+      "Use `typeof raw === 'object' && raw !== null` before casting with `in` operator checks — no `as` needed.",
+      "Initialise `PageVisitMap` by spreading `VALID_PAGES` into `Object.fromEntries` so every `PageName` key starts at `0` before you start counting.",
+      "To find `mostVisitedPage`, sort the `PageName` entries of `pageVisits` first alphabetically, then pick the one with the maximum count — sorting first handles the tie-break for free."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript — Narrowing",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html"
+      },
+      {
+        "title": "TypeScript — Discriminated Unions",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html#discriminated-unions"
+      },
+      {
+        "title": "TypeScript — Record<K, V> Utility Type",
+        "url": "https://www.typescriptlang.org/docs/handbook/utility-types.html#recordkeys-type"
+      },
+      {
+        "title": "MDN — Array.prototype.reduce()",
+        "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/reduce"
+      }
+    ]
   }
 ]
