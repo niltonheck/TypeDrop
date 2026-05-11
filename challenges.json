@@ -2877,5 +2877,41 @@
         "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/reduce"
       }
     ]
+  },
+  {
+    "date": "2026-05-11",
+    "name": "Typed Distributed Circuit Breaker",
+    "difficulty": "Hard",
+    "description": "You're building the resilience layer for a microservices gateway. Each downstream service is protected by a typed circuit breaker that transitions through states based on failure thresholds; your engine must validate raw service configs arriving as `unknown`, manage per-service breaker state machines, execute calls with retry + timeout logic, and return a strongly-typed health report — with zero `any`.",
+    "snippet": "// Key types and main function signatures\n\nexport type ServiceId = string & { readonly __brand: \"ServiceId\" };\nexport type Ms        = number & { readonly __brand: \"Ms\" };\n\nexport type BreakerState =\n  | { readonly status: \"closed\";   failureCount: number }\n  | { readonly status: \"open\";     openedAt: number     }\n  | { readonly status: \"half-open\"                      };\n\nexport type CallOutcome<T> =\n  | { readonly ok: true;  value: T;     durationMs: number }\n  | { readonly ok: false; reason: CallFailureReason; durationMs: number };\n\nexport type CallFailureReason =\n  | \"timeout\" | \"circuit-open\" | \"max-retries-exceeded\" | \"upstream-error\";\n\nexport type ValidatedOrError<T> =\n  | { readonly valid: true;  data: T      }\n  | { readonly valid: false; error: string };\n\n// ── Functions you must implement ──────────────────────────────────\n\nexport function validateServiceConfig(raw: unknown): ServiceConfig { ... }\n\nexport function createBreakerEngine(\n  configs: ReadonlyArray<ServiceConfig>\n): BreakerEngine { ... }\n\nexport function initGateway(rawConfigs: ReadonlyArray<unknown>): {\n  engine: BreakerEngine;\n  errors: ReadonlyArray<string>;\n} { ... }\n",
+    "goals": [
+      "Define `RawServiceConfig` (all fields `unknown`) and implement `validateServiceConfig` that narrows every field and throws a `TypeError` on any violation — no `any` or type assertions beyond the two provided brand constructors.",
+      "Define `BreakerRegistry` as a mapped/Record type keyed by `ServiceId` and implement `createBreakerEngine` with the full closed → open → half-open state machine, per-call timeout via `Promise.race`, and retry logic.",
+      "Implement the generic `call<T>` method so that `T` is inferred from the passed `fn`, returning a fully typed `CallOutcome<T>` for every branch (circuit-open, timeout, max-retries-exceeded, upstream-error, success).",
+      "Implement `initGateway` using the `ValidatedOrError<T>` conditional type alias to type intermediate results, collecting all validation errors without short-circuiting and always returning a working engine."
+    ],
+    "hints": [
+      "For the timeout race, construct a `new Promise<never>((_, reject) => setTimeout(...))` and use `Promise.race([fn(), timeoutPromise])` — wrap the whole thing so the outer return type stays `Promise<CallOutcome<T>>` without `any`.",
+      "To key `BreakerRegistry` by `ServiceId` without `any`, try `type BreakerRegistry = { [K in ServiceId]?: BreakerState }` or simply `Record<ServiceId, BreakerState>` — both satisfy the branded constraint.",
+      "Inside `validateServiceConfig`, use a local type guard helper `(v: unknown): v is Record<string, unknown>` to safely access named properties before narrowing each one individually."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript Handbook — Narrowing",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html"
+      },
+      {
+        "title": "TypeScript Handbook — Generics",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/generics.html"
+      },
+      {
+        "title": "TypeScript Handbook — Mapped Types",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/mapped-types.html"
+      },
+      {
+        "title": "MDN — Promise.race()",
+        "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise/race"
+      }
+    ]
   }
 ]
