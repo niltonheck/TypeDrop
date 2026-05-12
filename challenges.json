@@ -2913,5 +2913,41 @@
         "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise/race"
       }
     ]
+  },
+  {
+    "date": "2026-05-12",
+    "name": "Typed Product Inventory Filter",
+    "difficulty": "Easy",
+    "description": "You're building the catalog layer for an e-commerce platform. Raw product entries arrive as `unknown` from a third-party supplier feed; your engine must validate them, apply typed filter criteria, and return a strongly-typed filtered inventory report — with zero `any`.",
+    "snippet": "// Key types and main entry point\n\nexport type Category = \"electronics\" | \"clothing\" | \"books\" | \"home\" | \"sports\";\n\nexport interface Product {\n  id: string;\n  name: string;\n  category: Category;\n  priceUsd: number;\n  stock: number;\n  rating: number;\n  tags: string[];\n}\n\nexport interface FilterCriteria {\n  categories?: Category[];\n  maxPriceUsd?: number;\n  minRating?: number;\n  inStockOnly?: boolean;\n  tags?: string[];\n}\n\nexport type ValidationResult =\n  | { ok: true;  product: Product }\n  | { ok: false; reason: string  };\n\nexport function validateProduct(raw: unknown): ValidationResult { /* TODO */ }\nexport function matchesFilter(product: Product, criteria: FilterCriteria): boolean { /* TODO */ }\nexport function buildInventoryReport(rawEntries: unknown, criteria: FilterCriteria): InventoryReport { /* TODO */ }\n",
+    "goals": [
+      "Implement `validateProduct` to narrow `unknown` → `Product` using a discriminated union result type — no `as` allowed.",
+      "Implement `matchesFilter` to apply each optional `FilterCriteria` field only when present, returning true only when all present criteria pass.",
+      "Implement `buildInventoryReport` to orchestrate validation + filtering in a single pass and return a fully-populated `InventoryReport`.",
+      "Handle edge cases: non-array input, empty tags arrays, out-of-range ratings, and non-string tag elements."
+    ],
+    "hints": [
+      "Use `typeof x === 'object' && x !== null` to satisfy R1 before accessing any properties — TypeScript will narrow the type for you.",
+      "For the `Category` union check, define a constant array `const CATEGORIES = ['electronics', ...] as const` and use `Array.prototype.includes` with a type predicate — this avoids any need for `as`.",
+      "In `matchesFilter`, short-circuit early: check each criterion with a guard like `if (criteria.inStockOnly && product.stock === 0) return false` to keep the logic flat and readable."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript Narrowing",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html"
+      },
+      {
+        "title": "TypeScript Discriminated Unions",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html#discriminated-unions"
+      },
+      {
+        "title": "TypeScript Utility Types (Extract, Pick, etc.)",
+        "url": "https://www.typescriptlang.org/docs/handbook/utility-types.html"
+      },
+      {
+        "title": "MDN: Array.prototype.includes",
+        "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/includes"
+      }
+    ]
   }
 ]
