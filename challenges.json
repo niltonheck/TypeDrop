@@ -2949,5 +2949,41 @@
         "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/includes"
       }
     ]
+  },
+  {
+    "date": "2026-05-13",
+    "name": "Typed Async Job Scheduler with Priority Queues",
+    "difficulty": "Hard",
+    "description": "You're building the task-execution layer for a distributed background-job platform. Raw job definitions arrive as `unknown` from multiple producer services; your scheduler must validate them, enqueue them into typed priority queues, execute batches with a concurrency limit and per-job timeout, and return a strongly-typed execution report — with zero `any`.",
+    "snippet": "\ntype JobPriority = \"critical\" | \"high\" | \"normal\" | \"low\";\n\ntype JobId    = string & { readonly __brand: \"JobId\" };\ntype QueueId  = string & { readonly __brand: \"QueueId\" };\n\ninterface Job {\n  readonly id:         JobId;\n  readonly queueId:    QueueId;\n  readonly priority:   JobPriority;\n  readonly timeoutMs:  number;        // 100 – 30_000\n  readonly payload:    Record<string, unknown>;\n  readonly maxRetries: number;        // 0 – 5\n}\n\ntype JobOutcome =\n  | { readonly status: \"succeeded\"; readonly jobId: JobId; readonly durationMs: number }\n  | { readonly status: \"failed\";    readonly jobId: JobId; readonly error: string; readonly attempts: number }\n  | { readonly status: \"timed_out\"; readonly jobId: JobId; readonly timeoutMs: number };\n\ntype Result<T, E> =\n  | { readonly ok: true;  readonly value: T }\n  | { readonly ok: false; readonly error: E };\n\n// --- Four functions to implement ---\nfunction validateJob(raw: unknown): Result<Job, ValidationError[]>;\nfunction buildPriorityQueue(jobs: readonly Job[]): readonly Job[];\nasync function executeJob(job: Job, handler: JobHandler): Promise<JobOutcome>;\nasync function runScheduler(\n  rawJobs: readonly unknown[],\n  handler: JobHandler,\n  config: SchedulerConfig\n): Promise<SchedulerReport>;\n",
+    "goals": [
+      "Implement `validateJob` to parse `unknown` payloads into a branded `Job`, collecting ALL validation errors before returning.",
+      "Implement `buildPriorityQueue` to perform a stable sort of jobs by their priority weight.",
+      "Implement `executeJob` to run a job with `Promise.race`-based timeout and per-failure retry logic, returning a discriminated `JobOutcome`.",
+      "Implement `runScheduler` to validate raw inputs, group and sort jobs into per-queue priority queues, and execute them under a global concurrency limit, returning a fully-typed `SchedulerReport`."
+    ],
+    "hints": [
+      "For the concurrency limiter in `runScheduler`, maintain a counter of active slots and use a queue of pending resolvers — or track in-flight Promises and use `Promise.race` to free a slot when any job finishes.",
+      "In `executeJob`, create a timeout Promise with `new Promise<never>((_, reject) => setTimeout(...))` and race it against the handler; a `timed_out` result must exit immediately without retrying.",
+      "When collecting `ValidationError[]` in `validateJob`, push errors into a mutable local array and only decide `ok: true` vs `ok: false` at the very end — this satisfies the 'collect ALL errors' requirement."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript Handbook — Branded / Nominal Types",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/template-literal-types.html"
+      },
+      {
+        "title": "TypeScript Handbook — Narrowing",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html"
+      },
+      {
+        "title": "MDN — Promise.race()",
+        "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise/race"
+      },
+      {
+        "title": "TypeScript 5.x — satisfies operator",
+        "url": "https://www.typescriptlang.org/docs/handbook/release-notes/typescript-4-9.html#the-satisfies-operator"
+      }
+    ]
   }
 ]
