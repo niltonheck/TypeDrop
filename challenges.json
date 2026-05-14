@@ -2985,5 +2985,41 @@
         "url": "https://www.typescriptlang.org/docs/handbook/release-notes/typescript-4-9.html#the-satisfies-operator"
       }
     ]
+  },
+  {
+    "date": "2026-05-14",
+    "name": "Typed Blog Post Tag Index",
+    "difficulty": "Easy",
+    "description": "You're building the content-discovery layer for a blogging platform. Raw post entries arrive as `unknown` from a CMS API; your engine must validate them, build a typed reverse index from tags to posts, and return a strongly-typed tag summary report — with zero `any`.",
+    "snippet": "\n// Key types\nexport interface BlogPost {\n  id: string;\n  title: string;\n  author: string;\n  publishedAt: string;              // \"YYYY-MM-DD\"\n  tags: [string, ...string[]];      // at least one tag\n  wordCount: number;                // positive integer\n}\n\nexport interface TagSummary {\n  tag: string;\n  postCount: number;\n  avgWordCount: number;             // Math.round'd\n  longestPost: Pick<BlogPost, \"id\" | \"title\" | \"wordCount\">;\n  postIds: string[];                // sorted ascending\n}\n\nexport type ValidationResult<T> = never; // TODO: discriminated union\n\n// Main functions\nexport function validatePost(raw: unknown): ValidationResult<BlogPost>;\nexport function buildTagIndex(rawPosts: unknown[]): TagIndexReport;\n",
+    "goals": [
+      "Define a generic discriminated union `ValidationResult<T>` with `ok: true / ok: false` variants.",
+      "Implement `validatePost` to narrow `unknown` → `BlogPost` through ordered field-by-field guards, returning a typed result.",
+      "Implement `buildTagIndex` to validate all raw entries, accumulate per-tag statistics in a single pass, and assemble a `TagIndexReport`.",
+      "Use `Pick`, `Record`, and tuple types from the provided interfaces — no `any`, no type assertions."
+    ],
+    "hints": [
+      "A discriminated union is just two object types that share a literal-typed field — `ok: true` and `ok: false` are enough to let TypeScript narrow between them.",
+      "After checking `Array.isArray(tags) && tags.length > 0 && tags.every(t => ...)`, you can cast the result as the tuple type `[string, ...string[]]` — but only inside the guard where you've already proved it.",
+      "Use an intermediate accumulator object (e.g. `Record<string, { posts: BlogPost[]; totalWords: number }>`) to collect per-tag data before building each `TagSummary`."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript Handbook — Discriminated Unions",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html#discriminated-unions"
+      },
+      {
+        "title": "TypeScript Handbook — Generics",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/generics.html"
+      },
+      {
+        "title": "TypeScript Utility Types (Pick, Record, etc.)",
+        "url": "https://www.typescriptlang.org/docs/handbook/utility-types.html"
+      },
+      {
+        "title": "MDN — Array.prototype.every (used in tag validation)",
+        "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/every"
+      }
+    ]
   }
 ]
