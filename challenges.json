@@ -3021,5 +3021,41 @@
         "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/every"
       }
     ]
+  },
+  {
+    "date": "2026-05-15",
+    "name": "Typed Streaming ETL Pipeline with Middleware",
+    "difficulty": "Hard",
+    "description": "You're building the data-ingestion layer for a real-time analytics platform. Raw records stream in as `unknown` from heterogeneous sources; your typed ETL pipeline must validate them, pass them through a composable middleware chain (transform, enrich, filter), execute stages with a concurrency limit, and emit a strongly-typed pipeline report — with zero `any`.",
+    "snippet": "// Key types and main entry point\n\ntype Brand<T, B extends string> = T & { readonly __brand: B };\nexport type RecordId   = Brand<string, \"RecordId\">;\nexport type SourceName = Brand<string, \"SourceName\">;\n\nexport type ProcessableRecord = ValidatedRecord | TransformedRecord;\n\nexport type MiddlewareNext = (\n  record: ProcessableRecord\n) => Promise<ProcessableRecord | DroppedRecord>;\n\nexport type Middleware = (\n  record: ProcessableRecord,\n  next:   MiddlewareNext\n) => Promise<ProcessableRecord | DroppedRecord>;\n\nexport interface PipelineConfig {\n  readonly concurrency: number;\n  readonly middleware:  Middleware;\n}\n\n// Main entry point — implement this (+ internal runConcurrent<T>)\nexport async function runPipeline(\n  rawRecords: ReadonlyArray<unknown>,\n  config:     PipelineConfig\n): Promise<PipelineReport> { /* TODO */ }\n",
+    "goals": [
+      "Implement `validateRecord` to safely narrow `unknown` → `ValidatedRecord | FailedRecord`, extracting branded types and performing best-effort field recovery on failure.",
+      "Implement the three middleware factories (`createTransformMiddleware`, `createFilterMiddleware`, `createEnrichMiddleware`) that correctly upgrade `ProcessableRecord` stage and track payload mutations.",
+      "Implement `composeMiddleware` using the classic koa-style onion pattern so middleware executes in declaration order with a proper async `next` chain.",
+      "Implement `runPipeline` including an internal generic `runConcurrent<T>` helper that enforces the concurrency limit, preserves input order, and returns a fully-typed `PipelineReport`."
+    ],
+    "hints": [
+      "For `composeMiddleware`, build the chain from right to left: each middleware's `next` is the invocation of the next middleware in the array with its own `next` — the terminal `next` is the identity (returns the record unchanged).",
+      "To upgrade a `ValidatedRecord` to `TransformedRecord` without type assertions, construct a new object literal with `stage: 'transformed' as const` and spread the existing fields — TypeScript will infer the narrowed type from the literal.",
+      "In `runConcurrent<T>`, use a shared index counter and a pool of `concurrency` worker Promises that each pull the next task index atomically — this avoids complex queue management while keeping results in order."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript Handbook — Narrowing",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html"
+      },
+      {
+        "title": "TypeScript Handbook — Conditional Types",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/conditional-types.html"
+      },
+      {
+        "title": "MDN — Promise.allSettled",
+        "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise/allSettled"
+      },
+      {
+        "title": "TypeScript Handbook — Generics",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/generics.html"
+      }
+    ]
   }
 ]
