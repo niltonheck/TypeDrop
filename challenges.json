@@ -3057,5 +3057,41 @@
         "url": "https://www.typescriptlang.org/docs/handbook/2/generics.html"
       }
     ]
+  },
+  {
+    "date": "2026-05-16",
+    "name": "Typed User Session Aggregator",
+    "difficulty": "Easy",
+    "description": "You're building the analytics layer for a SaaS dashboard. Raw session events arrive as `unknown` from a browser telemetry API; your engine must validate them, group them by user, and return a strongly-typed per-user session summary report — with zero `any`.",
+    "snippet": "\n// Key types you'll work with:\n\nexport type EventCategory = \"pageview\" | \"click\" | \"error\" | \"purchase\";\n\nexport type UserId = string & { readonly _brand: \"UserId\" };\n\nexport type Result<T, E> =\n  | { ok: true;  value: T }\n  | { ok: false; error: E };\n\nexport type EventCounts = { [K in EventCategory]: number }; // mapped type\n\nexport interface UserSessionSummary {\n  readonly userId: UserId;\n  readonly totalEvents: number;\n  readonly eventCounts: EventCounts;\n  readonly firstSeen: number;\n  readonly lastSeen: number;\n  readonly totalRevenueCents: number;\n  readonly uniquePaths: ReadonlyArray<string>;\n}\n\n// Functions you must implement:\nexport function validateSessionEvent(raw: unknown): Result<SessionEvent, string> { ... }\nexport function aggregateSessions(rawEvents: unknown[]): AggregationReport { ... }\n",
+    "goals": [
+      "Declare the `UserId` branded type and a `Result<T, E>` discriminated union from the provided stubs.",
+      "Implement `validateSessionEvent` to safely narrow `unknown` → `SessionEvent`, returning typed success or failure.",
+      "Define `EventCounts` as a mapped type over `EventCategory` (no hand-written properties).",
+      "Implement `aggregateSessions` to group valid events by user and produce a fully-typed `AggregationReport` with correct totals, revenue, unique paths, and sorted summaries."
+    ],
+    "hints": [
+      "For `EventCounts`, think `{ [K in EventCategory]: number }` — a single mapped type expression covers all four categories at once.",
+      "To validate the `category` field at runtime without `any`, define a `const CATEGORIES: ReadonlyArray<EventCategory>` tuple and use `.includes()` after narrowing to `string`.",
+      "A `Map<UserId, UserSessionSummary>` (or a mutable intermediate type) is a clean way to accumulate per-user data; convert it to a sorted array at the end."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript Handbook — Mapped Types",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/mapped-types.html"
+      },
+      {
+        "title": "TypeScript Handbook — Narrowing",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html"
+      },
+      {
+        "title": "TypeScript Handbook — Generics",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/generics.html"
+      },
+      {
+        "title": "MDN — Map",
+        "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Map"
+      }
+    ]
   }
 ]
