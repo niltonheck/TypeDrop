@@ -3093,5 +3093,41 @@
         "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Map"
       }
     ]
+  },
+  {
+    "date": "2026-05-17",
+    "name": "Typed Paginated API Client with Result Handling",
+    "difficulty": "Medium",
+    "description": "You're building the data-access layer for a developer dashboard that fetches issues from a project-management API. Responses arrive as `unknown` from a generic HTTP transport; your client must validate each page, accumulate results across pages, and return a strongly-typed aggregation report — with zero `any`.",
+    "snippet": "\n// Core Result type + domain types + main function signature\n\ntype Result<T, E> =\n  | { ok: true; value: T }\n  | { ok: false; error: E };\n\ntype FetchError =\n  | { kind: \"network\";    message: string }\n  | { kind: \"parse\";      message: string; raw: unknown }\n  | { kind: \"validation\"; message: string; field: string };\n\ninterface Issue {\n  id: number; title: string;\n  status: IssueStatus; priority: IssuePriority;\n  assignee: string | null; createdAt: string;\n}\n\ninterface IssueReport {\n  totalFetched:   number;\n  byStatus:       Record<IssueStatus, Issue[]>;\n  byPriority:     Record<IssuePriority, Issue[]>;\n  unassignedCount: number;\n  failedPages:    Array<{ page: number; error: FetchError }>;\n}\n\ntype PageFetcher = (page: number) => Promise<unknown>;\n\nasync function fetchAllIssues(fetcher: PageFetcher): Promise<IssueReport> { /* TODO */ }\n",
+    "goals": [
+      "Implement `isIssueStatus` and `isIssuePriority` as type-predicate guards that narrow `unknown` to the correct union literal.",
+      "Implement `parseIssue` and `parsePage` to validate raw `unknown` payloads and return a typed `Result<T, FetchError>` — no `any` or `as` casts.",
+      "Implement `fetchAllIssues` to fetch page 1 first, then remaining pages in parallel with `Promise.all`, gracefully capturing both network rejections and validation failures into `failedPages`.",
+      "Build the final `IssueReport` with all `byStatus` and `byPriority` keys guaranteed present (even if empty), and `failedPages` sorted in ascending page order."
+    ],
+    "hints": [
+      "Use `typeof x === 'string' && (x === 'open' || ...)` patterns inside your type predicates — TypeScript will narrow the return type automatically.",
+      "When validating an `unknown` object, first check `typeof raw === 'object' && raw !== null`, then use `'fieldName' in raw` before indexing — this avoids any cast.",
+      "Wrap each `fetcher(page)` call in a `Promise.allSettled`-style `.then(...).catch(...)` chain so rejections become `{ kind: 'network' }` errors rather than unhandled exceptions."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript — Narrowing (type predicates)",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html#using-type-predicates"
+      },
+      {
+        "title": "TypeScript — Utility Types (Record, Extract)",
+        "url": "https://www.typescriptlang.org/docs/handbook/utility-types.html"
+      },
+      {
+        "title": "MDN — Promise.all",
+        "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise/all"
+      },
+      {
+        "title": "TypeScript — Discriminated Unions",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html#discriminated-unions"
+      }
+    ]
   }
 ]
