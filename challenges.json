@@ -3129,5 +3129,41 @@
         "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html#discriminated-unions"
       }
     ]
+  },
+  {
+    "date": "2026-05-18",
+    "name": "Typed Product Inventory Grouper",
+    "difficulty": "Easy",
+    "description": "You're building the catalog layer for an e-commerce platform. Raw product entries arrive as `unknown` from a warehouse API; your engine must validate them, group them by category, and return a strongly-typed per-category inventory summary — with zero `any`.",
+    "snippet": "// Core types and main function signature\n\ninterface Product {\n  id:        string;\n  name:      string;\n  category:  string;\n  price:     number;   // must be > 0\n  stock:     number;   // must be >= 0 and an integer\n  available: boolean;\n}\n\ntype ParseResult<T> =\n  | { ok: true;  value: T }\n  | { ok: false; error: string };\n\ninterface CategorySummary {\n  category:      string;\n  productCount:  number;\n  totalStock:    number;\n  totalValue:    number;   // sum of price * stock\n  availableCount: number;\n}\n\ninterface InventoryReport {\n  summaries:     CategorySummary[];\n  parseErrors:   string[];\n  totalProducts: number;\n}\n\nexport function parseProduct(raw: unknown): ParseResult<Product> { /* TODO */ }\nexport function buildInventoryReport(rawProducts: unknown[]): InventoryReport { /* TODO */ }",
+    "goals": [
+      "Define the `Product` interface and `ParseResult<T>` discriminated union with correct field constraints.",
+      "Implement `parseProduct(raw: unknown)` to validate every field at runtime and return a typed `ParseResult<Product>` — no `any` or type assertions.",
+      "Implement `buildInventoryReport` to parse all entries, group valid products by category, and compute per-category `CategorySummary` values.",
+      "Return a fully-typed `InventoryReport` with summaries sorted alphabetically by category and all parse errors collected."
+    ],
+    "hints": [
+      "Use `typeof raw === 'object' && raw !== null && 'price' in raw` style guards to safely narrow `unknown` — then access properties through the narrowed type.",
+      "A `Map<string, Product[]>` is a clean way to accumulate products per category before converting to `CategorySummary[]`.",
+      "Remember: `Number.isInteger(n)` and `n >= 0` are two separate checks needed for the `stock` constraint."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript Handbook — Narrowing",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html"
+      },
+      {
+        "title": "TypeScript Handbook — Discriminated Unions",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html#discriminated-unions"
+      },
+      {
+        "title": "MDN — Number.isInteger()",
+        "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number/isInteger"
+      },
+      {
+        "title": "MDN — Map",
+        "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Map"
+      }
+    ]
   }
 ]
