@@ -3165,5 +3165,41 @@
         "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Map"
       }
     ]
+  },
+  {
+    "date": "2026-05-19",
+    "name": "Typed Workflow State Machine with Retry & Cancellation",
+    "difficulty": "Hard",
+    "description": "You're building the job-execution engine for a distributed task platform. Jobs arrive as `unknown` from a queue API; your engine must validate them, drive each job through a strict discriminated-union state machine, execute steps with typed retry logic and AbortController cancellation, and return a strongly-typed execution report — with zero `any`.",
+    "snippet": "// Key types and main function signatures\n\nexport type JobId  = string & { readonly __brand: \"JobId\" };\nexport type StepId = string & { readonly __brand: \"StepId\" };\n\n// Discriminated union — StepState\nexport type StepState =\n  | { status: \"pending\" }\n  | { status: \"running\";    attempt: number; startedAt: number }\n  | { status: \"succeeded\";  attempt: number; startedAt: number; endedAt: number; durationMs: number }\n  | { status: \"failed\";     attempts: number; lastError: string }\n  | { status: \"cancelled\";  attempt: number; reason: string };\n\n// Conditional type — maps each StepState variant to its summary shape\nexport type StepSummary<S extends StepState> =\n  S[\"status\"] extends \"succeeded\" ? { outcome: \"success\";   durationMs: number } :\n  S[\"status\"] extends \"failed\"    ? { outcome: \"failure\";   attempts: number   } :\n  S[\"status\"] extends \"cancelled\" ? { outcome: \"cancelled\"; reason: string     } :\n                                    { outcome: \"pending\"                        };\n\nexport type Result<T, E> =\n  | { ok: true;  value: T }\n  | { ok: false; error: E };\n\n// Full pipeline entry point\nexport declare function processJobFromQueue(\n  raw: unknown\n): Promise<Result<JobReport, string>>;\n",
+    "goals": [
+      "Define all branded types, discriminated unions (StepState, JobState, ValidationError, ExecutionError), and the conditional type StepSummary<S> correctly under strict mode.",
+      "Implement validateStep and validateJob to parse unknown input, collect all errors without short-circuiting, and return Result<T, ValidationError[]>.",
+      "Implement createStepExecutor, runStep (with retry logic and AbortSignal cancellation), and runJob (sequential execution with abort-on-failure) with fully typed state transitions.",
+      "Implement buildJobReport using exhaustive narrowing over StepState to produce StepReport<StepState>[], and wire everything together in processJobFromQueue."
+    ],
+    "hints": [
+      "For StepSummary, use a conditional type `S[\"status\"] extends \"succeeded\" ? ... : ...` chain — TypeScript can narrow the status discriminant inside each branch.",
+      "In runStep, detect an AbortError by checking `error instanceof Error && error.message.startsWith(\"AbortError\")` — then return a Cancelled ExecutionError without retrying.",
+      "Use `satisfies` on your ValidationError and ExecutionError literal objects to catch misspelled `kind` discriminants at the call site without widening the type."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript Handbook — Discriminated Unions",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html#discriminated-unions"
+      },
+      {
+        "title": "TypeScript Handbook — Conditional Types",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/conditional-types.html"
+      },
+      {
+        "title": "MDN — AbortController / AbortSignal",
+        "url": "https://developer.mozilla.org/en-US/docs/Web/API/AbortController"
+      },
+      {
+        "title": "TypeScript 4.9 — satisfies operator",
+        "url": "https://www.typescriptlang.org/docs/handbook/release-notes/typescript-4-9.html#the-satisfies-operator"
+      }
+    ]
   }
 ]
