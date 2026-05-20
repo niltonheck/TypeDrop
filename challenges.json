@@ -3201,5 +3201,41 @@
         "url": "https://www.typescriptlang.org/docs/handbook/release-notes/typescript-4-9.html#the-satisfies-operator"
       }
     ]
+  },
+  {
+    "date": "2026-05-20",
+    "name": "Typed Event Bus with Subscriber Registry",
+    "difficulty": "Medium",
+    "description": "You're building the internal messaging backbone for a collaborative document editor. UI components publish strongly-typed domain events; other components subscribe to specific event kinds and must receive exactly the right payload shape — with zero `any`.",
+    "snippet": "/** All possible event kinds */\nexport type EventKind = AppEvent[\"kind\"];\n\n/** Resolve a union member by its `kind` literal */\nexport type EventByKind<K extends EventKind> = Extract<AppEvent, { kind: K }>;\n\n/** A subscriber callback typed to the exact event shape */\nexport type Subscriber<K extends EventKind> = (event: EventByKind<K>) => void;\n\n/** Maps every EventKind to its set of active subscribers */\nexport type SubscriberRegistry = {\n  [K in EventKind]: Set<Subscriber<K>>;\n};\n\nexport class EventBus {\n  private registry: SubscriberRegistry;\n  subscribe<K extends EventKind>(kind: K, callback: Subscriber<K>): () => void;\n  publish(event: AppEvent): void;\n  subscriberCount<K extends EventKind>(kind: K): number;\n}\n\nexport function filterEvents<K extends EventKind>(\n  events: AppEvent[],\n  kind: K\n): EventByKind<K>[];",
+    "goals": [
+      "Implement `EventByKind<K>` using `Extract` to resolve the exact union member for a given `kind` literal.",
+      "Build `SubscriberRegistry` as a mapped type over `EventKind` so each key holds a correctly-typed `Set<Subscriber<K>>`.",
+      "Implement `EventBus.subscribe`, `publish`, and `subscriberCount` so events are delivered only to subscribers of the matching kind, with correct payload types and working unsubscribe.",
+      "Implement `filterEvents` to narrow an `AppEvent[]` to `EventByKind<K>[]` without any type assertions."
+    ],
+    "hints": [
+      "For `publish`, a small private generic helper method `dispatch<K extends EventKind>(kind: K, event: EventByKind<K>)` lets TypeScript verify the Set/callback relationship without casting.",
+      "A type predicate `(e: AppEvent): e is EventByKind<K> => e.kind === kind` is the cleanest way to implement `filterEvents` with no assertions.",
+      "When building the registry in the constructor, `Object.fromEntries` or `reduce` both work — cast only the final result to `SubscriberRegistry`, not the individual Sets."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript: Extract<T, U> Utility Type",
+        "url": "https://www.typescriptlang.org/docs/handbook/utility-types.html#extracttype-union"
+      },
+      {
+        "title": "TypeScript: Mapped Types",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/mapped-types.html"
+      },
+      {
+        "title": "TypeScript: Narrowing & Type Predicates",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html#using-type-predicates"
+      },
+      {
+        "title": "TypeScript: Generic Constraints",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/generics.html#generic-constraints"
+      }
+    ]
   }
 ]
