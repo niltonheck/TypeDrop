@@ -3237,5 +3237,41 @@
         "url": "https://www.typescriptlang.org/docs/handbook/2/generics.html#generic-constraints"
       }
     ]
+  },
+  {
+    "date": "2026-05-21",
+    "name": "Typed Recipe Ingredient Scaler",
+    "difficulty": "Easy",
+    "description": "You're building the recipe engine for a meal-planning app. Raw recipe data arrives as `unknown` from a third-party nutrition API; your engine must validate it, scale ingredient quantities to a target serving count, and return a strongly-typed scaled recipe summary — with zero `any`.",
+    "snippet": "// Key types and main function signatures\n\nexport type PositiveNumber = number & { readonly __brand: \"PositiveNumber\" };\n\nexport type Unit = \"g\" | \"ml\" | \"tsp\" | \"tbsp\" | \"cup\" | \"piece\";\n\nexport type Ingredient = {\n  name: string;\n  quantity: PositiveNumber;\n  unit: Unit;\n};\n\nexport type Recipe = {\n  id: string;\n  title: string;\n  servings: PositiveNumber;\n  ingredients: readonly [Ingredient, ...Ingredient[]]; // non-empty tuple\n};\n\nexport type ValidationError =\n  | { kind: \"MissingField\";  field: string }\n  | { kind: \"InvalidValue\"; field: string; reason: string };\n\nexport type Result<T, E> =\n  | { ok: true;  value: T }\n  | { ok: false; error: E };\n\nexport function parseRecipe(raw: unknown): Result<Recipe, ValidationError>;\nexport function scaleRecipe(recipe: Recipe, targetServings: PositiveNumber): ScaledRecipe;\nexport function parseAndScale(raw: unknown, targetServings: number): Result<ScaledRecipe, ValidationError>;",
+    "goals": [
+      "Define branded, union, and discriminated-union types that model the recipe domain with zero `any`.",
+      "Implement `parseRecipe` to validate an `unknown` payload into a typed `Recipe`, returning the first `ValidationError` encountered.",
+      "Implement `scaleRecipe` to compute per-ingredient `scaledQuantity` values using the `PositiveNumber` brand.",
+      "Compose both functions in `parseAndScale`, including upfront validation that `targetServings` is positive."
+    ],
+    "hints": [
+      "A branded type is just `number & { readonly __brand: 'PositiveNumber' }` — use a helper function with a runtime `> 0` check to produce one safely.",
+      "For `Unit` validation, a `const VALID_UNITS = new Set([...]) satisfies Set<Unit>` lets you narrow an unknown string in one `has()` call.",
+      "Non-empty tuple `readonly [Ingredient, ...Ingredient[]]` enforces at least one element at the type level — your runtime check (length >= 1) mirrors this guarantee."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript Handbook – Narrowing",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html"
+      },
+      {
+        "title": "TypeScript Handbook – Utility Types",
+        "url": "https://www.typescriptlang.org/docs/handbook/utility-types.html"
+      },
+      {
+        "title": "TypeScript Handbook – Template Literal & Branded Types (Symbols)",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/types-from-types.html"
+      },
+      {
+        "title": "TypeScript 5.x – `satisfies` operator",
+        "url": "https://www.typescriptlang.org/docs/handbook/release-notes/typescript-4-9.html#the-satisfies-operator"
+      }
+    ]
   }
 ]
