@@ -3273,5 +3273,41 @@
         "url": "https://www.typescriptlang.org/docs/handbook/release-notes/typescript-4-9.html#the-satisfies-operator"
       }
     ]
+  },
+  {
+    "date": "2026-05-22",
+    "name": "Typed Middleware Pipeline with Typed Context & Error Boundaries",
+    "difficulty": "Hard",
+    "description": "You're building the request-processing core for a high-throughput HTTP gateway. Incoming requests pass through a chain of typed middleware layers — auth, rate-limiting, transformation, and logging — each of which can enrich a shared context object or short-circuit the pipeline with a strongly-typed error. The hardest part is making the context type accumulate correctly as it flows through each middleware stage.",
+    "snippet": "// Core types and main pipeline entry point\n\nexport type Brand<T, Tag extends string> = T & { readonly __brand: Tag };\nexport type UserId   = Brand<string, \"UserId\">;\nexport type TraceId  = Brand<string, \"TraceId\">;\nexport type TenantId = Brand<string, \"TenantId\">;\n\nexport type Result<T, E> =\n  | { readonly ok: true;  readonly value: T }\n  | { readonly ok: false; readonly error: E };\n\nexport type Middleware<In, Out extends In> = (\n  ctx: In\n) => Promise<Result<Out, AnyPipelineError>>;\n\nexport type FullContext =\n  BaseContext & AuthFields & RateLimitFields & TransformFields;\n\n// Validate raw unknown input → typed RawRequest\nexport function validateRequest(\n  raw: unknown\n): Result<RawRequest, PipelineError<\"VALIDATION_ERROR\">> { /* TODO */ }\n\n// Run all middleware stages sequentially, short-circuiting on any error\nexport async function runPipeline(\n  raw: unknown,\n  store: RateLimitStore\n): Promise<Result<FullContext, AnyPipelineError>> { /* TODO */ }\n",
+    "goals": [
+      "Implement `validateRequest` to safely narrow `unknown` to a fully-typed `RawRequest`, returning a discriminated `Result` with a concrete `PipelineError<\"VALIDATION_ERROR\">` on failure.",
+      "Implement the three middleware functions (`authMiddleware`, `makeRateLimitMiddleware`, `transformMiddleware`) so each one adds exactly the right fields to the context intersection type and short-circuits with a correctly-kinded `PipelineError` on failure.",
+      "Implement `runPipeline` to chain all middleware stages sequentially, propagating typed errors without re-wrapping them, and returning a `Result<FullContext, AnyPipelineError>`.",
+      "Implement `reportError` with an exhaustive `switch` over all `PipelineErrorKind` variants and a `never`-typed exhaustiveness guard so TypeScript enforces full coverage."
+    ],
+    "hints": [
+      "For `Middleware<In, Out extends In>`, the `Out extends In` constraint is the key to making TypeScript enforce that each stage can only *add* fields — use intersection types like `BaseContext & AuthFields` as the `Out` type parameter.",
+      "In `reportError`, after your `switch` statement, assign `err` to a variable typed as `never` (e.g. `const _exhaustive: never = err`) — this will produce a compile error if you forget a case.",
+      "In `validateRequest`, build up your checks incrementally: first guard the top-level shape with `typeof`/`!= null`, then use `in` narrowing and `typeof` checks on each field — avoid casting, let the type guards do the work."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript Handbook — Narrowing",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html"
+      },
+      {
+        "title": "TypeScript Handbook — Conditional & Mapped Types",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/types-from-types.html"
+      },
+      {
+        "title": "TypeScript Handbook — Generics (Constraints)",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/generics.html#generic-constraints"
+      },
+      {
+        "title": "TypeScript Deep Dive — Discriminated Unions",
+        "url": "https://basarat.gitbook.io/typescript/type-system/discriminated-unions"
+      }
+    ]
   }
 ]
