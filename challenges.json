@@ -3309,5 +3309,41 @@
         "url": "https://basarat.gitbook.io/typescript/type-system/discriminated-unions"
       }
     ]
+  },
+  {
+    "date": "2026-05-23",
+    "name": "Typed Task Priority Queue",
+    "difficulty": "Easy",
+    "description": "You're building the scheduling layer for a project management tool. Tasks arrive as `unknown` from a REST API; your engine must validate them, insert them into a typed priority queue, and drain them in order — returning a strongly-typed execution plan with zero `any`.",
+    "snippet": "/** Raw priority levels accepted by the API. */\ntype Priority = \"low\" | \"medium\" | \"high\" | \"critical\";\n\ntype Task = {\n  id:          string;\n  title:       string;\n  priority:    Priority;\n  durationMin: number;        // must be > 0\n  tags:        readonly string[];\n};\n\ntype ExecutionPlan = {\n  orderedTasks:         readonly Task[];   // critical → high → medium → low\n  totalDurationMin:     number;\n  taskCountByPriority:  Record<Priority, number>;\n};\n\n/** Ordered priority levels — highest first. */\nconst PRIORITY_ORDER = [\"critical\", \"high\", \"medium\", \"low\"] as const;\n\n// Your main entry point:\nfunction buildExecutionPlan(rawTasks: unknown[]): ExecutionPlan { /* TODO */ }\n",
+    "goals": [
+      "Implement `isValidPriority` as a proper type-guard that narrows `unknown` to `Priority`.",
+      "Implement `validateTask` to parse `unknown` input into a well-typed `Task`, throwing descriptive `TypeError`s for each invalid field.",
+      "Implement `TaskQueue` with `insert`, `drain` (stable priority sort), and a `size` getter — using no `any`.",
+      "Implement `buildExecutionPlan` to validate all raw tasks, drain the queue in priority order, and return a fully-typed `ExecutionPlan` where every `Priority` key is present in `taskCountByPriority`."
+    ],
+    "hints": [
+      "Use `PRIORITY_ORDER.indexOf(a.priority) - PRIORITY_ORDER.indexOf(b.priority)` as your sort comparator — a stable sort preserves insertion order for equal priorities.",
+      "To ensure every `Priority` key is always present in `taskCountByPriority`, initialise the `Record` with all four keys set to `0` before counting.",
+      "Inside `validateTask`, narrow `raw` to `Record<string, unknown>` after the non-null object check so you can safely access named fields without `any`."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript — Narrowing & Type Guards",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html"
+      },
+      {
+        "title": "TypeScript — Utility Types (Record, Readonly)",
+        "url": "https://www.typescriptlang.org/docs/handbook/utility-types.html"
+      },
+      {
+        "title": "MDN — Array.prototype.sort() (stable sort)",
+        "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/sort"
+      },
+      {
+        "title": "TypeScript — `as const` & Const Type Parameters",
+        "url": "https://www.typescriptlang.org/docs/handbook/release-notes/typescript-3-4.html#const-assertions"
+      }
+    ]
   }
 ]
