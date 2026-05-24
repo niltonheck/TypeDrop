@@ -3345,5 +3345,41 @@
         "url": "https://www.typescriptlang.org/docs/handbook/release-notes/typescript-3-4.html#const-assertions"
       }
     ]
+  },
+  {
+    "date": "2026-05-24",
+    "name": "Typed Paginated API Client with Cursor-Based Aggregation",
+    "difficulty": "Hard",
+    "description": "You're building the data-ingestion layer for an analytics dashboard that pulls user activity events from a cursor-paginated REST API. Pages arrive as `unknown`; your client must validate each page, fan out concurrent fetches up to a concurrency limit, aggregate results through a typed single-pass reducer, and surface a strongly-typed report — with zero `any`.",
+    "snippet": "\n// Core types & main orchestrator signature at a glance\n\nexport type Cursor   = string & { readonly __brand: \"Cursor\" };\nexport type PageSize = number & { readonly __brand: \"PageSize\" };\n\nexport type EventKind = \"click\" | \"view\" | \"purchase\" | \"share\";\n\nexport type Result<T, E extends string> =\n  | { readonly ok: true;  readonly value: T }\n  | { readonly ok: false; readonly error: E; readonly detail: string };\n\nexport interface Page<T> {\n  readonly items:       readonly T[];\n  readonly nextCursor:  Cursor | null;\n  readonly totalCount:  number;\n}\n\nexport type KindStats = {\n  readonly [K in EventKind]: {\n    readonly count:           number;\n    readonly totalDurationMs: number;\n    readonly totalRevenueUsd: number;\n  };\n};\n\nexport type PageFetcher =\n  (cursor: Cursor | null, pageSize: PageSize) => Promise<unknown>;\n\n// Ties everything together — validate config, paginate, aggregate\nexport async function runIngestion(\n  fetcher: PageFetcher,\n  config:  ClientConfig,\n): Promise<Result<AggregationReport, \"InvalidPageSize\" | \"FetchFailed\">>;\n",
+    "goals": [
+      "Implement branded constructors `makeCursor` and `makePageSize` that return `Result` types with precise error literals.",
+      "Implement `validatePage` that narrows `unknown` API responses to `Page<ActivityEvent>` using only type guards — no type assertions.",
+      "Implement `aggregateEvents` that computes a fully-typed `AggregationReport` in a single pass with an exhaustive `KindStats` mapped type.",
+      "Implement `fetchAllPages` with a rolling concurrency window and `runIngestion` that wires validation, pagination, and aggregation into one `Result`-returning async pipeline."
+    ],
+    "hints": [
+      "For `validatePage`, build a series of narrowing helper functions (e.g. `isActivityEvent`) that check each field individually — TypeScript needs explicit `typeof` / `in` guards, not casts.",
+      "For `KindStats`, initialise all four keys up front using an object literal that satisfies the mapped type — the compiler will catch any missing key at compile time.",
+      "For the concurrency window in `fetchAllPages`, think of a recursive \"slot\" pattern: start up to `concurrency` fetches, and as each resolves, immediately launch the next cursor if one is available — rather than batching pages in fixed groups."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript Handbook — Narrowing",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html"
+      },
+      {
+        "title": "TypeScript Handbook — Mapped Types",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/mapped-types.html"
+      },
+      {
+        "title": "TypeScript Handbook — Generics",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/generics.html"
+      },
+      {
+        "title": "MDN — Promise.all",
+        "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise/all"
+      }
+    ]
   }
 ]
