@@ -3381,5 +3381,41 @@
         "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise/all"
       }
     ]
+  },
+  {
+    "date": "2026-05-25",
+    "name": "Typed User Permission Checker",
+    "difficulty": "Easy",
+    "description": "You're building the access-control layer for a SaaS dashboard. Raw user session data arrives as `unknown` from a JWT-decode utility; your engine must validate it, derive a typed permission set from the user's role, and answer permission queries — with zero `any`.",
+    "snippet": "/** Every discrete action a user might attempt. */\ntype Action =\n  | \"read:content\"   | \"write:content\" | \"delete:content\"\n  | \"manage:users\"   | \"view:analytics\" | \"export:data\";\n\ntype Role = \"admin\" | \"editor\" | \"viewer\";\n\n/** Mapped type: every Role key is guaranteed present */\ntype PermissionMap = { readonly [R in Role]: ReadonlyArray<Action> };\n\n/** Discriminated-union result from the session parser */\ntype ParseResult =\n  | { ok: true;  session: UserSession }\n  | { ok: false; reason: string };\n\n// --- functions you must implement ---\ndeclare function parseSession(raw: unknown): ParseResult;\ndeclare function can(session: UserSession, action: Action): boolean;\ndeclare function checkAll(\n  session: UserSession,\n  actions: ReadonlyArray<Action>\n): Partial<Record<Action, boolean>>;\n",
+    "goals": [
+      "Define `PermissionMap` as a mapped type over `Role` and populate `PERMISSIONS` using the `satisfies` operator.",
+      "Implement `parseSession` to validate `unknown` input into a typed `UserSession` via a discriminated-union `ParseResult` — no `any` or type assertions.",
+      "Write a `isRole` type-guard that narrows `unknown` to the `Role` union without casting.",
+      "Implement `can` and `checkAll` to answer permission queries against the typed permission table."
+    ],
+    "hints": [
+      "A type-guard `isRole(v: unknown): v is Role` lets the compiler accept `rec['role']` as `Role` inside `parseSession` without any cast.",
+      "The `satisfies` operator validates an object's shape against a type while preserving its narrower literal types — perfect for `PERMISSIONS`.",
+      "`Object.fromEntries(actions.map(a => [a, can(session, a)]))` produces the batch report in one expression; you only need a light cast at the boundary."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript Handbook — Mapped Types",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/mapped-types.html"
+      },
+      {
+        "title": "TypeScript Handbook — Narrowing & Type Guards",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html"
+      },
+      {
+        "title": "TypeScript 4.9 — The `satisfies` Operator",
+        "url": "https://www.typescriptlang.org/docs/handbook/release-notes/typescript-4-9.html#the-satisfies-operator"
+      },
+      {
+        "title": "TypeScript Handbook — Utility Types (Record, Partial)",
+        "url": "https://www.typescriptlang.org/docs/handbook/utility-types.html"
+      }
+    ]
   }
 ]
