@@ -3417,5 +3417,41 @@
         "url": "https://www.typescriptlang.org/docs/handbook/utility-types.html"
       }
     ]
+  },
+  {
+    "date": "2026-05-26",
+    "name": "Typed Event Aggregator with Discriminated Union Streams",
+    "difficulty": "Medium",
+    "description": "You're building the analytics ingestion layer for a real-time monitoring dashboard. Raw telemetry events arrive as `unknown` from a WebSocket feed; your engine must validate them, fan them into typed streams by category, and produce a strongly-typed per-category summary report — with zero `any`.",
+    "snippet": "// Core discriminated union & key types you must define:\n\nexport type TypedEvent =\n  | { category: \"error\";  id: string; ts: number; payload: ErrorPayload  }\n  | { category: \"metric\"; id: string; ts: number; payload: MetricPayload }\n  | { category: \"audit\";  id: string; ts: number; payload: AuditPayload  };\n\nexport type EventCategory = TypedEvent[\"category\"]; // derive, don't hardcode\n\nexport type EventByCategory<C extends EventCategory> = /* your conditional type */;\nexport type SummaryByCategory<C extends EventCategory> = /* your conditional type */;\n\n// Main generic functions you must implement:\nexport function extractCategory<C extends EventCategory>(\n  results: ParseResult[],\n  category: C\n): EventByCategory<C>[];\n\nexport function summarize<C extends EventCategory>(\n  results: ParseResult[],\n  category: C\n): SummaryByCategory<C>;",
+    "goals": [
+      "Define `TypedEvent` as a three-member discriminated union and derive `EventCategory`, `EventByCategory<C>`, and `SummaryByCategory<C>` from it using conditional types or `Extract<>` — no hardcoded strings in utility types.",
+      "Implement `validateRawEvent` and `parseEvent` to narrow `unknown` inputs into fully typed events, returning a `ParseResult` discriminated union without any `as` assertions.",
+      "Implement the generic `extractCategory<C>` so that TypeScript statically narrows the returned array element type to the correct `TypedEvent` member for each category.",
+      "Implement the generic `summarize<C>` to compute `ErrorSummary`, `MetricSummary`, or `AuditSummary` with correct aggregation logic (topCode, per-name averages, unique actors), with the return type statically resolving to the right summary via `SummaryByCategory<C>`."
+    ],
+    "hints": [
+      "For `EventByCategory<C>`, try `Extract<TypedEvent, { category: C }>` — it resolves to exactly the union member whose `category` matches `C`.",
+      "For `SummaryByCategory<C>`, a conditional type chain `C extends 'error' ? ErrorSummary : C extends 'metric' ? MetricSummary : AuditSummary` is the cleanest approach — but you'll still need a type assertion-free way to return it from `summarize`; consider a type predicate or exhaustive if/else that TypeScript can follow.",
+      "In `validateRawEvent`, use `typeof`, `Array.isArray`, and `Object.keys` checks — never `as`. Once all checks pass, TypeScript will accept the return type."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript: Discriminated Unions",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html#discriminated-unions"
+      },
+      {
+        "title": "TypeScript: Conditional Types",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/conditional-types.html"
+      },
+      {
+        "title": "TypeScript: Extract<Type, Union> utility type",
+        "url": "https://www.typescriptlang.org/docs/handbook/utility-types.html#extracttype-union"
+      },
+      {
+        "title": "TypeScript: Narrowing (typeof, in, user-defined type guards)",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html"
+      }
+    ]
   }
 ]
