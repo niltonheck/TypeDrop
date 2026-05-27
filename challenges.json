@@ -3453,5 +3453,41 @@
         "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html"
       }
     ]
+  },
+  {
+    "date": "2026-05-27",
+    "name": "Typed Retry-with-Backoff Fetch Orchestrator",
+    "difficulty": "Hard",
+    "description": "You're building the resilient data-fetching layer for a financial trading dashboard. External market-data endpoints are flaky; your orchestrator must validate raw responses, retry failed requests with typed exponential back-off policies, fan out concurrent calls within a concurrency cap, and surface a strongly-typed per-endpoint result report — with zero `any`.",
+    "snippet": "// Key types and main orchestration signature\n\ntype EndpointUrl = string & { readonly __brand: \"EndpointUrl\" };\ntype AssetClass  = \"equity\" | \"bond\" | \"crypto\" | \"commodity\";\n\ninterface MarketQuote {\n  readonly symbol: string;\n  readonly price: number;\n  readonly assetClass: AssetClass;\n  readonly timestampMs: number;\n}\n\ntype Ok<T>          = { readonly ok: true;  readonly value: T };\ntype Err<E extends string> = { readonly ok: false; readonly error: E; readonly detail: string };\ntype Result<T, E extends string> = Ok<T> | Err<E>;\ntype FetchError = \"NETWORK_ERROR\" | \"TIMEOUT\" | \"INVALID_RESPONSE\" | \"RETRIES_EXHAUSTED\";\n\ntype Fetcher = (url: EndpointUrl, signal: AbortSignal) => Promise<unknown>;\n\ninterface EndpointSpec { readonly url: EndpointUrl; readonly policy: BackoffPolicy; }\n\ntype EndpointOutcome =\n  | { readonly status: \"fulfilled\"; readonly quote: MarketQuote }\n  | { readonly status: \"rejected\";  readonly error: FetchError; readonly detail: string };\n\ntype OrchestrationReport = Readonly<Record<string, EndpointOutcome>>;\n\n// Main entry point you must implement:\nasync function orchestrate(\n  specs: ReadonlyArray<EndpointSpec>,\n  fetcher: Fetcher,\n  concurrencyLimit: number,\n  outerSignal: AbortSignal\n): Promise<OrchestrationReport> { /* TODO */ throw new Error(); }",
+    "goals": [
+      "Implement branded-type construction (`makeEndpointUrl`) and runtime validation (`parseMarketQuote`) that narrows `unknown` to `MarketQuote` without type assertions.",
+      "Build a typed retry loop (`fetchWithRetry`) that applies exponential back-off, respects an `AbortSignal`, and correctly classifies every failure variant of `FetchError`.",
+      "Orchestrate concurrent fetches in fixed-size batches using `Promise.allSettled`, assembling a fully-typed `OrchestrationReport` keyed by URL string.",
+      "Aggregate the report into per-`AssetClass` statistics in a single pass and expose fulfilled URLs via a type-predicate guard — all under `strict: true` with zero `any`."
+    ],
+    "hints": [
+      "For `makeEndpointUrl`, the branded type can only be produced by returning a value that TypeScript already knows satisfies the brand — think about what the condition guarantees before you return.",
+      "In `fetchWithRetry`, a `Promise`-based sleep that also listens to an `AbortSignal` needs two racing paths inside `Promise.race`; one resolves after `setTimeout`, the other resolves/rejects when the signal fires.",
+      "For single-pass aggregation in `aggregateReport`, keep a running `{ sum, count, min, max }` accumulator per asset class inside a `Map` and compute `avgPrice` only at the end when writing the output record."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript – Branded / Nominal Types",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/types-from-types.html"
+      },
+      {
+        "title": "AbortController & AbortSignal (MDN)",
+        "url": "https://developer.mozilla.org/en-US/docs/Web/API/AbortController"
+      },
+      {
+        "title": "Promise.allSettled (MDN)",
+        "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise/allSettled"
+      },
+      {
+        "title": "TypeScript – Narrowing & Type Predicates",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html#using-type-predicates"
+      }
+    ]
   }
 ]
