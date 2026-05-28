@@ -3489,5 +3489,41 @@
         "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html#using-type-predicates"
       }
     ]
+  },
+  {
+    "date": "2026-05-28",
+    "name": "Typed Middleware Pipeline Builder",
+    "difficulty": "Medium",
+    "description": "You're building the request-processing layer for an internal API gateway. Incoming requests pass through a chain of typed middleware handlers — each one can enrich the context, short-circuit with a typed error, or pass control to the next handler — all with zero `any`.",
+    "snippet": "// Key types and main builder signature\n\ntype Middleware<C, Extra = Record<string, never>> =\n  (ctx: C) => Promise<StepResult<C & Extra>>;\n\ntype StepResult<C> =\n  | { ok: true; ctx: C }\n  | { ok: false; error: MiddlewareError };\n\ntype PipelineResult<T> =\n  | { ok: true; value: T }\n  | { ok: false; error: MiddlewareError };\n\n// Fluent builder — each .use() widens the context type\nclass Pipeline<C> {\n  constructor(initialCtx: C) { /* ... */ }\n\n  use<Extra>(step: Middleware<C, Extra>): Pipeline<C & Extra> { /* ... */ }\n\n  run<T>(handler: (ctx: C) => Promise<T>): Promise<PipelineResult<T>> { /* ... */ }\n}\n\n// Usage:\nconst result = await new Pipeline(requestCtx)\n  .use(authMiddleware())           // ctx gains: { auth: { token: string } }\n  .use(roleMiddleware(\"admin\"))    // ctx gains: { user: { role: string } }\n  .run(async (ctx) => ctx.user.role);\n",
+    "goals": [
+      "Define the `Middleware<C, Extra>` type alias with a default type parameter and implement the `Pipeline<C>` builder so that `.use()` correctly widens the context type to `C & Extra` on each call.",
+      "Implement `Pipeline.run()` to execute all registered middleware sequentially, short-circuiting on the first `{ ok: false }` result and catching thrown exceptions as `{ kind: 'internal' }` errors.",
+      "Implement the three middleware factories (`authMiddleware`, `roleMiddleware`, `rateLimitMiddleware`) with their exact return types — no `any`, no type assertions.",
+      "Implement `describeError` with an exhaustive `switch` over all five `MiddlewareError` variants, including every variant-specific field in the output string."
+    ],
+    "hints": [
+      "For the internal step array in `Pipeline`, consider storing steps as `((ctx: unknown) => Promise<StepResult<unknown>>)[]` and casting only at the boundary inside `use()` — this is the one place where you may need to think carefully about structural compatibility.",
+      "The `use<Extra>()` method should construct and return a brand-new `Pipeline` instance (passing the accumulated steps), rather than mutating `this` — this keeps the type widening sound.",
+      "For `describeError`, TypeScript will flag a missing case if you omit any `kind` variant from the `switch`; use a helper `function assertNever(x: never): never { throw new Error(...) }` in the `default` branch to get compile-time exhaustiveness proof."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript Handbook — Generics",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/generics.html"
+      },
+      {
+        "title": "TypeScript Handbook — Narrowing & Discriminated Unions",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html#discriminated-unions"
+      },
+      {
+        "title": "TypeScript Handbook — Intersection Types",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/objects.html#intersection-types"
+      },
+      {
+        "title": "TypeScript Deep Dive — Never Type",
+        "url": "https://basarat.gitbook.io/typescript/type-system/never"
+      }
+    ]
   }
 ]
