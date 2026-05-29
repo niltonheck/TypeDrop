@@ -3525,5 +3525,41 @@
         "url": "https://basarat.gitbook.io/typescript/type-system/never"
       }
     ]
+  },
+  {
+    "date": "2026-05-29",
+    "name": "Typed Shopping Cart Aggregator",
+    "difficulty": "Easy",
+    "description": "You're building the order-summary layer for an e-commerce checkout flow. Raw cart items arrive as `unknown` from a localStorage deserializer; your engine must validate them, apply typed discount rules, and produce a strongly-typed order summary — with zero `any`.",
+    "snippet": "// Key types at a glance\n\ntype Category = \"electronics\" | \"clothing\" | \"food\" | \"books\";\n\ntype ValidatedCartItem = RawCartItem & { readonly __validated: true };\n\ntype DiscountRule =\n  | { kind: \"flat\"; amountInCents: number }\n  | { kind: \"percentage\"; percent: number }\n  | { kind: \"bogo\"; category: Category };\n\ninterface OrderSummary {\n  lineItems: LineItem[];\n  subtotalInCents: number;\n  discountInCents: number;\n  totalInCents: number;   // never negative\n  itemCount: number;\n}\n\n// Functions you must implement:\ndeclare function validateCartItem(raw: unknown): ValidatedCartItem;\ndeclare function buildLineItems(items: ReadonlyArray<ValidatedCartItem>): LineItem[];\ndeclare function applyDiscounts(\n  subtotalInCents: number,\n  items: ReadonlyArray<ValidatedCartItem>,\n  rules: ReadonlyArray<DiscountRule>\n): number;\ndeclare function buildOrderSummary(\n  items: ReadonlyArray<ValidatedCartItem>,\n  rules: ReadonlyArray<DiscountRule>\n): OrderSummary;\n",
+    "goals": [
+      "Implement `validateCartItem` to narrow `unknown` → `ValidatedCartItem` using a branded type, throwing a `TypeError` on any invalid field.",
+      "Implement `buildLineItems` to map validated items into `LineItem` objects with computed line totals.",
+      "Implement `applyDiscounts` to accumulate discounts from all three `DiscountRule` kinds (flat, percentage, bogo) against the original subtotal, clamped to [0, subtotal].",
+      "Compose everything in `buildOrderSummary` to produce a fully-typed `OrderSummary` with a non-negative total."
+    ],
+    "hints": [
+      "Use a type predicate (`value is ValidatedCartItem`) or an explicit brand assignment inside `validateCartItem` — remember, no `as` allowed means you must narrow field-by-field before returning.",
+      "For the discriminated union in `applyDiscounts`, a `switch` on `rule.kind` gives you exhaustive narrowing and TypeScript will enforce that every branch is handled.",
+      "The `bogo` discount only needs the validated items array — filter by `rule.category`, then sum each matching item's `lineTotalInCents` and halve it with `Math.floor`."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript Narrowing",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html"
+      },
+      {
+        "title": "Discriminated Unions",
+        "url": "https://www.typescriptlang.org/docs/handbook/typescript-in-5-minutes-func.html#discriminated-unions"
+      },
+      {
+        "title": "Branded / Nominal Types (TypeScript Deep Dive)",
+        "url": "https://basarat.gitbook.io/typescript/main-1/nominaltyping"
+      },
+      {
+        "title": "ReadonlyArray — MDN",
+        "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array"
+      }
+    ]
   }
 ]
