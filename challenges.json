@@ -3561,5 +3561,41 @@
         "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array"
       }
     ]
+  },
+  {
+    "date": "2026-05-30",
+    "name": "Typed Paginated API Cursor Engine",
+    "difficulty": "Hard",
+    "description": "You're building the data-fetching layer for a large-scale analytics dashboard that must stream millions of records from a paginated REST API. Pages arrive as `unknown` JSON; your engine must validate them, thread opaque cursors through sequential fetches, enforce concurrency limits across multiple resource streams, and surface a strongly-typed per-resource aggregation report — with zero `any`.",
+    "snippet": "// Key types and main function signatures\n\nexport type Cursor = string & { readonly __brand: \"Cursor\" };\nexport type ResourceId = string & { readonly __brand: \"ResourceId\" };\n\nexport type FetchError =\n  | { kind: \"network\";    message: string }\n  | { kind: \"validation\"; field: string; message: string }\n  | { kind: \"exhausted\";  attempts: number };\n\nexport type Result<T> =\n  | { ok: true;  value: T }\n  | { ok: false; error: FetchError };\n\nexport interface ResourceStream<TPayload> {\n  resourceId: ResourceId;\n  fetchPage: (cursor: Cursor | undefined) => Promise<unknown>;\n  validatePayload: (raw: unknown) => Result<TPayload>;\n}\n\nexport interface PaginationPolicy {\n  maxPages: number;\n  delayMs: number;\n  concurrencyLimit: number;\n}\n\n// Validate raw unknown API response → typed RawPage\nexport function validateRawPage(raw: unknown): Result<RawPage> { /* TODO */ }\n\n// Parse a validated page, delegating payload validation\nexport function parsePage<TPayload>(\n  rawPage: RawPage,\n  validatePayload: (raw: unknown) => Result<TPayload>\n): ParsedPage<TPayload> { /* TODO */ }\n\n// Paginate one stream sequentially, respecting policy\nexport async function paginateStream<TPayload>(\n  stream: ResourceStream<TPayload>,\n  policy: PaginationPolicy\n): Promise<ResourceReport<TPayload>> { /* TODO */ }\n\n// Fan out all streams with a concurrency cap, return full report\nexport async function runAggregation<TPayload>(\n  streams: ReadonlyArray<ResourceStream<TPayload>>,\n  policy: PaginationPolicy\n): Promise<AggregationReport<TPayload>> { /* TODO */ }\n",
+    "goals": [
+      "Implement `validateRawPage` to safely narrow `unknown` API responses into a typed `RawPage` using structural guards — no `as` or `any`.",
+      "Implement `parsePage` to iterate raw record arrays, delegate payload validation, thread branded `Cursor` values, and collect partial errors without aborting.",
+      "Implement `paginateStream` to fetch pages sequentially, advance the opaque cursor, honour `maxPages` and `delayMs`, and return a fully classified `ResourceReport`.",
+      "Implement `runAggregation` to fan out multiple streams under a `concurrencyLimit`, collect all reports without letting one failure abort others, and compute the final `AggregationReport`."
+    ],
+    "hints": [
+      "For branded types (`Cursor`, `ResourceId`), the provided `makeCursor` / `makeResourceId` helpers are the only legal promotion points — use type predicates elsewhere to avoid `as`.",
+      "A concurrency-pool without a library: maintain a `Set` of in-flight Promises, `await Promise.race(inFlight)` whenever the set reaches `concurrencyLimit`, then remove the resolved promise and add the next one.",
+      "Thread the cursor through `paginateStream` with a `let cursor: Cursor | undefined = undefined` and update it to `page.nextCursor ?? undefined` after each page — the `null` sentinel is your loop exit condition."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript — Branded / Opaque Types (handbook)",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/template-literal-types.html"
+      },
+      {
+        "title": "TypeScript — Narrowing & Type Predicates",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html"
+      },
+      {
+        "title": "Promise.allSettled — MDN",
+        "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise/allSettled"
+      },
+      {
+        "title": "TypeScript — Generics",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/generics.html"
+      }
+    ]
   }
 ]
