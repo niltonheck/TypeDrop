@@ -3597,5 +3597,41 @@
         "url": "https://www.typescriptlang.org/docs/handbook/2/generics.html"
       }
     ]
+  },
+  {
+    "date": "2026-05-31",
+    "name": "Typed Permission-Based Access Control Engine",
+    "difficulty": "Medium",
+    "description": "You're building the authorization layer for a multi-tenant SaaS platform. Unknown user session tokens arrive from an authentication provider; your engine must validate them, resolve role-based permissions via a typed policy registry, and produce a strongly-typed access decision report — with zero `any`.",
+    "snippet": "// Key types & main function signature\n\ntype Resource = \"billing\" | \"reports\" | \"settings\" | \"users\" | \"audit_logs\";\ntype Action   = \"create\" | \"read\" | \"update\" | \"delete\";\ntype RoleId   = \"admin\" | \"analyst\" | \"billing_manager\" | \"viewer\" | \"support\";\n\n// TODO 1 — template literal + brand\ntype Permission = /* `${Resource}:${Action}` + unique symbol brand */ unknown;\n\ntype PolicyRegistry = Record<RoleId, ReadonlyArray<Permission>>;\n\ntype AccessDecision =\n  | { outcome: \"granted\"; matchedPermission: Permission }\n  | { outcome: \"denied\";  reason: \"insufficient_permissions\" | \"token_expired\" | \"no_roles\" }\n  | { outcome: \"error\";   error: ValidationError };\n\n// TODO 6 — generic mapped type\ntype AccessReport<T extends Record<string, AccessRequest>> = unknown; // mapped over keys of T\n\n// Main engine function — return type is fully inferred from T\nfunction checkAccess<T extends Record<string, AccessRequest>>(\n  rawToken: unknown,\n  requests: T,\n  options?: EngineOptions\n): AccessReport<T> { /* TODO 7 */ }\n",
+    "goals": [
+      "Define `Permission` as a branded template literal type combining `Resource` and `Action`, and implement `makePermission` without type assertions.",
+      "Implement `validateSessionToken` to safely narrow `unknown` to `SessionToken`, throwing a typed `ValidationError` for every invalid field.",
+      "Implement the generic `checkAccess` engine so its return type is `AccessReport<T>` — a mapped type that preserves the exact keys of the input request map.",
+      "Implement `diffPermissions` to compute the symmetric difference and intersection of two roles' permission sets, returning fully typed `Permission[]` arrays."
+    ],
+    "hints": [
+      "For the branded `Permission` type, combine a template literal type with an intersection of `{ readonly [__permissionBrand]: true }` — then return it from `makePermission` using a type-safe cast-free approach (hint: the function body can use string concatenation and the return type annotation does the heavy lifting).",
+      "In `validateSessionToken`, use `typeof` and `Array.isArray` guards first, then narrow each field individually — store intermediate results in typed `const` bindings so TypeScript can follow the narrowing chain.",
+      "For `AccessReport<T>`, the mapped type should look like `{ [K in keyof T]: AccessDecision }` — make sure to preserve the `readonly` modifier and that `T` is constrained to `Record<string, AccessRequest>`."
+    ],
+    "docs": [
+      {
+        "title": "Template Literal Types — TS Handbook",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/template-literal-types.html"
+      },
+      {
+        "title": "Mapped Types — TS Handbook",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/mapped-types.html"
+      },
+      {
+        "title": "Narrowing (unknown & type guards) — TS Handbook",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html"
+      },
+      {
+        "title": "The `satisfies` Operator — TS 4.9 Release Notes",
+        "url": "https://www.typescriptlang.org/docs/handbook/release-notes/typescript-4-9.html#the-satisfies-operator"
+      }
+    ]
   }
 ]
