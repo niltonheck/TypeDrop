@@ -3633,5 +3633,41 @@
         "url": "https://www.typescriptlang.org/docs/handbook/release-notes/typescript-4-9.html#the-satisfies-operator"
       }
     ]
+  },
+  {
+    "date": "2026-06-01",
+    "name": "Typed Real-Time Event Stream Aggregator",
+    "difficulty": "Hard",
+    "description": "You're building the ingestion layer for a live operations monitoring platform. Raw telemetry events arrive as `unknown` over a simulated stream; your engine must validate them into a discriminated-union event type, route them through per-kind typed reducer functions, enforce a sliding time-window deduplication strategy, and produce a strongly-typed per-source aggregation report — with zero `any`.",
+    "snippet": "// Key types & main function signature\n\ntype Brand<Base, Tag extends string> = Base & { readonly __brand: Tag };\n\ntype EventId   = Brand<string, \"EventId\">;\ntype SourceId  = Brand<string, \"SourceId\">;\ntype Timestamp = Brand<number, \"Timestamp\">;\n\ntype TelemetryEvent =\n  | { kind: \"metric\"; id: EventId; sourceId: SourceId; timestamp: Timestamp; payload: MetricPayload }\n  | { kind: \"log\";    id: EventId; sourceId: SourceId; timestamp: Timestamp; payload: LogPayload   }\n  | { kind: \"alert\";  id: EventId; sourceId: SourceId; timestamp: Timestamp; payload: AlertPayload };\n\ntype AccumulatorMap = {\n  metric: MetricAccumulator;\n  log:    LogAccumulator;\n  alert:  AlertAccumulator;\n};\n\ninterface AggregationReport {\n  sources:        Map<SourceId, SourceReport>;\n  totalIngested:  number;\n  totalDropped:   number;\n}\n\nfunction aggregateStream(\n  rawEvents: unknown[],\n  dedupConfig: DeduplicationConfig\n): AggregationReport { /* TODO */ }\n",
+    "goals": [
+      "Define branded scalar types and a discriminated-union TelemetryEvent with per-kind payload shapes.",
+      "Implement a runtime validator that narrows unknown → TelemetryEvent | null without any casts until all checks pass.",
+      "Build a generic AccumulatorMap mapped type and three pure typed reducer functions dispatched exhaustively by event kind.",
+      "Implement a sliding-window deduplicator closure and wire everything together in aggregateStream to produce a fully-typed AggregationReport."
+    ],
+    "hints": [
+      "For AccumulatorMap, a simple interface-based mapped type `{ [K in TelemetryEvent[\"kind\"]]: ... }` plus a conditional type avoids any index-signature tricks.",
+      "In aggregateStream, write a small `applyReducer(report: SourceReport, event: TelemetryEvent): void` helper that switches on `event.kind` — TypeScript will narrow both the event and the accumulator type inside each branch without needing casts.",
+      "The `satisfies` operator in parseEvent lets you build the return object as a plain literal and have the compiler verify the discriminated-union shape in one shot, rather than asserting types piecemeal."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript Handbook — Discriminated Unions",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html#discriminated-unions"
+      },
+      {
+        "title": "TypeScript Handbook — Mapped Types",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/mapped-types.html"
+      },
+      {
+        "title": "TypeScript Handbook — The satisfies Operator",
+        "url": "https://www.typescriptlang.org/docs/handbook/release-notes/typescript-4-9.html#the-satisfies-operator"
+      },
+      {
+        "title": "TypeScript Handbook — Utility Types (Extract, Record)",
+        "url": "https://www.typescriptlang.org/docs/handbook/utility-types.html"
+      }
+    ]
   }
 ]
