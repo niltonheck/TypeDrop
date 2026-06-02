@@ -3669,5 +3669,41 @@
         "url": "https://www.typescriptlang.org/docs/handbook/utility-types.html"
       }
     ]
+  },
+  {
+    "date": "2026-06-02",
+    "name": "Typed Contact Book Grouper",
+    "difficulty": "Easy",
+    "description": "You're building the display layer for a mobile contact book app. Raw contact entries arrive as `unknown` from a device sync API; your engine must validate them, normalize their data, and group them into a strongly-typed alphabetical index — with zero `any`.",
+    "snippet": "export type ContactCategory = \"personal\" | \"work\";\n\nexport interface Contact {\n  id: string;\n  fullName: string;   // trimmed, non-empty\n  email: string;      // must contain \"@\"\n  phone: string | null;\n  category: ContactCategory;\n}\n\nexport type AlphaKey = Uppercase<\n  \"a\"|\"b\"|\"c\"|\"d\"|\"e\"|\"f\"|\"g\"|\"h\"|\"i\"|\"j\"|\"k\"|\"l\"|\"m\"|\n  \"n\"|\"o\"|\"p\"|\"q\"|\"r\"|\"s\"|\"t\"|\"u\"|\"v\"|\"w\"|\"x\"|\"y\"|\"z\"\n> | \"#\";\n\nexport type ContactIndex = Partial<Record<AlphaKey, Contact[]>>;\n\nexport type GroupResult = { index: ContactIndex; errors: ValidationError[] };\n\n// Main entry point — validate, normalize, and group raw contacts\nexport function groupContacts(rawEntries: unknown[]): GroupResult { ... }",
+    "goals": [
+      "Implement `isPlainObject` as a type predicate that distinguishes plain objects from arrays, primitives, and null.",
+      "Implement `validateContact` to validate each field according to its rules and normalize `fullName` (trim) and `phone` (blank string → null).",
+      "Implement `resolveAlphaKey` to map a contact's first character to the correct `AlphaKey` letter or the `\"#\"` fallback.",
+      "Implement `groupContacts` to process all raw entries, collect typed validation errors, build the alphabetical `ContactIndex`, and sort each bucket case-insensitively by `fullName`."
+    ],
+    "hints": [
+      "A type predicate (`value is Record<string, unknown>`) lets the compiler narrow `unknown` inside every `if` branch that calls your guard — combine `typeof`, `!== null`, and `!Array.isArray` checks.",
+      "The `AlphaKey` union is exhaustive: use `String.prototype.toUpperCase()` and check whether the result is a single A–Z letter (e.g. `/^[A-Z]$/.test(...)`) before falling back to `\"#\"`.",
+      "`Partial<Record<AlphaKey, Contact[]>>` means each bucket may be `undefined` — initialise a bucket with an empty array the first time you encounter a new key, then push and sort."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript — Type Predicates",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html#using-type-predicates"
+      },
+      {
+        "title": "TypeScript — Utility Types (Record, Partial)",
+        "url": "https://www.typescriptlang.org/docs/handbook/utility-types.html"
+      },
+      {
+        "title": "TypeScript — Template Literal Types & Uppercase",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/template-literal-types.html"
+      },
+      {
+        "title": "MDN — Array.prototype.sort()",
+        "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/sort"
+      }
+    ]
   }
 ]
