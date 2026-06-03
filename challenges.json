@@ -3705,5 +3705,41 @@
         "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/sort"
       }
     ]
+  },
+  {
+    "date": "2026-06-03",
+    "name": "Typed Workflow State Machine Executor",
+    "difficulty": "Hard",
+    "description": "You're building the execution engine for a no-code automation platform where users define multi-step workflows as JSON. Raw workflow definitions arrive as `unknown` from a REST API; your engine must validate them, execute each step through a typed strategy registry, enforce per-step retry logic with exponential back-off, and produce a strongly-typed execution report — with zero `any`.",
+    "snippet": "// Key types & main function signatures\n\ntype StepDefinition =\n  | { id: StepId; kind: \"http\";      retries: number; url: string; method: \"GET\"|\"POST\"|\"PUT\"|\"DELETE\"; body?: string }\n  | { id: StepId; kind: \"transform\"; retries: number; expression: string }\n  | { id: StepId; kind: \"condition\"; retries: number; expression: string; onTrue: StepId; onFalse: StepId }\n  | { id: StepId; kind: \"notify\";    retries: number; channel: \"email\"|\"slack\"|\"sms\"; message: string };\n\n// Maps each kind → its handler function (typed per-variant)\ntype HandlerRegistry = { [K in StepDefinition[\"kind\"]]:\n  StepHandler<Extract<StepDefinition, { kind: K }>> };\n\n// Maps each kind → its output shape\ntype StepOutput<K extends StepDefinition[\"kind\"]> = /* mapped type */ ...;\n\n// Validate unknown → WorkflowDefinition or throw\nfunction parseWorkflowDefinition(raw: unknown): WorkflowDefinition;\n\n// Retry with exponential back-off + AbortSignal support\nasync function withRetry<T>(\n  fn: () => Promise<T>,\n  maxRetries: number,\n  baseDelayMs: number,\n  signal: AbortSignal\n): Promise<{ result: T; attempts: number }>;\n\n// Run the workflow, return a full execution report\nasync function executeWorkflow(\n  rawDefinition: unknown,\n  registry: HandlerRegistry\n): Promise<WorkflowExecutionReport>;",
+    "goals": [
+      "Define `StepDefinition` as a four-variant discriminated union and wire `StepOutput<K>` and `HandlerRegistry` as mapped types that use `Extract` to maintain per-kind type safety.",
+      "Implement `parseWorkflowDefinition` to validate an `unknown` payload into a fully-typed `WorkflowDefinition`, throwing descriptive errors for any structural or semantic violations.",
+      "Implement `withRetry` as a generic async helper with exponential back-off that respects an `AbortSignal` and returns both the result and total attempt count.",
+      "Implement `executeWorkflow` to run steps sequentially with retry logic, handle condition-step branching, propagate abort/timeout to remaining steps, and produce a complete `WorkflowExecutionReport` including per-kind summary tallies."
+    ],
+    "hints": [
+      "For `StepOutput<K>` and `HandlerRegistry`, a mapped type of the form `{ [K in StepDefinition[\"kind\"]]: ... Extract<StepDefinition, { kind: K }> ... }` lets TypeScript resolve the exact variant per key — no overloads needed.",
+      "In `withRetry`, wrap each retry delay in a `Promise` that rejects early when `signal.addEventListener('abort', ...)` fires, then `clearTimeout` in the cleanup to avoid leaks.",
+      "Inside `executeWorkflow`, maintain a `nextStepIndex` cursor; after a successful 'condition' step, scan `steps` for the index whose `id` matches `output.nextStepId` and jump there — steps in between get a 'skipped' result entry."
+    ],
+    "docs": [
+      {
+        "title": "TS Handbook — Discriminated Unions",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html#discriminated-unions"
+      },
+      {
+        "title": "TS Handbook — Mapped Types",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/mapped-types.html"
+      },
+      {
+        "title": "TS Handbook — Conditional Types & infer",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/conditional-types.html"
+      },
+      {
+        "title": "MDN — AbortController / AbortSignal",
+        "url": "https://developer.mozilla.org/en-US/docs/Web/API/AbortController"
+      }
+    ]
   }
 ]
