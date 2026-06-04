@@ -3741,5 +3741,41 @@
         "url": "https://developer.mozilla.org/en-US/docs/Web/API/AbortController"
       }
     ]
+  },
+  {
+    "date": "2026-06-04",
+    "name": "Typed Product Inventory Aggregator",
+    "difficulty": "Medium",
+    "description": "You're building the reporting layer for an e-commerce warehouse system. Raw inventory records arrive as `unknown` JSON from a legacy ERP API; your engine must validate them, apply category-level discount rules via a typed strategy registry, and produce a strongly-typed per-category stock summary — with zero `any`.",
+    "snippet": "\n// Core types and main function signature\n\ntype Category = \"electronics\" | \"apparel\" | \"grocery\" | \"furniture\";\n\ninterface Product {\n  id: string;\n  name: string;\n  category: Category;\n  priceUsd: number;       // must be > 0\n  stockUnits: number;     // must be >= 0, integer\n  warehouseCode: string;\n}\n\ntype Result<T, E> =\n  | { ok: true;  value: T }\n  | { ok: false; error: E };\n\ntype DiscountRegistry = { [K in Category]: (product: Product) => number };\n\ntype InventoryReport = { [K in Category]?: CategorySummary };\n\ninterface AggregatorResult {\n  report: InventoryReport;\n  validCount: number;\n  invalidCount: number;\n  errors: Record<string, ValidationError[]>;\n}\n\n// Main entry point\nfunction aggregateInventory(\n  rawRecords: unknown[],\n  registry: DiscountRegistry = defaultDiscountRegistry\n): AggregatorResult { /* TODO */ }\n",
+    "goals": [
+      "Implement `validateProduct` to narrow `unknown` → `Product`, collecting ALL field errors before returning.",
+      "Declare `DiscountRegistry` as a mapped type over `Category` (every key required) and `InventoryReport` as an optional mapped type, then build `defaultDiscountRegistry` using the `satisfies` operator.",
+      "Implement `aggregateInventory` to validate each raw record, apply the registry's discount strategy per category, and accumulate per-category `CategorySummary` values into an `InventoryReport`.",
+      "Surface invalid records in `AggregatorResult.errors` keyed by their raw `id` string, falling back to `\"__unknown__\"` when `id` is absent or invalid."
+    ],
+    "hints": [
+      "For `validateProduct`, build an `errors: ValidationError[]` array, push every failing field into it, then return the Result at the end — never return early on the first failure.",
+      "Use `{ [K in Category]: DiscountStrategy }` for the registry (all keys required) and `{ [K in Category]?: CategorySummary }` for the report (all keys optional) — two small mapped types that enforce very different contracts.",
+      "When building `defaultDiscountRegistry`, write the object literal and append `satisfies DiscountRegistry` — TypeScript will catch any missing or misspelled category keys at compile time without widening the type."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript Mapped Types",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/mapped-types.html"
+      },
+      {
+        "title": "TypeScript `satisfies` operator",
+        "url": "https://www.typescriptlang.org/docs/handbook/release-notes/typescript-4-9.html#the-satisfies-operator"
+      },
+      {
+        "title": "TypeScript Narrowing (unknown → typed)",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html"
+      },
+      {
+        "title": "TypeScript Utility Types (Record, Pick, etc.)",
+        "url": "https://www.typescriptlang.org/docs/handbook/utility-types.html"
+      }
+    ]
   }
 ]
