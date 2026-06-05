@@ -3777,5 +3777,41 @@
         "url": "https://www.typescriptlang.org/docs/handbook/utility-types.html"
       }
     ]
+  },
+  {
+    "date": "2026-06-05",
+    "name": "Typed Recipe Ingredient Scaler",
+    "difficulty": "Easy",
+    "description": "You're building the recipe engine for a meal-planning app. Raw recipe data arrives as `unknown` from a third-party nutrition API; your engine must validate it, scale each ingredient's quantity to a requested serving size, and return a strongly-typed scaled recipe — with zero `any`.",
+    "snippet": "\n// Key types & main function signature\n\nexport type Unit = \"g\" | \"kg\" | \"ml\" | \"l\" | \"tsp\" | \"tbsp\" | \"cup\" | \"piece\" | \"pinch\";\n\nexport interface Ingredient { name: string; quantity: number; unit: Unit; }\nexport interface Recipe     { id: string; title: string; servings: number; ingredients: Ingredient[]; }\nexport interface ScaledRecipe extends Recipe { originalServings: number; targetServings: number; }\n\nexport type Result<T, E extends string = string> =\n  | { ok: true;  value: T }\n  | { ok: false; error: E };\n\nexport type PipelineError =\n  | { stage: \"validation\"; error: ValidationError }\n  | { stage: \"scaling\";    error: ScalingError    };\n\n// Full pipeline: validate raw unknown → scale to targetServings\nexport function parseAndScale(\n  raw: unknown,\n  targetServings: number\n): Result<ScaledRecipe, PipelineError> { /* TODO */ }\n",
+    "goals": [
+      "Implement `isUnit()` as a strict type guard using the `UNITS` constant.",
+      "Implement `parseIngredient()` and `parseRecipe()` to validate `unknown` input into typed domain objects, returning discriminated `ValidationError` values.",
+      "Implement `scaleRecipe()` to proportionally adjust ingredient quantities and return a `ScaledRecipe` with `originalServings` and `targetServings` fields.",
+      "Implement `parseAndScale()` to compose the validation and scaling steps, tagging pipeline errors with a `stage` discriminant."
+    ],
+    "hints": [
+      "Use `Array.prototype.includes` with a cast-free approach on `UNITS` to implement `isUnit` — remember `UNITS` is `readonly Unit[]`, so `(UNITS as readonly unknown[]).includes(value)` keeps you type-safe.",
+      "In `parseRecipe`, check `typeof raw === 'object' && raw !== null` before accessing any fields, then use `'fieldName' in raw` to confirm keys exist before reading them.",
+      "For `parseAndScale`, unwrap each `Result` step-by-step and wrap errors with the correct `stage` tag before returning — no casting needed."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript — Narrowing",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html"
+      },
+      {
+        "title": "TypeScript — Discriminated Unions",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html#discriminated-unions"
+      },
+      {
+        "title": "TypeScript — Generic Types",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/generics.html"
+      },
+      {
+        "title": "MDN — Array.prototype.includes()",
+        "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/includes"
+      }
+    ]
   }
 ]
