@@ -3813,5 +3813,41 @@
         "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/includes"
       }
     ]
+  },
+  {
+    "date": "2026-06-06",
+    "name": "Typed Paginated API Client with Retry & Result Monad",
+    "difficulty": "Hard",
+    "description": "You're building the data-access layer for an analytics dashboard that pulls records from a paginated third-party REST API. The API is unreliable — responses arrive as `unknown`, pages must be fetched concurrently up to a configurable limit, transient failures must be retried with exponential back-off, and every outcome must be surfaced through a typed `Result<T, E>` monad — with zero `any`.",
+    "snippet": "// Core types & main function signature at a glance\n\ntype Ok<T>  = { readonly tag: \"ok\";  readonly value: T };\ntype Err<E> = { readonly tag: \"err\"; readonly error: E };\ntype Result<T, E> = Ok<T> | Err<E>;\n\ntype ApiError =\n  | { kind: \"NetworkError\";   message: string }\n  | { kind: \"ParseError\";     message: string; raw: unknown }\n  | { kind: \"ExhaustedError\"; attempts: number; lastMessage: string };\n\ntype PageResponse<T> = {\n  page: number;\n  totalPages: number;\n  items: readonly T[];\n};\n\ntype PaginatorOptions<T> = {\n  totalPages: number;\n  concurrency: number;\n  retry: RetryOptions;\n  fetchPage: (page: number) => Promise<unknown>;\n  itemGuard: (u: unknown) => u is T;\n};\n\n// Main entry point — fetch all pages with concurrency + retry\nasync function fetchAllPages<T>(\n  opts: PaginatorOptions<T>\n): Promise<FetchReport<T>> { /* TODO */ }\n",
+    "goals": [
+      "Implement a fully-typed Result<T,E> monad (Ok/Err constructors + mapResult) and a three-variant ApiError discriminated union.",
+      "Write a generic validatePageResponse<T> that narrows unknown → PageResponse<T> using a caller-supplied type-guard predicate.",
+      "Implement withRetry<T> that retries a Result-returning async operation with exponential back-off and surfaces ExhaustedError after all attempts.",
+      "Implement fetchAllPages<T> that fetches pages 1..N concurrently (capped at a configurable limit), retries failures, and merges results into a FetchReport<T> preserving page order."
+    ],
+    "hints": [
+      "Model Result<T,E> as a discriminated union on a `tag` field — narrowing with `if (r.tag === 'ok')` then gives you the typed value with no assertions needed.",
+      "For the concurrency cap in fetchAllPages, maintain a Set (or array) of in-flight Promises and await the first to settle before launching the next when the pool is full — Promise.race is your friend here.",
+      "To enforce exhaustiveness in renderApiError, add a `default` branch that assigns `error` to a `never`-typed variable; the compiler will error if any ApiError variant is unhandled."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript Handbook – Narrowing",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html"
+      },
+      {
+        "title": "TypeScript Handbook – Generics",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/generics.html"
+      },
+      {
+        "title": "MDN – Promise.race()",
+        "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise/race"
+      },
+      {
+        "title": "TypeScript Handbook – Type Guards & Discriminated Unions",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html#discriminated-unions"
+      }
+    ]
   }
 ]
