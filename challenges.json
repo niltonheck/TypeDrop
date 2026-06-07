@@ -3849,5 +3849,41 @@
         "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html#discriminated-unions"
       }
     ]
+  },
+  {
+    "date": "2026-06-07",
+    "name": "Typed Event Log Aggregator with Discriminated Unions",
+    "difficulty": "Medium",
+    "description": "You're building the analytics layer for a SaaS platform's audit dashboard. Raw event log entries stream in as `unknown` from a Kafka consumer; your engine must validate them, narrow each to its correct discriminated-union variant, and produce a strongly-typed per-user activity summary — with zero `any`.",
+    "snippet": "// Core discriminated-union types + main pipeline signature\n\ninterface BaseEvent {\n  eventId: string;\n  userId: string;\n  occurredAt: string;\n}\n\n// Three concrete variants (you define the bodies):\ninterface PageViewEvent extends BaseEvent { kind: \"page_view\"; payload: { path: string; durationMs: number } }\ninterface ApiCallEvent  extends BaseEvent { kind: \"api_call\";  payload: { endpoint: string; statusCode: number; latencyMs: number } }\ninterface ErrorEvent    extends BaseEvent { kind: \"error\";     payload: { code: string; message: string; fatal: boolean } }\n\ntype AuditEvent = PageViewEvent | ApiCallEvent | ErrorEvent;\n\n// Generic Result monad (you define this):\ntype Result<T, E> = { ok: true; value: T } | { ok: false; error: E };\n\ninterface ValidationError { rawInput: unknown; reason: string; }\n\n// Main pipeline — wire parseEvent → aggregateEvents:\nfunction processEventLog(rawEvents: unknown[]): {\n  summary: Record<string, UserSummary>;\n  failures: ValidationError[];\n}",
+    "goals": [
+      "Define three discriminated-union event interfaces and a `Result<T, E>` monad with no `any` or type assertions.",
+      "Implement `parseEvent` that narrows `unknown` input to the correct `AuditEvent` variant or returns a structured `ValidationError`.",
+      "Implement `aggregateEvents` that computes all `UserSummary` fields — including de-duplicated paths and nullable average latency — in a single pass.",
+      "Wire both functions together in `processEventLog`, separating valid events from failures and returning a typed summary map."
+    ],
+    "hints": [
+      "Use a `switch` on `kind` inside `parseEvent` — TypeScript will narrow the union for you in each branch, letting you return the correctly typed variant without casting.",
+      "For the single-pass requirement in `aggregateEvents`, maintain a mutable accumulator object per userId (inside a `Record`) and update all counters inside one `for…of` loop.",
+      "`avgApiLatencyMs` needs both a running sum and a count — store both in the accumulator, then compute the mean after the loop finishes."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript Handbook — Discriminated Unions",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html#discriminated-unions"
+      },
+      {
+        "title": "TypeScript Handbook — Narrowing (type guards)",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html"
+      },
+      {
+        "title": "TypeScript Handbook — Generics",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/generics.html"
+      },
+      {
+        "title": "MDN — Array.prototype.reduce()",
+        "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/reduce"
+      }
+    ]
   }
 ]
