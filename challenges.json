@@ -3885,5 +3885,41 @@
         "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/reduce"
       }
     ]
+  },
+  {
+    "date": "2026-06-08",
+    "name": "Typed Plugin Middleware Chain Executor",
+    "difficulty": "Hard",
+    "description": "You're building the request-processing core for an API gateway platform where operators compose pipelines of plugins (auth, rate-limiting, transformation, logging) loaded at runtime from `unknown` JSON configuration. Each plugin is resolved through a typed registry, executed as an ordered async middleware chain with per-plugin timeout enforcement, and the entire run produces a strongly-typed execution trace — with zero `any`.",
+    "snippet": "// Key types & main function signature — challenge.ts (preview)\n\ndeclare const __brand: unique symbol;\ntype Brand<T, B extends string> = T & { readonly [__brand]: B };\n\nexport type PluginId  = Brand<string, \"PluginId\">;\nexport type RequestId = Brand<number, \"RequestId\">;\n\n// Discriminated union — 4 variants\nexport type PluginConfig =\n  | { type: \"auth\";      pluginId: PluginId; apiKeyHeader: string; required: boolean }\n  | { type: \"rateLimit\"; pluginId: PluginId; maxRpm: number; burstSize: number }\n  | { type: \"transform\"; pluginId: PluginId; stripHeaders: string[]; addHeaders: Record<string, string> }\n  | { type: \"logger\";    pluginId: PluginId; level: \"debug\"|\"info\"|\"warn\"|\"error\"; destination: string };\n\n// Handler generic — C narrows to the exact variant\nexport type PluginHandler<C extends PluginConfig> =\n  (config: C, ctx: GatewayContext) => Promise<void>;\n\n// Registry — mapped type over union keys (your job to fill in)\nexport type PluginRegistry = { [K in PluginConfig[\"type\"]]: PluginHandler<Extract<PluginConfig, { type: K }>> };\n\nexport async function executePipeline(\n  requestId: RequestId,\n  rawConfigs: unknown[],\n  registry: PluginRegistry,\n  ctx: GatewayContext,\n  options?: PipelineOptions\n): Promise<PipelineTrace> { /* TODO */ throw new Error(\"not implemented\"); }\n",
+    "goals": [
+      "Define the `PluginConfig` discriminated union, `PluginHandler<C>` generic, and `PluginRegistry` mapped type so that each registry key accepts only its matching config variant.",
+      "Implement `validatePluginConfig` to fully narrow `unknown` → `PluginConfig` for all four plugin types without using `as` or `any`.",
+      "Implement `withTimeout<T>` and the `TimeoutError` class so that slow plugin handlers are reliably cancelled and their `pluginId` is preserved in the error.",
+      "Implement `executePipeline` to run plugins sequentially with per-plugin timeout enforcement, correct `PluginOutcome` recording, `abortOnError` support, and a `PipelineTrace` whose `overallStatus` is a type derived from `PluginOutcome[\"status\"]`."
+    ],
+    "hints": [
+      "For `PluginRegistry`, try `{ [K in PluginConfig[\"type\"]]: PluginHandler<Extract<PluginConfig, { type: K }>> }` — `Extract` pulls the exact union member whose `type` matches `K`.",
+      "In `validatePluginConfig`, use `typeof raw === \"object\" && raw !== null && \"type\" in raw` guards step by step — TypeScript narrows the type at each check without needing `as`.",
+      "For `withTimeout<T>`, `Promise.race` between the real promise and a `new Promise((_, reject) => setTimeout(() => reject(new TimeoutError(...)), ms))` is the idiomatic pattern."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript Handbook — Discriminated Unions",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html#discriminated-unions"
+      },
+      {
+        "title": "TypeScript Handbook — Mapped Types",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/mapped-types.html"
+      },
+      {
+        "title": "TypeScript Handbook — Conditional Types & Extract",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/conditional-types.html"
+      },
+      {
+        "title": "MDN — Promise.race()",
+        "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise/race"
+      }
+    ]
   }
 ]
