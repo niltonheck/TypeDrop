@@ -3921,5 +3921,41 @@
         "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise/race"
       }
     ]
+  },
+  {
+    "date": "2026-06-09",
+    "name": "Typed Job Queue Scheduler with Priority & Concurrency",
+    "difficulty": "Medium",
+    "description": "You're building the background-job engine for a data-processing platform. Raw job definitions arrive as `unknown` from a REST API; your scheduler must validate them, dispatch jobs by priority through a typed concurrency-limited runner, and return a strongly-typed execution report — with zero `any`.",
+    "snippet": "// Key types & main function signature\n\ntype Priority = \"critical\" | \"high\" | \"normal\" | \"low\";\n\n// Discriminated union — three variants sharing a `kind` discriminant\ntype JobDefinition =\n  | { readonly kind: \"http\";         readonly id: string; readonly priority: Priority; /* ... */ }\n  | { readonly kind: \"compute\";      readonly id: string; readonly priority: Priority; /* ... */ }\n  | { readonly kind: \"notification\"; readonly id: string; readonly priority: Priority; /* ... */ };\n\n// Generic Result monad\ntype Result<T, E> = /* { ok: true; value: T } | { ok: false; error: E } */;\n\n// Mapped type: one async handler per job kind\ntype JobHandlerMap = {\n  [K in JobDefinition[\"kind\"]]: (job: Extract<JobDefinition, { kind: K }>) => Promise<void>;\n};\n\n// Validates unknown input → typed JobDefinition or error string\nfunction parseJobDefinition(raw: unknown): Result<JobDefinition, string> { /* ... */ }\n\n// Validates, sorts by priority, runs up to `concurrency` jobs in parallel\nasync function runScheduler(\n  rawJobs: unknown[],\n  options: { concurrency: number; handlers: JobHandlerMap }\n): Promise<SchedulerReport> { /* ... */ }",
+    "goals": [
+      "Define a three-variant discriminated union `JobDefinition` and a generic `Result<T, E>` type with no `any`.",
+      "Implement `parseJobDefinition` that narrows `unknown` input to the correct `JobDefinition` variant or returns a descriptive error string.",
+      "Build a `JobHandlerMap` mapped type using `Extract` and implement the concurrency-limited `runScheduler` that sorts jobs by priority and caps parallel execution.",
+      "Ensure `runScheduler` returns a fully-typed `SchedulerReport` that accounts for both parse failures and runtime handler errors."
+    ],
+    "hints": [
+      "For `JobHandlerMap`, use a mapped type over `JobDefinition[\"kind\"]` combined with `Extract<JobDefinition, { kind: K }>` to get the exact variant type per handler.",
+      "For the concurrency limiter in `runScheduler`, maintain a counter of active jobs and a queue; resolve slots as each job settles — or consider using a Promise pool pattern.",
+      "In `parseJobDefinition`, narrow `kind` with a switch statement first, then validate kind-specific fields inside each case — this keeps TypeScript's narrowing happy without any type assertions."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript Handbook — Discriminated Unions",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html#discriminated-unions"
+      },
+      {
+        "title": "TypeScript Handbook — Mapped Types",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/mapped-types.html"
+      },
+      {
+        "title": "TypeScript Utility Types — Extract",
+        "url": "https://www.typescriptlang.org/docs/handbook/utility-types.html#extracttype-union"
+      },
+      {
+        "title": "MDN — Promise.allSettled",
+        "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise/allSettled"
+      }
+    ]
   }
 ]
