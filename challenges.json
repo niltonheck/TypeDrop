@@ -3957,5 +3957,41 @@
         "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise/allSettled"
       }
     ]
+  },
+  {
+    "date": "2026-06-10",
+    "name": "Typed Shopping Cart Discount Engine",
+    "difficulty": "Easy",
+    "description": "You're building the checkout engine for an e-commerce platform. Cart items arrive as `unknown` from a storefront API; your engine must validate them, apply the correct typed discount rule to each item, and return a strongly-typed order summary — with zero `any`.",
+    "snippet": "// Core discount union — four variants keyed by `kind`\ntype DiscountRule =\n  | { kind: \"percentage\"; percent: number }\n  | { kind: \"flat\"; amount: number }\n  | { kind: \"buyNgetM\"; buyN: number; getM: number }\n  | { kind: \"none\" };\n\ntype CartItem = {\n  id: string;\n  name: string;\n  unitPrice: number;\n  quantity: number;\n  discount: DiscountRule;\n};\n\ntype OrderLineItem = {\n  id: string; name: string; unitPrice: number; quantity: number;\n  discountKind: DiscountRule[\"kind\"];\n  lineTotal: number;\n  discountSaved: number;\n};\n\n// Validate unknown → CartItem\nfunction isValidCartItem(value: unknown): value is CartItem { ... }\n\n// Apply the correct discount branch, return Pick<OrderLineItem, ...>\nfunction applyDiscount(item: CartItem): Pick<OrderLineItem, \"lineTotal\" | \"discountSaved\"> { ... }\n\n// Entry point: validate, apply, aggregate\nfunction buildOrderSummary(rawItems: unknown[]): OrderSummary { ... }\n",
+    "goals": [
+      "Implement `isValidDiscountRule` and `isValidCartItem` as type predicates that safely narrow `unknown` input, rejecting any structurally invalid or out-of-range data.",
+      "Implement `applyDiscount` with an exhaustive branch for each of the four `DiscountRule` variants, computing the correct `lineTotal` and `discountSaved`.",
+      "Implement `buildOrderSummary` to validate raw items, skip invalid ones, apply discounts, and aggregate all lines into a correctly rounded `OrderSummary`.",
+      "Use only TypeScript's type system features (discriminated unions, type predicates, Pick) — no `any`, no type assertions."
+    ],
+    "hints": [
+      "Start `isValidDiscountRule` by checking `typeof value === 'object' && value !== null` and then narrowing on the `kind` field with a type-safe property access.",
+      "In `applyDiscount`, a `switch` on `item.discount.kind` gives you exhaustive narrowing — TypeScript will know which variant's fields are available in each branch.",
+      "For the `buyNgetM` calculation: `Math.floor(quantity / buyN)` gives you the number of full groups, each yielding `getM` free items."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript — Narrowing & Type Predicates",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html#using-type-predicates"
+      },
+      {
+        "title": "TypeScript — Discriminated Unions",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html#discriminated-unions"
+      },
+      {
+        "title": "TypeScript — Utility Types (Pick)",
+        "url": "https://www.typescriptlang.org/docs/handbook/utility-types.html#picktype-keys"
+      },
+      {
+        "title": "MDN — Math.floor",
+        "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Math/floor"
+      }
+    ]
   }
 ]
