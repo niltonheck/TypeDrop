@@ -3993,5 +3993,41 @@
         "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Math/floor"
       }
     ]
+  },
+  {
+    "date": "2026-06-11",
+    "name": "Typed Real-Time Sensor Stream Aggregator",
+    "difficulty": "Medium",
+    "description": "You're building the ingestion layer for an IoT monitoring platform. Raw sensor readings arrive as `unknown` from a WebSocket feed; your engine must validate them, group them by device and metric type via a strongly-typed pipeline, and produce a per-device aggregated summary — with zero `any`.",
+    "snippet": "// Core domain types & main function signatures\n\nexport type SensorKind = \"temperature\" | \"humidity\" | \"pressure\";\n\nexport type SensorReading =\n  | { kind: \"temperature\"; deviceId: string; timestamp: number; value: number }\n  | { kind: \"humidity\";    deviceId: string; timestamp: number; value: number }\n  | { kind: \"pressure\";   deviceId: string; timestamp: number; value: number };\n\nexport type MetricStats = { count: number; min: number; max: number; avg: number };\n\nexport type DeviceSummary = {\n  deviceId: string;\n  firstSeen: number;\n  lastSeen: number;\n} & Partial<{ [K in SensorKind]: MetricStats }>;\n\nexport type DeviceAggregation = Record<string, DeviceSummary>;\n\nexport type FeedReport = {\n  aggregation: DeviceAggregation;\n  errors: ParseError[];\n  totalReceived: number;\n  totalValid: number;\n};\n\n// Validate unknown → Result<SensorReading, ParseError>\ndeclare function parseSensorReading(raw: unknown): Result<SensorReading, ParseError>;\n\n// Group + compute per-device stats\ndeclare function aggregateReadings(readings: SensorReading[]): DeviceAggregation;\n\n// Parse + aggregate an entire raw feed\ndeclare function processRawFeed(rawItems: unknown[]): FeedReport;",
+    "goals": [
+      "Define a discriminated union `SensorReading` with three `kind` variants and a mapped `DeviceSummary` type over `SensorKind`.",
+      "Implement `parseSensorReading` to safely validate `unknown` input and return a typed `Result<SensorReading, ParseError>` — no throws, no `any`.",
+      "Implement `aggregateReadings` to group readings by `deviceId` and compute `MetricStats` (count, min, max, avg) for each metric kind present.",
+      "Implement `processRawFeed` to parse a raw feed, collect errors, aggregate valid readings, and return a fully typed `FeedReport`."
+    ],
+    "hints": [
+      "Use `[K in SensorKind]: MetricStats` inside a `Partial<{...}>` intersection to make per-kind stats optional on `DeviceSummary`.",
+      "In `parseSensorReading`, check `typeof` and array `.includes()` to narrow `unknown` step-by-step before constructing the typed value — a type predicate helper can keep it clean.",
+      "A single `reduce` pass over `SensorReading[]` can build the entire `DeviceAggregation` by initialising a device entry on first encounter and updating stats in-place."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript Handbook: Discriminated Unions",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html#discriminated-unions"
+      },
+      {
+        "title": "TypeScript Handbook: Mapped Types",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/mapped-types.html"
+      },
+      {
+        "title": "TypeScript Handbook: Narrowing (typeof / in guards)",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html"
+      },
+      {
+        "title": "TypeScript Utility Types (Partial, Record)",
+        "url": "https://www.typescriptlang.org/docs/handbook/utility-types.html"
+      }
+    ]
   }
 ]
