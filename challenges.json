@@ -4029,5 +4029,41 @@
         "url": "https://www.typescriptlang.org/docs/handbook/utility-types.html"
       }
     ]
+  },
+  {
+    "date": "2026-06-12",
+    "name": "Typed Recipe Ingredient Scaler",
+    "difficulty": "Easy",
+    "description": "You're building the recipe management feature for a meal-planning app. Raw recipe data arrives as `unknown` from a user-uploaded JSON file; your engine must validate it, scale each ingredient's quantity to a requested serving size, and return a strongly-typed scaled recipe — with zero `any`.",
+    "snippet": "// Key types & main function signatures\n\nexport const VALID_UNITS = [\n  \"g\", \"kg\", \"ml\", \"l\", \"tsp\", \"tbsp\", \"cup\", \"piece\",\n] as const;\n\nexport type Unit        = typeof VALID_UNITS[number];\nexport type Ingredient  = { name: string; quantity: number; unit: Unit };\nexport type Recipe      = { title: string; defaultServings: number; ingredients: Ingredient[] };\nexport type ScaledRecipe = Recipe & { targetServings: number };\nexport type IngredientLine = `${string}: ${number} ${Unit}`;\n\nexport function parseIngredient(value: unknown): Ingredient | null { /* TODO */ }\nexport function parseRecipe(value: unknown): Recipe | null { /* TODO */ }\nexport function scaleRecipe(recipe: Recipe, targetServings: number): ScaledRecipe | null { /* TODO */ }\nexport function formatIngredient(ingredient: Ingredient): IngredientLine { /* TODO */ }",
+    "goals": [
+      "Derive the `Unit` union type directly from the `VALID_UNITS` const array using `typeof` and indexed access — no manual duplication.",
+      "Implement `parseIngredient` and `parseRecipe` to safely narrow `unknown` inputs, returning `null` for any invalid field rather than throwing.",
+      "Implement `scaleRecipe` to proportionally adjust every ingredient quantity (rounded to 2 decimal places) and attach `targetServings` to the result.",
+      "Define the `IngredientLine` template literal type and use it as the explicit return type of `formatIngredient`."
+    ],
+    "hints": [
+      "You can derive `Unit` with a single line: `typeof VALID_UNITS[number]` — no need to list the strings twice.",
+      "To check a unit at runtime, `(VALID_UNITS as readonly string[]).includes(unit)` works, but you'll still need a type predicate or assertion-free cast to satisfy the compiler.",
+      "Template literal types like `` `${string}: ${number} ${Unit}` `` are valid return-type annotations — TypeScript will accept a string literal that matches the pattern."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript — `as const` & Const Assertions",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/everyday-types.html#literal-types"
+      },
+      {
+        "title": "TypeScript — Template Literal Types",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/template-literal-types.html"
+      },
+      {
+        "title": "TypeScript — Narrowing (unknown → typed)",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html"
+      },
+      {
+        "title": "TypeScript — Utility Types (Pick, Omit, Record…)",
+        "url": "https://www.typescriptlang.org/docs/handbook/utility-types.html"
+      }
+    ]
   }
 ]
