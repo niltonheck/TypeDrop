@@ -4101,5 +4101,41 @@
         "url": "https://basarat.gitbook.io/typescript/main-1/nominaltyping"
       }
     ]
+  },
+  {
+    "date": "2026-06-14",
+    "name": "Typed Workflow Orchestrator with Conditional Branching",
+    "difficulty": "Hard",
+    "description": "You're building the workflow engine for a business-process automation platform. Raw workflow definitions arrive as `unknown` from a configuration API; your orchestrator must validate them, execute each step through a typed middleware pipeline, conditionally branch based on strongly-typed step outcomes, and produce a fully-typed execution trace — with zero `any`.",
+    "snippet": "// Key types and main function signatures\n\ntype Result<T, E extends WorkflowError> =\n  | { ok: true; value: T }\n  | { ok: false; error: E };\n\ntype WorkflowStep = TransformStep | BranchStep | MergeStep;\n// TransformStep: { type:\"transform\"; id:string; transformer:string; timeoutMs?:number }\n// BranchStep:    { type:\"branch\";    id:string; branches: Record<string,string> }\n// MergeStep:     { type:\"merge\";     id:string; strategy:\"first\"|\"concat\"|\"sum\" }\n\ntype TransformerFn<TIn, TOut> = (\n  input: TIn,\n  ctx: StepContext\n) => Promise<Result<{ value: TOut; outcome: string }, WorkflowError>>;\n\n// ── Validate raw unknown → typed definition ──────────────────\nfunction validateWorkflowDefinition(\n  raw: unknown\n): Result<WorkflowDefinition, WorkflowError> { /* TODO */ }\n\n// ── Build a reusable orchestrator instance ───────────────────\nfunction createOrchestrator<\n  R extends Record<string, TransformerFn<unknown, unknown>>\n>(\n  registry: StepRegistry<R>,\n  middleware?: StepMiddleware[]\n): { run: (definition: WorkflowDefinition, initialInput: unknown) => Promise<ExecutionReport> }\n{ /* TODO */ }\n\n// ── Exhaustive error dispatcher ──────────────────────────────\nfunction narrowError<E extends WorkflowError>(\n  error: E,\n  handlers: { [K in E[\"kind\"]]: (e: Extract<E, { kind: K }>) => string }\n): string { /* TODO */ }\n",
+    "goals": [
+      "Implement `validateWorkflowDefinition` to safely narrow `unknown` → `WorkflowDefinition` using manual type guards, returning a typed `Result` on the first failure found.",
+      "Implement `createOrchestrator` with a full step-execution loop that handles transform (with optional timeout via `Promise.race`), branch (with wildcard fallback), and merge steps, wiring middleware as an ordered async chain.",
+      "Implement `extractStepIds` using a single `reduce` call to build a `Record<WorkflowStep[\"type\"], string[]>` derived entirely from the union — no manual object literal types.",
+      "Implement `narrowError` as a generic exhaustive dispatcher over `WorkflowError` kinds using a mapped `Extract` handler record — TypeScript must reject any call with a missing handler."
+    ],
+    "hints": [
+      "For `validateWorkflowDefinition`, write a small `isRecord(v: unknown): v is Record<string, unknown>` guard first — it composes cleanly into every nested check without needing `as`.",
+      "For the middleware chain in `createOrchestrator`, build the composed `next` function by `reduceRight`-ing over the middleware array so the first-registered middleware becomes the outermost wrapper.",
+      "For `narrowError`, the handler lookup is just `handlers[error.kind](error as never)` — but try to avoid `as never`; instead cast through the mapped type using the discriminant key to satisfy TypeScript's narrowing."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript Handbook — Discriminated Unions",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html#discriminated-unions"
+      },
+      {
+        "title": "TypeScript Handbook — Conditional Types & Extract",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/conditional-types.html"
+      },
+      {
+        "title": "TypeScript Handbook — Mapped Types",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/mapped-types.html"
+      },
+      {
+        "title": "MDN — Promise.race()",
+        "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise/race"
+      }
+    ]
   }
 ]
