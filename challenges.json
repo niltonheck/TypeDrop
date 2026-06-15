@@ -4137,5 +4137,41 @@
         "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise/race"
       }
     ]
+  },
+  {
+    "date": "2026-06-15",
+    "name": "Typed Job Queue Scheduler with Priority & Retry",
+    "difficulty": "Medium",
+    "description": "You're building the background job processing layer for a SaaS platform. Raw job definitions arrive as `unknown` from a REST API; your scheduler must validate them, enqueue them by priority, execute them with concurrency limits, and produce a strongly-typed execution report — with zero `any`.",
+    "snippet": "// Key types & main function signatures\n\nexport type Priority = \"high\" | \"normal\" | \"low\";\nexport type JobKind  = \"email\" | \"report\" | \"export\";\n\nexport type Job =\n  | { id: string; kind: \"email\";  priority: Priority; retries: number; payload: EmailPayload  }\n  | { id: string; kind: \"report\"; priority: Priority; retries: number; payload: ReportPayload }\n  | { id: string; kind: \"export\"; priority: Priority; retries: number; payload: ExportPayload };\n\nexport type Result<T, E> =\n  | { ok: true;  value: T }\n  | { ok: false; error: E };\n\n// Maps every JobKind to a strongly-typed handler — must be complete\nexport type HandlerRegistry = {\n  [K in JobKind]: (job: Extract<Job, { kind: K }>) => Promise<boolean>;\n};\n\nexport function validateJob(raw: unknown): Result<Job, ValidationError>;\n\nexport function enqueueByPriority(jobs: Job[]): Job[];\n\nexport async function runScheduler(\n  jobs: Job[],\n  registry: HandlerRegistry,\n  config: SchedulerConfig        // { concurrency: number; maxAttempts: number }\n): Promise<SchedulerReport>;\n\nexport function buildReport(outcomes: JobOutcome[]): SchedulerReport;\n",
+    "goals": [
+      "Implement `validateJob` to parse `unknown` API payloads into a discriminated-union `Job`, returning a typed `Result<Job, ValidationError>` for every failure case.",
+      "Implement `enqueueByPriority` to stably sort jobs by priority tier (high → normal → low) without mutating the input array.",
+      "Implement `runScheduler` to execute jobs with a sliding-window concurrency pool, per-job retry budgets, and correct `succeeded` / `exhausted` / `failed` status tracking.",
+      "Implement `buildReport` as a pure single-pass `reduce` that tallies outcomes and returns a `SchedulerReport` whose `outcomes` field is the exact same array reference passed in."
+    ],
+    "hints": [
+      "For `HandlerRegistry`, the mapped type `[K in JobKind]: JobHandler<K>` forces you to handle every kind — lean on `Extract<Job, { kind: K }>` to get the right payload type per handler.",
+      "A sliding-window concurrency pool can be built by maintaining a `Set` of in-flight Promises and `await`-ing the fastest one (via `Promise.race`) whenever the pool is full.",
+      "In `validateJob`, narrow `raw` with `typeof` / `in` guards first, then use a `switch` on `kind` to validate the per-kind payload fields — the compiler will track the narrowed type in each branch."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript — Discriminated Unions",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html#discriminated-unions"
+      },
+      {
+        "title": "TypeScript — Mapped Types",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/mapped-types.html"
+      },
+      {
+        "title": "TypeScript — Extract<Type, Union> Utility Type",
+        "url": "https://www.typescriptlang.org/docs/handbook/utility-types.html#extracttype-union"
+      },
+      {
+        "title": "MDN — Promise.race()",
+        "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise/race"
+      }
+    ]
   }
 ]
