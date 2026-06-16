@@ -4173,5 +4173,41 @@
         "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise/race"
       }
     ]
+  },
+  {
+    "date": "2026-06-16",
+    "name": "Typed Permission Policy Engine with Role Inheritance",
+    "difficulty": "Hard",
+    "description": "You're building the authorization layer for a multi-tenant SaaS platform. Raw policy definitions arrive as `unknown` from a configuration service; your engine must validate them, resolve role inheritance chains, evaluate typed permission checks against a request context, and produce a strongly-typed authorization decision — with zero `any`.",
+    "snippet": "// Key types and main function signature preview\n\ntype RoleId     = string & { readonly __brand: \"RoleId\" };\ntype ResourceId = string & { readonly __brand: \"ResourceId\" };\ntype ActionId   = string & { readonly __brand: \"ActionId\" };\n\ntype Result<T, E> =\n  | { readonly ok: true;  readonly value: T }\n  | { readonly ok: false; readonly error: E };\n\ntype PolicyError =\n  | { readonly kind: \"INVALID_INPUT\";    readonly message: string }\n  | { readonly kind: \"UNKNOWN_ROLE\";     readonly roleId: RoleId }\n  | { readonly kind: \"CYCLE_DETECTED\";   readonly cycle: RoleId[] }\n  | { readonly kind: \"UNKNOWN_RESOURCE\"; readonly resourceId: ResourceId }\n  | { readonly kind: \"UNKNOWN_ACTION\";   readonly actionId: ActionId };\n\ntype Decision =\n  | { readonly verdict: \"ALLOW\"; readonly grantedBy: RoleId }\n  | { readonly verdict: \"DENY\";  readonly deniedBy:  RoleId }\n  | { readonly verdict: \"NO_MATCH\" };\n\n// One-shot convenience: parse raw policy → resolve role → evaluate\ndeclare function authorize(\n  rawPolicy:   unknown,\n  rawRoleId:   string,\n  rawResource: string,\n  rawAction:   string,\n): Result<Decision, PolicyError>;\n",
+    "goals": [
+      "Implement brand constructors (`toRoleId`, `toResourceId`, `toActionId`) that validate inputs and return `Result` types.",
+      "Implement `parsePolicy` to fully validate an `unknown` config payload into a strongly-typed `Policy`, returning structured `PolicyError` values for every violation.",
+      "Implement `resolveRole` to recursively expand role inheritance, merge permissions in the correct order, and detect cycles — all without `any`.",
+      "Implement `evaluateRequest` and the `authorize` convenience function, threading `PolicyResult<T>` through every step with exhaustive error handling."
+    ],
+    "hints": [
+      "Branded types can't be used as index signatures directly — use `{ [K in RoleId]: ... }` (a mapped type) rather than `{ [key: RoleId]: ... }` (an index signature).",
+      "For cycle detection in `resolveRole`, thread a `ReadonlySet<RoleId>` of ancestors through the recursive calls — if you encounter a role already in the set, you've found a cycle.",
+      "In `parsePolicy`, narrow `unknown` step-by-step: check `typeof`, then `Array.isArray`, then field-by-field — TypeScript will track the narrowing and let you avoid `as` casts."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript Handbook — Narrowing",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html"
+      },
+      {
+        "title": "TypeScript Handbook — Mapped Types",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/mapped-types.html"
+      },
+      {
+        "title": "TypeScript Handbook — Conditional Types",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/conditional-types.html"
+      },
+      {
+        "title": "TypeScript Handbook — Template Literal & Branded Types (type-fest pattern)",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/template-literal-types.html"
+      }
+    ]
   }
 ]
