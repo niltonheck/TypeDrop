@@ -4209,5 +4209,41 @@
         "url": "https://www.typescriptlang.org/docs/handbook/2/template-literal-types.html"
       }
     ]
+  },
+  {
+    "date": "2026-06-17",
+    "name": "Typed Shopping Cart Price Calculator",
+    "difficulty": "Easy",
+    "description": "You're building the checkout feature for an e-commerce storefront. Raw cart data arrives as `unknown` from a client-side POST request; your engine must validate it, apply typed discount rules, and return a strongly-typed order summary — with zero `any`.",
+    "snippet": "\nexport type Currency = \"USD\" | \"EUR\" | \"GBP\";\n\nexport type DiscountKind =\n  | { kind: \"percentage\"; percent: number }\n  | { kind: \"fixed\";      amount: number };\n\nexport interface Cart {\n  currency: Currency;\n  items: CartItem[];\n  discount?: DiscountKind;\n}\n\nexport type Result<T, E> =\n  | { ok: true;  value: T }\n  | { ok: false; error: E };\n\nexport type ValidationError =\n  | { field: \"currency\";          message: string }\n  | { field: \"items\";             message: string }\n  | { field: `items[${number}]`;  message: string }\n  | { field: \"discount\";          message: string };\n\n/** Validate raw unknown input → typed Cart, collecting ALL errors. */\nexport function validateCart(raw: unknown): Result<Cart, ValidationError[]>;\n\n/** Compute line totals, subtotal, discount, and final total. */\nexport function buildOrderSummary(cart: Cart): OrderSummary;\n\n/** Validate + calculate in one call. */\nexport function processCart(raw: unknown): Result<OrderSummary, ValidationError[]>;\n",
+    "goals": [
+      "Implement `validateCart` to narrow `unknown` → `Cart` using type guards, collecting every `ValidationError` before returning.",
+      "Implement `buildOrderSummary` to compute per-line totals, subtotal, and a correctly capped `discountApplied` amount using discriminated-union narrowing on `DiscountKind`.",
+      "Implement `processCart` to compose the two helpers and return a `Result<OrderSummary, ValidationError[]>`.",
+      "Use zero `any` and zero type assertions (`as`) throughout — rely solely on type guards and control flow narrowing."
+    ],
+    "hints": [
+      "A `const CURRENCIES = ['USD','EUR','GBP'] as const` array lets you write a clean type-guard without repeating the union members.",
+      "Narrow `DiscountKind` in `buildOrderSummary` with a `switch (cart.discount.kind)` — TypeScript will fully narrow each branch for you.",
+      "For the template-literal error field `items[${number}]`, just interpolate the index: `` `items[${i}]` as const `` satisfies the union member exactly."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript Handbook — Narrowing",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html"
+      },
+      {
+        "title": "TypeScript Handbook — Discriminated Unions",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html#discriminated-unions"
+      },
+      {
+        "title": "TypeScript Handbook — Template Literal Types",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/template-literal-types.html"
+      },
+      {
+        "title": "TypeScript Handbook — Generics",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/generics.html"
+      }
+    ]
   }
 ]
