@@ -4245,5 +4245,41 @@
         "url": "https://www.typescriptlang.org/docs/handbook/2/generics.html"
       }
     ]
+  },
+  {
+    "date": "2026-06-18",
+    "name": "Typed GraphQL-Style Query Planner & Resolver",
+    "difficulty": "Hard",
+    "description": "You're building the query execution layer for an in-house data-graph API. Raw query documents arrive as `unknown` from an HTTP body; your planner must validate them, resolve each field through a registry of strongly-typed resolvers, fan out leaf fetches concurrently with a concurrency cap, and return a deeply-typed response tree — with zero `any`.",
+    "snippet": "\n// Key types at a glance:\n\ntype ScalarValue = string | number | boolean | null;\n\ntype ResponseNode =\n  | ScalarValue\n  | ResponseNode[]\n  | { [field: string]: ResponseNode };\n\ndeclare const __resolverPath: unique symbol;\ntype ResolverPath = string & { readonly [__resolverPath]: true };\n\ntype ResolverRegistry = Map<ResolverPath, Resolver>;\n\ninterface ExecutionPlan {\n  operation: \"query\" | \"mutation\";\n  roots: PlanNode[];   // PlanNode.children is recursive\n}\n\n// --- Main entry point you must implement ---\nasync function runQuery(\n  raw: unknown,                // straight from HTTP body\n  registry: ResolverRegistry,\n  context: ResolverContext\n): Promise<QueryResponse>;\n// pipeline: validate → buildExecutionPlan → executeQuery\n",
+    "goals": [
+      "Implement `validateQueryDocument` to safely narrow an `unknown` HTTP body into a typed `QueryDocument` using structural type guards — no `any`, no assertions.",
+      "Implement `buildExecutionPlan` to convert a `QueryDocument` into a recursive `ExecutionPlan` tree where every node carries a correctly-constructed branded `ResolverPath`.",
+      "Implement `createConcurrencyLimiter` as a generic queue-based scheduler that caps simultaneous async tasks while preserving each task's return type.",
+      "Implement `executeQuery` to fan out root resolvers concurrently (or sequentially for mutations), resolve children with parent values, isolate per-field errors, and assemble a `QueryResponse`."
+    ],
+    "hints": [
+      "For `createConcurrencyLimiter`, maintain a counter of running tasks and a queue of `() => void` drain callbacks — resolve each queued promise only when a slot opens.",
+      "In `validateQueryDocument`, write a recursive `isFieldSelection(v: unknown): v is FieldSelection` guard; TypeScript will narrow the array element type for you if you use `Array.prototype.every`.",
+      "In `executeQuery`, remember that `mutation` root nodes must run one-at-a-time: use a `for...of` loop with `await` instead of `Promise.all`, even when the concurrency limiter is active."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript — Narrowing (type guards)",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html"
+      },
+      {
+        "title": "TypeScript — Recursive Types",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/objects.html#the-array-type"
+      },
+      {
+        "title": "TypeScript — Generics",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/generics.html"
+      },
+      {
+        "title": "MDN — Promise.all / allSettled",
+        "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise/allSettled"
+      }
+    ]
   }
 ]
