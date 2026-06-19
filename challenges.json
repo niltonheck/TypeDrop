@@ -4281,5 +4281,41 @@
         "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise/allSettled"
       }
     ]
+  },
+  {
+    "date": "2026-06-19",
+    "name": "Typed CSV Report Pipeline with Aggregation & Validation",
+    "difficulty": "Medium",
+    "description": "You're building the data-export layer for an analytics dashboard. Raw CSV rows arrive as `unknown[]` from a file-upload parser; your pipeline must validate each row into a strongly-typed record, aggregate metrics in a single pass, and return a typed report summary — with zero `any`.",
+    "snippet": "\n// Key types & main function signatures at a glance\n\nexport type Region = \"north\" | \"south\" | \"east\" | \"west\";\n\nexport interface SalesRecord {\n  id: string;\n  region: Region;\n  product: string;\n  quantity: number;   // positive integer\n  unitPrice: number;  // positive number\n  saleDate: string;   // \"YYYY-MM-DD\"\n}\n\nexport type ValidationResult<T> =\n  | { readonly status: \"ok\";    readonly value: T }\n  | { readonly status: \"error\"; readonly rowIndex: number;\n      readonly field: keyof SalesRecord | \"unknown\"; readonly message: string };\n\nexport type PipelineResult =\n  | { status: \"complete\"; report: ReportSummary }\n  | { status: \"empty\";    message: string }\n  | { status: \"fatal\";    error: string };\n\nexport function validateRow(row: unknown, rowIndex: number): ValidationResult<SalesRecord>;\n\nexport function aggregateRecords(records: SalesRecord[]): Pick<ReportSummary, \"grandTotalRevenue\" | \"byRegion\">;\n\nexport function runPipeline(rawRows: unknown[]): PipelineResult;\n",
+    "goals": [
+      "Implement `validateRow` to fully narrow `unknown` → `SalesRecord` using field-by-field type guards, returning the first failing field in a typed `ValidationFailure`.",
+      "Implement `aggregateRecords` to compute `grandTotalRevenue` and a per-region `Record<Region, RegionSummary>` in a single loop pass, with all monetary values rounded to 2 decimal places.",
+      "Implement `runPipeline` to orchestrate validation and aggregation, collecting errors and returning a fully-typed `PipelineResult` discriminated union — never throwing.",
+      "Ensure all four `Region` values always appear in `byRegion` (even if a region has zero records), using `Record<Region, RegionSummary>`."
+    ],
+    "hints": [
+      "To narrow `unknown` to an object with known keys, first check `typeof row === 'object' && row !== null`, then use `'fieldName' in row` before accessing each property — this keeps TypeScript happy with no `as` or `any`.",
+      "For the `Region` guard, define a `const REGIONS = ['north','south','east','west'] as const` array and use `REGIONS.includes(value as Region)` — or write an explicit type-predicate function `isRegion(v: unknown): v is Region`.",
+      "Seed `byRegion` before your aggregation loop by mapping over all four region literals so every key is always present; `Math.round(x * 100) / 100` is a clean way to round to 2 decimal places."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript Handbook — Narrowing",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html"
+      },
+      {
+        "title": "TypeScript Handbook — Utility Types (Pick, Record)",
+        "url": "https://www.typescriptlang.org/docs/handbook/utility-types.html"
+      },
+      {
+        "title": "TypeScript Handbook — Discriminated Unions",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html#discriminated-unions"
+      },
+      {
+        "title": "MDN — Array.prototype.reduce()",
+        "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/reduce"
+      }
+    ]
   }
 ]
