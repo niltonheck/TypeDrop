@@ -4317,5 +4317,41 @@
         "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/reduce"
       }
     ]
+  },
+  {
+    "date": "2026-06-20",
+    "name": "Typed Event Sourcing Engine with Projection & Snapshot",
+    "difficulty": "Hard",
+    "description": "You're building the event-sourcing backbone for a collaborative document editor. Raw domain events arrive as `unknown` from a Kafka consumer; your engine must validate them, apply them to a strongly-typed aggregate, maintain projections via a registry of typed reducers, and produce versioned snapshots — with zero `any`.",
+    "snippet": "\n// Key types at a glance:\ntype AggregateId = string & { readonly __brand: unique symbol };\ntype Version     = number & { readonly __brand: unique symbol };\n\ntype DomainEvent =\n  | { type: \"DocumentCreated\";   eventId: EventId; aggregateId: AggregateId; version: Version; occurredAt: string; title: string; authorId: string }\n  | { type: \"ContentUpdated\";    eventId: EventId; aggregateId: AggregateId; version: Version; occurredAt: string; content: string; wordCount: number }\n  | { type: \"CollaboratorAdded\"; eventId: EventId; aggregateId: AggregateId; version: Version; occurredAt: string; collaboratorId: string; role: \"viewer\" | \"editor\" }\n  | { type: \"DocumentArchived\";  eventId: EventId; aggregateId: AggregateId; version: Version; occurredAt: string; reason: string };\n\ntype ProjectionRegistry<S> = {\n  [K in DomainEvent[\"type\"]]: (state: S, event: Extract<DomainEvent, { type: K }>) => S;\n};\n\n// Main pipeline entry point:\nfunction processRawEventBatch(\n  rawEvents: unknown[],\n  initial: DocumentState,\n  registry: ProjectionRegistry<DocumentState>\n): BatchResult { /* ... */ }\n",
+    "goals": [
+      "Define branded types for AggregateId, EventId, and Version that are mutually incompatible at compile time.",
+      "Build a type-safe ProjectionRegistry using mapped types and Extract<> so each reducer receives the exact DomainEvent variant — not the full union.",
+      "Implement parseRawEvent to safely narrow unknown input to a typed DomainEvent, returning a Result<DomainEvent, ValidationError> with zero type assertions.",
+      "Wire everything together in processRawEventBatch: collect parse errors without halting, replay valid events sequentially, and return a fully-typed BatchResult including an optional snapshot."
+    ],
+    "hints": [
+      "For ProjectionRegistry, `[K in DomainEvent[\"type\"]]: (state: S, event: Extract<DomainEvent, { type: K }>) => S` lets TypeScript infer the exact variant in each reducer body.",
+      "When narrowing `unknown` in parseRawEvent, use `typeof` and `in` operator checks — never cast. A helper like `isNonNullObject(v: unknown): v is Record<string, unknown>` keeps the code clean.",
+      "Branded types need a `unique symbol` per brand; declare the symbol inside the type literal itself so each brand is truly distinct even without an exported symbol."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript Handbook — Mapped Types",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/mapped-types.html"
+      },
+      {
+        "title": "TypeScript Handbook — Conditional Types & infer",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/conditional-types.html"
+      },
+      {
+        "title": "TypeScript Handbook — Narrowing",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html"
+      },
+      {
+        "title": "TypeScript Utility Types (Extract, Record, Pick…)",
+        "url": "https://www.typescriptlang.org/docs/handbook/utility-types.html"
+      }
+    ]
   }
 ]
