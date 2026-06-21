@@ -4353,5 +4353,41 @@
         "url": "https://www.typescriptlang.org/docs/handbook/utility-types.html"
       }
     ]
+  },
+  {
+    "date": "2026-06-21",
+    "name": "Typed Notification Dispatcher with Retry & Channel Routing",
+    "difficulty": "Medium",
+    "description": "You're building the notification layer for a user-facing SaaS app. Raw notification payloads arrive as `unknown` from an internal queue; your dispatcher must validate them, route them to the correct typed channel handler (email, SMS, push), fan out deliveries concurrently, and return a strongly-typed delivery report — with zero `any`.",
+    "snippet": "// Core types & main function signatures\n\ntype EmailPayload = { channel: \"email\"; id: string; userId: string; to: string; subject: string; body: string };\ntype SmsPayload   = { channel: \"sms\";   id: string; userId: string; to: string; text: string };\ntype PushPayload  = { channel: \"push\";  id: string; userId: string; deviceToken: string; title: string; body: string };\n\ntype NotificationPayload = EmailPayload | SmsPayload | PushPayload;\n\ntype ChannelHandler<T extends NotificationPayload> = (payload: T) => Promise<void>;\n\n// ChannelRegistry maps each channel key → the handler for that exact variant\ntype ChannelRegistry = { [K in NotificationPayload[\"channel\"]]: ChannelHandler<Extract<NotificationPayload, { channel: K }>> };\n\n// Main entry point\nasync function dispatchAll(\n  rawPayloads: unknown[],\n  registry: ChannelRegistry,\n  maxRetries: number,\n): Promise<DeliveryReport> { /* TODO */ }\n",
+    "goals": [
+      "Define a three-variant discriminated union `NotificationPayload` and a `ChannelRegistry` mapped type that pairs each channel key with its exact handler type using `Extract`.",
+      "Implement `parsePayload` to narrow `unknown` to `NotificationPayload` at runtime using type guards — no `as` assertions.",
+      "Implement `dispatchOne` to route a payload to its correct handler and retry on failure up to `maxRetries` additional times, always resolving to a `DeliveryStatus`.",
+      "Implement `dispatchAll` to fan out all dispatches concurrently with `Promise.allSettled`, then aggregate results into a fully-typed `DeliveryReport` with per-channel summaries."
+    ],
+    "hints": [
+      "For `ChannelRegistry`, a mapped type `{ [K in NotificationPayload[\"channel\"]]: ChannelHandler<Extract<NotificationPayload, { channel: K }>> }` lets the compiler verify each handler receives the right payload variant.",
+      "In `parsePayload`, narrow step-by-step: first check `typeof raw === 'object' && raw !== null`, then check the `channel` field is a string, then branch on its value — the compiler will track the type in each branch.",
+      "In `dispatchOne`, a `for` loop from `0` to `maxRetries` (inclusive) lets you attempt the call and `break` on success, capturing the last error for the `failed` status."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript Handbook — Discriminated Unions",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html#discriminated-unions"
+      },
+      {
+        "title": "TypeScript Handbook — Mapped Types",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/mapped-types.html"
+      },
+      {
+        "title": "TypeScript Utility Types — Extract",
+        "url": "https://www.typescriptlang.org/docs/handbook/utility-types.html#extracttype-union"
+      },
+      {
+        "title": "MDN — Promise.allSettled",
+        "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise/allSettled"
+      }
+    ]
   }
 ]
