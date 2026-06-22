@@ -4389,5 +4389,41 @@
         "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise/allSettled"
       }
     ]
+  },
+  {
+    "date": "2026-06-22",
+    "name": "Typed Workflow Orchestrator with Dependency Resolution & Typed Step Registry",
+    "difficulty": "Hard",
+    "description": "You're building the execution engine for a low-code automation platform. Raw workflow definitions arrive as `unknown` from a user-uploaded JSON file; your orchestrator must validate them, topologically sort steps by their declared dependencies, execute each step through a registry of strongly-typed handlers, propagate outputs between steps, and return a fully-typed execution report — with zero `any`.",
+    "snippet": "// Core types & main entry-point signature\n\ntype StepId      = string & { readonly __brand: \"StepId\" };\ntype HandlerKind = string & { readonly __brand: \"HandlerKind\" };\n\ntype HandlerDescriptor<C, O> = {\n  readonly kind: HandlerKind;\n  validate(rawConfig: unknown): C;\n  execute(config: C, inputs: StepInputMap): Promise<O>;\n};\n\ntype StepResult<O = unknown> =\n  | { readonly status: \"success\"; readonly stepId: StepId; readonly output: O }\n  | { readonly status: \"failure\"; readonly stepId: StepId; readonly error: string };\n\ntype WorkflowReport = {\n  readonly workflowId: string;\n  readonly results: StepResult[];\n  readonly overallStatus: \"completed\" | \"partial\" | \"failed\";\n};\n\n// Full pipeline: raw JSON string → strongly-typed execution report\nasync function executeWorkflowJson(\n  rawJson: string,\n  registry: HandlerRegistry\n): Promise<WorkflowReport> { /* TODO */ }",
+    "goals": [
+      "Implement `toStepId` and `toHandlerKind` branded-type constructors that reject empty/non-string input.",
+      "Implement `validateWorkflow` to narrow `unknown` → `ValidatedWorkflow`, enforcing uniqueness, dangling-reference, and registry-membership checks without using `any`.",
+      "Implement `topologicalSort` using Kahn's algorithm to produce a wave-ordered flat array and throw a descriptive error on circular dependencies.",
+      "Implement `runWorkflow` to execute steps wave-by-wave with `Promise.allSettled`, propagate outputs as `StepInputMap`, skip steps whose dependencies failed, and compute the correct `overallStatus`."
+    ],
+    "hints": [
+      "For `HandlerRegistry`, an index signature `[K in HandlerKind]: HandlerDescriptor<unknown, unknown>` is the correct escape hatch at the registry level — individual handlers are still fully typed via their own `HandlerDescriptor<C, O>` generics.",
+      "Kahn's algorithm: build an in-degree map, push all zero-in-degree nodes into a queue as the first wave, process wave-by-wave, decrementing in-degrees as you go — if nodes remain after the queue empties, you have a cycle.",
+      "To build waves for concurrent execution in `runWorkflow`, group steps by their topological 'level': a step's level is `1 + max(level of dependencies)`, then `Promise.allSettled` each level's group together."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript Handbook — Branded / Nominal Types",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html"
+      },
+      {
+        "title": "TypeScript Handbook — Mapped Types",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/mapped-types.html"
+      },
+      {
+        "title": "MDN — Promise.allSettled()",
+        "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise/allSettled"
+      },
+      {
+        "title": "TypeScript Handbook — Generic Constraints",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/generics.html#generic-constraints"
+      }
+    ]
   }
 ]
