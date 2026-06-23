@@ -4425,5 +4425,41 @@
         "url": "https://www.typescriptlang.org/docs/handbook/2/generics.html#generic-constraints"
       }
     ]
+  },
+  {
+    "date": "2026-06-23",
+    "name": "Typed Feature Flag Evaluator with Targeting Rules & Rollout",
+    "difficulty": "Medium",
+    "description": "You're building the feature-flag evaluation engine for a SaaS platform. Raw flag configurations arrive as `unknown` from a remote config service; your evaluator must validate them, match each flag's targeting rules against a typed user context, apply percentage-based rollouts, and return a strongly-typed evaluation report — with zero `any`.",
+    "snippet": "export type RuleOperator = \"eq\" | \"neq\" | \"in\" | \"gt\" | \"lt\";\n\nexport interface FeatureFlag {\n  key: string;\n  description: string;\n  enabled: boolean;\n  rules: TargetingRule[];\n  defaultVariant: string;\n  rolloutPercentage: number; // 0–100\n}\n\nexport interface UserContext {\n  userId: string;\n  email: string;\n  country: string;\n  plan: \"free\" | \"pro\" | \"enterprise\";\n  accountAgeDays: number;\n}\n\nexport type Result<T, E> =\n  | { ok: true; value: T }\n  | { ok: false; error: E };\n\n// Validate raw unknown → FeatureFlag\nexport function parseFlag(raw: unknown, index: number): Result<FeatureFlag, ValidationError>;\n\n// Evaluate one flag for a user → variant + reason\nexport function evaluateFlag(flag: FeatureFlag, user: UserContext): FlagEvaluation;\n\n// Parse all raws, evaluate each, return a typed report\nexport function evaluateFlags(\n  rawFlags: unknown[], user: UserContext, errors: ValidationError[]\n): EvaluationReport;",
+    "goals": [
+      "Implement `parseFlag` to validate `unknown` flag configs into `FeatureFlag` using only type-narrowing guards (no `as`).",
+      "Implement `evaluateFlag` to apply targeting rules in order using all five `RuleOperator` semantics, respecting the disabled and rollout-bucket checks.",
+      "Implement `evaluateFlags` to orchestrate parsing and evaluation, skip invalid flags into an errors array, and produce a fully-typed `EvaluationReport`.",
+      "Ensure `rolloutPercentage` correctly gates non-default variants using `deterministicHash(flagKey:userId) % 100`."
+    ],
+    "hints": [
+      "For `parseFlag`, build up a validated object field-by-field using `typeof` and `Array.isArray` checks — `keyof UserContext` can be validated against a hard-coded set like `new Set([\"userId\", \"email\", ...])`.",
+      "In `evaluateFlag`, handle the four evaluation steps in strict order (disabled → rollout → rules → default) before touching any rule logic.",
+      "For the `\"in\"` operator, remember `ruleValue` must be `string[]` — narrow it with `Array.isArray` before calling `.includes`."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript — Narrowing",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html"
+      },
+      {
+        "title": "TypeScript — keyof Type Operator",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/keyof-types.html"
+      },
+      {
+        "title": "TypeScript — Generic Types",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/generics.html"
+      },
+      {
+        "title": "TypeScript — Discriminated Unions",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html#discriminated-unions"
+      }
+    ]
   }
 ]
