@@ -4461,5 +4461,41 @@
         "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html#discriminated-unions"
       }
     ]
+  },
+  {
+    "date": "2026-06-24",
+    "name": "Typed Shopping Cart with Discount Rules & Order Summary",
+    "difficulty": "Easy",
+    "description": "You're building the checkout layer for a small e-commerce storefront. Cart items and discount codes arrive as raw input; your module must validate them into strongly-typed structures, apply the correct discount strategy, and return a fully-typed order summary — with zero `any`.",
+    "snippet": "export type ProductCategory = \"electronics\" | \"clothing\" | \"food\" | \"books\" | \"toys\";\n\nexport type CartItem = {\n  id: string;\n  name: string;\n  priceUSD: number;\n  quantity: number;\n  category: ProductCategory;\n};\n\nexport type Discount =\n  | { kind: \"percentage\"; code: string; percent: number }\n  | { kind: \"fixed\";      code: string; amountUSD: number }\n  | { kind: \"bogo\";       code: string; category: ProductCategory };\n\nexport type OrderSummary = {\n  items: CartItem[];\n  subtotalUSD: number;\n  discountUSD: number;\n  totalUSD: number;\n  appliedCode: string | null;\n};\n\nexport function validateCartItem(raw: unknown): CartItem { /* TODO */ }\nexport function applyDiscount(items: CartItem[], discount: Discount): number { /* TODO */ }\nexport function buildOrderSummary(rawItems: unknown[], discount: Discount | null): OrderSummary { /* TODO */ }",
+    "goals": [
+      "Define a `CartItem` type and a three-variant `Discount` discriminated union with no `any`.",
+      "Implement `validateCartItem` that narrows `unknown` to `CartItem` and throws a descriptive error for invalid input.",
+      "Implement `applyDiscount` with an exhaustive switch over all three `Discount` kinds (percentage, fixed, bogo).",
+      "Implement `buildOrderSummary` that validates raw items, computes the subtotal, applies an optional discount, and returns a fully-typed `OrderSummary`."
+    ],
+    "hints": [
+      "Use a `switch (discount.kind)` in `applyDiscount` — TypeScript will narrow each branch automatically, and the compiler will warn you if a case is missing.",
+      "In `validateCartItem`, first check `typeof raw === 'object' && raw !== null`, then use `'id' in raw` guards before accessing individual properties — no `as` needed.",
+      "For the bogo calculation, group clothing items by category first, then for every pair of quantity count the cheaper item's price as saved — remember quantity means multiple units of one line item."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript — Discriminated Unions",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html#discriminated-unions"
+      },
+      {
+        "title": "TypeScript — Narrowing (typeof, in, control flow)",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html"
+      },
+      {
+        "title": "TypeScript — Union and Intersection Types",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/everyday-types.html#union-types"
+      },
+      {
+        "title": "MDN — Array.prototype.reduce()",
+        "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/reduce"
+      }
+    ]
   }
 ]
