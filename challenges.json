@@ -4497,5 +4497,41 @@
         "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/reduce"
       }
     ]
+  },
+  {
+    "date": "2026-06-25",
+    "name": "Typed API Rate Limiter with Sliding Window & Policy Registry",
+    "difficulty": "Medium",
+    "description": "You're building the rate-limiting middleware for a multi-tenant REST API gateway. Raw policy configurations arrive as `unknown` from a remote config store; your limiter must validate them, look up the correct typed policy per tenant, track request counts in a sliding-window algorithm, and return a strongly-typed admission decision — with zero `any`.",
+    "snippet": "// Core types and main class signature\n\nexport type TenantId = string & { readonly __brand: \"TenantId\" };\nexport type EpochMs  = number & { readonly __brand: \"EpochMs\" };\n\nexport type RateLimitPolicy =\n  | { readonly kind: \"fixed\";   readonly maxRequests: number; readonly windowMs: number }\n  | { readonly kind: \"sliding\"; readonly maxRequests: number; readonly windowMs: number }\n  | { readonly kind: \"tiered\";  readonly tier: string;\n      readonly tiers: Record<string, { maxRequests: number; windowMs: number }> };\n\nexport type Result<T, E> =\n  | { readonly ok: true;  readonly value: T }\n  | { readonly ok: false; readonly error: E };\n\nexport type AdmissionDecision =\n  | { readonly decision: \"allowed\"; remainingRequests: number; windowResetAt: EpochMs }\n  | { readonly decision: \"denied\";  retryAfterMs: number;      windowResetAt: EpochMs };\n\nexport class RateLimiter {\n  registerPolicy(tenantId: TenantId, raw: unknown): Result<RateLimitPolicy, PolicyValidationError>;\n  admit(tenantId: TenantId, requestId: RequestId, now: EpochMs): AdmissionDecision;\n  snapshot(now: EpochMs): Record<TenantId, { policy: RateLimitPolicy; requestsInWindow: number; windowResetAt: EpochMs }>;\n}",
+    "goals": [
+      "Implement `registerPolicy` to safely narrow `unknown` → `RateLimitPolicy` and return a typed `Result<T,E>` with specific `PolicyValidationError` variants.",
+      "Implement `admit` to dispatch on the policy's discriminated `kind` and apply the correct fixed-window or sliding-window admission algorithm.",
+      "Implement `snapshot` to return a `Record<TenantId, …>` reflecting each tenant's in-window request count and reset time at the given `now`.",
+      "Use branded types throughout — never conflate raw `string`/`number` with `TenantId`, `RequestId`, or `EpochMs`."
+    ],
+    "hints": [
+      "To narrow `unknown` safely, start with `typeof raw === 'object' && raw !== null` before accessing any fields — then use `'kind' in raw` and check the value.",
+      "For the sliding window, store timestamps as a mutable copy of the `readonly` array: `[...existing, now]` creates a new array you can assign back without fighting `readonly`.",
+      "The `Record<TenantId, …>` return type of `snapshot` requires `TenantId` as the index — use `Object.fromEntries` or build up a plain object cast through the branded key type."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript Handbook — Narrowing",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html"
+      },
+      {
+        "title": "TypeScript Handbook — Discriminated Unions",
+        "url": "https://www.typescriptlang.org/docs/handbook/typescript-in-5-minutes-func.html#discriminated-unions"
+      },
+      {
+        "title": "TypeScript Handbook — Utility Types (Record, Pick, Omit…)",
+        "url": "https://www.typescriptlang.org/docs/handbook/utility-types.html"
+      },
+      {
+        "title": "MDN — Map object",
+        "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Map"
+      }
+    ]
   }
 ]
