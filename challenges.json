@@ -4533,5 +4533,41 @@
         "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Map"
       }
     ]
+  },
+  {
+    "date": "2026-06-26",
+    "name": "Typed Event Sourcing Engine with Snapshot & Projection",
+    "difficulty": "Hard",
+    "description": "You're building the core event-sourcing engine for a financial ledger service. Raw domain events arrive as `unknown` from a Kafka consumer; your engine must validate and narrow them into a discriminated-union event log, rebuild aggregate state via typed reducers, apply snapshotting for performance, and fan-out to multiple read-model projections — all with zero `any`.",
+    "snippet": "// Key types & main pipeline function\n\ntype DomainEvent =\n  | AccountOpenedEvent\n  | MoneyDepositedEvent\n  | MoneyWithdrawnEvent\n  | AccountClosedEvent;\n\ntype Result<T, E extends string> = Ok<T> | Err<E>;\n\ninterface Projection<R> {\n  name: string;\n  init: () => R;\n  apply: (readModel: R, event: DomainEvent) => R;\n}\n\n// Replays events through N projections — return type mirrors the input tuple:\nfunction runProjections<\n  const Ps extends readonly [Projection<unknown>, ...Projection<unknown>[]]\n>(\n  events: readonly DomainEvent[],\n  projections: Ps\n): { [K in keyof Ps]: Ps[K] extends Projection<infer R> ? R : never };\n\n// Full ingestion pipeline: validate → rebuild aggregate → project\nfunction ingestEvents(rawEvents: readonly unknown[]): PipelineResult;\n",
+    "goals": [
+      "Implement `validateEvent` to narrow `unknown` raw Kafka payloads into a typed `DomainEvent` discriminated union, returning a `Result<DomainEvent, ValidationError>`.",
+      "Implement `applyEvent` and `rebuildFromEvents` to reconstruct `AccountState` from an ordered event log, supporting optional `Snapshot<AccountState>` fast-forwarding.",
+      "Define the `Projection<R>` interface and implement both `ledgerProjection` and `summaryProjection` as pure fold functions over the event stream.",
+      "Implement `runProjections` using a mapped type over a const-inferred tuple so the return type mirrors the input projections tuple element-for-element, then wire everything together in `ingestEvents`."
+    ],
+    "hints": [
+      "For `runProjections`, the return type `{ [K in keyof Ps]: Ps[K] extends Projection<infer R> ? R : never }` is already written — your job is to produce a value that satisfies it; casting the accumulated array with a type assertion is the one place a cast is justified, but try to avoid it by building the result correctly.",
+      "In `validateEvent`, narrow the `unknown` step-by-step: first check `typeof raw === 'object' && raw !== null`, then use `'type' in raw` before reading the `type` field — TypeScript won't let you read a property of `unknown` without narrowing first.",
+      "For `rebuildFromEvents` with a snapshot, remember the snapshot's `version` tells you how many leading events to skip — `events.slice(snapshot.version)` gives you only the unseen tail."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript Handbook — Narrowing",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html"
+      },
+      {
+        "title": "TypeScript Handbook — Conditional Types & infer",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/conditional-types.html"
+      },
+      {
+        "title": "TypeScript Handbook — Mapped Types",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/mapped-types.html"
+      },
+      {
+        "title": "TypeScript 5.0 — const Type Parameters",
+        "url": "https://www.typescriptlang.org/docs/handbook/release-notes/typescript-5-0.html#const-type-parameters"
+      }
+    ]
   }
 ]
