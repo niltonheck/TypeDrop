@@ -4569,5 +4569,41 @@
         "url": "https://www.typescriptlang.org/docs/handbook/release-notes/typescript-5-0.html#const-type-parameters"
       }
     ]
+  },
+  {
+    "date": "2026-06-27",
+    "name": "Typed Job Queue with Priority Scheduling & Retry Policies",
+    "difficulty": "Medium",
+    "description": "You're building the background job processing engine for a SaaS platform. Raw job submissions arrive as `unknown` from an HTTP API; your queue must validate them into strongly-typed job descriptors, schedule them by priority, execute them through a typed handler registry, apply per-job-kind retry policies, and return a fully-typed execution receipt — with zero `any`.",
+    "snippet": "// Core types & main function signatures at a glance\n\ntype Priority = 1 | 2 | 3;\n\ntype Job = SendEmailJob | ResizeImageJob | GenerateReportJob;\ntype JobKind = Job[\"kind\"]; // \"send_email\" | \"resize_image\" | \"generate_report\"\n\n// Extracts the payload type for a given kind — you must complete this:\ntype PayloadOf<K extends JobKind> = Extract<Job, { kind: K }>[\"payload\"];\n\n// Every kind must have a handler — you must complete this mapped type:\ntype HandlerRegistry = { [K in JobKind]: HandlerFn<K> };\n\ntype ExecutionResult = SuccessResult | FailureResult;\n\n// Validate raw unknown → typed descriptor (or null):\nfunction validateJobDescriptor(raw: unknown): JobDescriptor | null { ... }\n\n// Sort descriptors: priority ASC, then enqueuedAt ASC:\nfunction scheduleJobs(jobs: ReadonlyArray<JobDescriptor>): JobDescriptor[] { ... }\n\n// Run one job with typed handler + retry policy:\nasync function executeJob(\n  descriptor: JobDescriptor,\n  handlers: HandlerRegistry,\n  policies: RetryPolicyRegistry\n): Promise<ExecutionResult> { ... }\n\n// Full pipeline: validate → schedule → execute sequentially:\nasync function runQueue(\n  rawJobs: unknown[],\n  handlers: HandlerRegistry,\n  policies: RetryPolicyRegistry\n): Promise<ExecutionResult[]> { ... }\n",
+    "goals": [
+      "Implement `validateJobDescriptor` to safely narrow `unknown` into a fully-typed `JobDescriptor`, returning `null` for any invalid input without ever throwing.",
+      "Implement `scheduleJobs` to sort descriptors by priority ascending, breaking ties by `enqueuedAt` ascending, without mutating the input array.",
+      "Implement `executeJob` to dispatch to the correct typed handler via `HandlerRegistry`, retrying up to `maxAttempts` times with `delayMs` waits, and returning a typed `ExecutionResult`.",
+      "Implement `runQueue` to run the full validate → schedule → execute pipeline, processing jobs sequentially and collecting all `ExecutionResult` values."
+    ],
+    "hints": [
+      "For `validateJobDescriptor`, switch on `kind` first to narrow which payload shape to check — TypeScript will understand the narrowing inside each `case` branch.",
+      "For `executeJob`, a small helper like `function dispatch<K extends JobKind>(k: K, h: HandlerRegistry, p: PayloadOf<K>): Promise<string>` lets you call `h[k](p)` without `any` — the mapped type makes the index signature safe.",
+      "The `RetryPolicyRegistry` and `HandlerRegistry` types are mapped types over `JobKind` — write `[K in JobKind]: ...` to enforce that every kind has an entry at compile time."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript Handbook: Mapped Types",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/mapped-types.html"
+      },
+      {
+        "title": "TypeScript Handbook: Conditional Types & infer",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/conditional-types.html"
+      },
+      {
+        "title": "TypeScript Handbook: Narrowing",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html"
+      },
+      {
+        "title": "TypeScript Utility Types: Extract",
+        "url": "https://www.typescriptlang.org/docs/handbook/utility-types.html#extracttype-union"
+      }
+    ]
   }
 ]
