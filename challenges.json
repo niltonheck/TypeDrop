@@ -4605,5 +4605,41 @@
         "url": "https://www.typescriptlang.org/docs/handbook/utility-types.html#extracttype-union"
       }
     ]
+  },
+  {
+    "date": "2026-06-28",
+    "name": "Typed CSV Contact Importer with Validation & Deduplication",
+    "difficulty": "Easy",
+    "description": "You're building the contact-import pipeline for a CRM tool. Raw CSV rows arrive as `unknown` from a file parser; your module must validate them into strongly-typed `Contact` records, collect structured field-level errors, and deduplicate entries by email — returning a fully-typed import report with zero `any`.",
+    "snippet": "// Key types and main function signature\n\ntype Email = string & { readonly _brand: \"Email\" };\ntype ContactCategory = \"lead\" | \"customer\" | \"partner\";\n\ninterface Contact {\n  id: string;\n  name: string;\n  email: Email;\n  category: ContactCategory;\n  createdAt: Date;\n}\n\ninterface FieldError { field: string; message: string; }\n\ntype RowResult =\n  | { status: \"ok\";    contact: Contact }\n  | { status: \"error\"; rowIndex: number; errors: [FieldError, ...FieldError[]] };\n\ninterface ImportReport {\n  imported:   Contact[];\n  failed:     RowResult[];\n  duplicates: Email[];\n}\n\nfunction isPlainObject(value: unknown): value is Record<string, unknown> { … }\nfunction validateRow(raw: unknown, rowIndex: number): RowResult { … }\nfunction importContacts(rows: unknown[]): ImportReport { … }",
+    "goals": [
+      "Define a branded `Email` type and use it throughout validation and deduplication without any type assertions.",
+      "Implement `isPlainObject` as a proper type guard that narrows `unknown` to `Record<string, unknown>`.",
+      "Implement `validateRow` to collect ALL field-level errors before returning, and return a correctly-shaped `RowResult` discriminated union.",
+      "Implement `importContacts` to produce a fully-typed `ImportReport` with deduplicated contacts and a unique `duplicates` list."
+    ],
+    "hints": [
+      "A branded type is just an intersection: `type Email = string & { readonly _brand: 'Email' }`. You can safely widen back to it inside a validated branch with a `return value as Email`... but can you avoid the cast entirely by structuring the return?",
+      "Collect errors into a `FieldError[]` array, then check `errors.length > 0` to decide which `RowResult` variant to return — TypeScript will accept `errors as [FieldError, ...FieldError[]]` only if you verify length first, or you can use a tuple push pattern.",
+      "Use a `Set<Email>` to track seen emails and a second `Set<Email>` to track already-recorded duplicates, so each dropped email appears at most once in `report.duplicates`."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript Handbook — Narrowing",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html"
+      },
+      {
+        "title": "TypeScript Handbook — Branded / Nominal Types",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/template-literal-types.html"
+      },
+      {
+        "title": "TypeScript Handbook — Discriminated Unions",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html#discriminated-unions"
+      },
+      {
+        "title": "MDN — Date() constructor & NaN detection",
+        "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date/Date"
+      }
+    ]
   }
 ]
