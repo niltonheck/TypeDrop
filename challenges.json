@@ -4641,5 +4641,41 @@
         "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date/Date"
       }
     ]
+  },
+  {
+    "date": "2026-06-29",
+    "name": "Typed Feature Flag Engine with Targeting Rules & Rollout Segments",
+    "difficulty": "Medium",
+    "description": "You're building the feature-flag evaluation engine for a SaaS platform. Raw flag configurations arrive as `unknown` from a remote config store; your engine must validate them into strongly-typed flag definitions, evaluate targeting rules against a typed user context, and return a fully-typed evaluation result — with zero `any`.",
+    "snippet": "// Key types and main function signature preview\n\ntype FlagValueType = \"boolean\" | \"string\" | \"number\";\n\ntype FlagValue<T extends FlagValueType> =\n  T extends \"boolean\" ? boolean :\n  T extends \"string\"  ? string  :\n  T extends \"number\"  ? number  : never;\n\ntype TargetingRule =\n  | { kind: \"exact\";   attribute: string; value: string }\n  | { kind: \"set\";     attribute: string; values: readonly string[] }\n  | { kind: \"rollout\"; percentage: number };\n\ninterface FlagDefinition<T extends FlagValueType> {\n  readonly id: string;\n  readonly valueType: T;\n  readonly rules: ReadonlyArray<{ rule: TargetingRule; value: FlagValue<T> }>;\n  readonly defaultValue: FlagValue<T>;\n}\n\n// Evaluate a single flag for a user — returns a typed discriminated result\ndeclare function evaluateFlag<K extends string>(\n  registry: FlagRegistry<K>,\n  flagId: string,\n  ctx: UserContext\n): EvalResult<FlagValueType>;",
+    "goals": [
+      "Complete the `FlagValue<T>` conditional type so each `FlagValueType` string literal maps to its corresponding TypeScript primitive.",
+      "Implement `validateFlagDefinition` to parse an `unknown` blob into a `FlagDefinition<FlagValueType>`, collecting all `ValidationError`s and returning a `Result<FlagDefinition<FlagValueType>, ValidationError[]>`.",
+      "Implement `evaluateRule` using an exhaustive type-narrowing `switch` on `rule.kind`, and `evaluateFlag` to walk the rule list and return the correct `EvalResult`.",
+      "Complete `FlagRegistryBuilder` so `.add()` widens the generic key union and `.build()` returns a correctly-typed `FlagRegistry<K>`."
+    ],
+    "hints": [
+      "For `FlagValue<T>`, chain `T extends 'boolean' ? boolean : T extends 'string' ? string : ...` — conditional types distribute over each branch.",
+      "In `FlagRegistryBuilder.add()`, the return type `FlagRegistryBuilder<K | typeof flag.id>` is already provided — store flags in a private `Map<string, FlagDefinition<FlagValueType>>` and cast the builder's `this` on return.",
+      "In `evaluateRule`'s `switch`, add a default branch that assigns `rule` to `never` (the exhaustiveness sentinel) — TypeScript will error if you forget a case."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript Handbook — Conditional Types",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/conditional-types.html"
+      },
+      {
+        "title": "TypeScript Handbook — Mapped Types",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/mapped-types.html"
+      },
+      {
+        "title": "TypeScript Handbook — Narrowing",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html"
+      },
+      {
+        "title": "TypeScript Handbook — Generics",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/generics.html"
+      }
+    ]
   }
 ]
