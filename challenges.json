@@ -4677,5 +4677,41 @@
         "url": "https://www.typescriptlang.org/docs/handbook/2/generics.html"
       }
     ]
+  },
+  {
+    "date": "2026-06-30",
+    "name": "Typed Shopping Cart with Discount Resolution",
+    "difficulty": "Easy",
+    "description": "You're building the checkout module for a small e-commerce storefront. Raw cart payloads arrive as `unknown` from the client; your module must validate them into strongly-typed `CartItem` records, apply the correct discount strategy per item category, and return a fully-typed order summary — with zero `any`.",
+    "snippet": "// Key types & main entry point\n\ntype Category = \"electronics\" | \"clothing\" | \"food\" | \"books\";\n\ninterface CartItem {\n  id: string;\n  name: string;\n  category: Category;\n  priceUsd: number;\n  quantity: number;\n}\n\ntype Discount =\n  | { kind: \"percentage\"; percent: number }\n  | { kind: \"fixed\"; amountUsd: number }\n  | { kind: \"none\" };\n\ntype DiscountPolicy = Record<Category, Discount>;\n\ntype OrderSummary =\n  | { ok: true;  lines: OrderLine[]; grandTotalUsd: number }\n  | { ok: false; errors: string[] };\n\nfunction buildOrderSummary(\n  rawItems: unknown[],\n  policy: DiscountPolicy\n): OrderSummary { /* TODO */ }\n",
+    "goals": [
+      "Define `Category`, `CartItem`, `Discount` (discriminated union), and `DiscountPolicy` (mapped/Record type) so that missing or misspelled categories cause compile errors.",
+      "Implement `parseCartItem` to safely narrow `unknown` → `CartItem`, throwing a descriptive `TypeError` on any invalid field.",
+      "Implement `applyDiscount` with an exhaustive `switch` on `discount.kind`, using `assertNever` in the default branch so new variants can never be silently ignored.",
+      "Implement `buildOrderSummary` to collect ALL parse errors before returning, and produce a correctly rounded `grandTotalUsd` on the happy path."
+    ],
+    "hints": [
+      "A `Record<Category, Discount>` mapped type forces every category key to be present — try omitting one and watch TypeScript complain.",
+      "In `parseCartItem`, a helper like `const VALID_CATEGORIES: readonly Category[] = [...]` combined with `.includes()` (with a type predicate) is a clean way to validate the category field without `any`.",
+      "The `assertNever` helper is already provided in the stub — make sure your `switch` covers all three `Discount` variants so the `default` branch is actually unreachable."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript Handbook — Discriminated Unions",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html#discriminated-unions"
+      },
+      {
+        "title": "TypeScript Handbook — Record<Keys, Type>",
+        "url": "https://www.typescriptlang.org/docs/handbook/utility-types.html#recordkeys-type"
+      },
+      {
+        "title": "TypeScript Handbook — Narrowing (typeof / in guards)",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html"
+      },
+      {
+        "title": "TypeScript Handbook — Exhaustiveness Checking",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html#exhaustiveness-checking"
+      }
+    ]
   }
 ]
