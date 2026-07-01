@@ -4713,5 +4713,41 @@
         "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html#exhaustiveness-checking"
       }
     ]
+  },
+  {
+    "date": "2026-07-01",
+    "name": "Typed API Rate Limiter with Sliding Window & Per-Client Policies",
+    "difficulty": "Medium",
+    "description": "You're building the rate-limiting middleware for a multi-tenant REST API gateway. Raw inbound requests arrive as `unknown` from an HTTP adapter; your module must validate them into strongly-typed request descriptors, look up per-client policies from a typed registry, apply a sliding-window algorithm to track usage, and return a fully-typed allow/deny decision — with zero `any`.",
+    "snippet": "\nexport type HttpMethod = \"GET\" | \"POST\" | \"PUT\" | \"PATCH\" | \"DELETE\";\nexport type ClientTier = \"free\" | \"pro\" | \"enterprise\";\n\nexport interface RequestDescriptor {\n  clientId: string;\n  method: HttpMethod;\n  path: string;\n  receivedAt: number; // Unix ms\n}\n\nexport interface RateLimitPolicy {\n  clientId: string;\n  tier: ClientTier;\n  windowMs: number;\n  maxRequests: number;\n}\n\nexport type RateLimitDecision =\n  | { status: \"allowed\"; clientId: string; remaining: number; resetAt: number }\n  | { status: \"denied\";  clientId: string; retryAfterMs: number };\n\nexport type Result<T, E> =\n  | { ok: true;  value: T }\n  | { ok: false; error: E };\n\nexport type WindowStore = Map<string, number[]>; // clientId → sorted timestamps\n\nexport function validateRequest(raw: unknown): Result<RequestDescriptor, ValidationError>;\nexport function evaluateRateLimit(req: RequestDescriptor, policy: RateLimitPolicy, store: WindowStore): RateLimitDecision;\nexport function isAllowed(decision: RateLimitDecision): decision is AllowedDecision;\n",
+    "goals": [
+      "Implement `validateRequest` to parse `unknown` input into a `RequestDescriptor`, returning typed `ValidationError` variants for each failure case.",
+      "Implement `lookupPolicy` to resolve a clientId against a `PolicyRegistry`, returning an `UnknownClientError` when absent.",
+      "Implement `evaluateRateLimit` to apply a sliding-window counter using a mutable `WindowStore`, returning the correct `AllowedDecision` or `DeniedDecision`.",
+      "Wire all three steps together in `processRequest` and implement the `isAllowed` type-guard so callers can safely narrow the decision union."
+    ],
+    "hints": [
+      "A const array like `const METHODS = ['GET','POST',...] as const` lets you derive `HttpMethod` and write a type-safe `.includes()` check without `any` — look into using a type predicate or casting the array to `ReadonlyArray<HttpMethod>`.",
+      "For the sliding window, `Array.prototype.filter` returns a new array — remember requirement [R11] says you must mutate the Map entry in-place, so reassign `store.set(clientId, prunedArray)` rather than creating a new Map.",
+      "The `Result<T, E>` union requires you to check `.ok` before TypeScript will let you access `.value` or `.error` — lean on that narrowing inside `processRequest` to propagate errors without type assertions."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript Handbook — Narrowing",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html"
+      },
+      {
+        "title": "TypeScript Handbook — Generics",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/generics.html"
+      },
+      {
+        "title": "TypeScript Handbook — Utility Types (Readonly, Record, Pick…)",
+        "url": "https://www.typescriptlang.org/docs/handbook/utility-types.html"
+      },
+      {
+        "title": "MDN — Map (mutable key→value store)",
+        "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Map"
+      }
+    ]
   }
 ]
