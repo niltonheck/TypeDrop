@@ -4749,5 +4749,41 @@
         "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Map"
       }
     ]
+  },
+  {
+    "date": "2026-07-02",
+    "name": "Typed Expense Report Aggregator",
+    "difficulty": "Easy",
+    "description": "You're building the expense-report processing module for a finance dashboard. Raw expense entries arrive as `unknown` from a form submission API; your module must validate them into strongly-typed `Expense` records, group them by category, compute per-category and overall totals, and return a fully-typed `ExpenseReport` — with zero `any`.",
+    "snippet": "// Key types at a glance:\n\ntype ExpenseCategory = \"travel\" | \"meals\" | \"accommodation\" | \"equipment\" | \"other\";\n\ninterface Expense {\n  id: string; submittedBy: string; category: ExpenseCategory;\n  description: string; amountCents: number; date: string;\n}\n\ntype ExpenseParseResult =\n  | { ok: true;  expense: Expense }\n  | { ok: false; rawIndex: number; errors: ExpenseFieldError[] };\n\ninterface ExpenseReport {\n  validCount: number; invalidCount: number; totalCents: number;\n  byCategory: CategorySummary[];\n  parseErrors: Array<{ rawIndex: number; errors: ExpenseFieldError[] }>;\n}\n\n// Your two entry-point functions:\nfunction parseExpense(raw: unknown, rawIndex: number): ExpenseParseResult { ... }\nfunction buildExpenseReport(rawEntries: unknown[]): ExpenseReport { ... }",
+    "goals": [
+      "Implement `isISODateString` and `isExpenseCategory` as proper type guards — the latter must derive its valid values from a single `const` tuple.",
+      "Implement `parseExpense` to validate every field of a raw `unknown` entry, collecting ALL field-level errors before returning the discriminated-union result.",
+      "Implement `buildExpenseReport` to parse all raw entries, group valid expenses by category using a `Map`, and return a fully-typed `ExpenseReport` with `byCategory` sorted A-Z.",
+      "Achieve all of the above with zero `any`, zero `as` assertions, and zero TypeScript errors under `strict: true`."
+    ],
+    "hints": [
+      "For `isExpenseCategory`, declare `const EXPENSE_CATEGORIES = ['travel', 'meals', ...] as const` and use `(EXPENSE_CATEGORIES as readonly string[]).includes(value as string)` — but you'll still need to narrow `value` to `string` first before calling `.includes`.",
+      "In `parseExpense`, access `raw` fields safely by first checking `typeof raw === 'object' && raw !== null`, then using `'id' in raw` guards before reading each property — this keeps TypeScript happy without any `as` casts.",
+      "Use `Map<ExpenseCategory, CategorySummary>` in `buildExpenseReport` to accumulate per-category counts and totals in a single pass, then spread `.values()` into an array and sort it."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript — Narrowing & Type Guards",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html"
+      },
+      {
+        "title": "TypeScript — Utility Types (Record, Pick, etc.)",
+        "url": "https://www.typescriptlang.org/docs/handbook/utility-types.html"
+      },
+      {
+        "title": "MDN — Map object",
+        "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Map"
+      },
+      {
+        "title": "TypeScript — Branded / Nominal Types (handbook)",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/objects.html#index-signatures"
+      }
+    ]
   }
 ]
