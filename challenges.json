@@ -4785,5 +4785,41 @@
         "url": "https://www.typescriptlang.org/docs/handbook/2/objects.html#index-signatures"
       }
     ]
+  },
+  {
+    "date": "2026-07-03",
+    "name": "Typed Job Queue Scheduler with Priority & Retry Policies",
+    "difficulty": "Medium",
+    "description": "You're building the background job scheduling engine for a distributed task platform. Raw job definitions arrive as `unknown` from a message broker; your engine must validate them into strongly-typed `Job` records, schedule them according to priority tiers, apply per-job-type retry policies, and return a fully-typed dispatch plan — with zero `any`.",
+    "snippet": "// Key types and main function signatures\n\nexport type Priority = 1 | 2 | 3;\nexport type JobKind = \"email\" | \"report\" | \"export\" | \"webhook\";\n\nexport type JobPayload =\n  | { kind: \"email\";   to: string; subject: string; body: string }\n  | { kind: \"report\";  reportId: string; format: \"pdf\" | \"csv\"  }\n  | { kind: \"export\";  resourceType: string; filters: Record<string, string> }\n  | { kind: \"webhook\"; url: string; secret: string              };\n\nexport type JobId = string & { readonly __brand: \"JobId\" };\n\nexport type PriorityDelayMs<P extends Priority> =\n  P extends 3 ? 0 : P extends 2 ? 500 : 2000;\n\n// Validate one raw broker message → typed Job or collected errors\nexport function validateJob(\n  raw: unknown,\n  retryPolicies: RetryPolicyMap\n): Result<Job, ValidationError[]> { /* TODO */ }\n\n// Derive first-attempt delay from priority via conditional type\nexport function getInitialDelayMs<P extends Priority>(priority: P): PriorityDelayMs<P> { /* TODO */ }\n\n// Build a fully-typed dispatch plan from raw broker messages\nexport function buildDispatchPlan(\n  rawJobs: unknown[],\n  retryPolicies: RetryPolicyMap\n): DispatchPlan { /* TODO */ }\n\n// Narrow a DispatchPlan to entries of a specific job kind\nexport function filterByKind<K extends JobKind>(\n  plan: DispatchPlan, kind: K\n): NarrowedEntry<K>[] { /* TODO */ }",
+    "goals": [
+      "Implement `validateJob` to parse `unknown` broker messages into strongly-typed `Job` records, collecting all field-level errors before returning.",
+      "Implement `getInitialDelayMs` whose return type is derived from the `PriorityDelayMs<P>` conditional type — no plain `number` annotation allowed.",
+      "Implement `buildDispatchPlan` to validate all raw inputs, sort valid jobs by priority DESC then enqueuedAt ASC, and populate the `rejected` map with index-keyed errors.",
+      "Implement `filterByKind` and `isPayloadOfKind` so that filtered entries have their `job.payload` narrowed to the exact `Extract<JobPayload, { kind: K }>` variant — verified at compile time."
+    ],
+    "hints": [
+      "For `validateJob`, check `typeof raw === 'object' && raw !== null` first, then use `'field' in raw` guards to safely access each property — this satisfies strict mode without `as`.",
+      "For `getInitialDelayMs`, a lookup object `const delays = { 1: 2000, 2: 500, 3: 0 } as const` combined with `return delays[priority]` satisfies the conditional return type — think about how `as const` interacts with index signatures.",
+      "For `filterByKind`, call `isPayloadOfKind` inside `.filter()` — TypeScript will propagate the type predicate into the narrowed array, letting you cast the result to `NarrowedEntry<K>[]` cleanly."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript Handbook — Narrowing",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html"
+      },
+      {
+        "title": "TypeScript Handbook — Conditional Types",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/conditional-types.html"
+      },
+      {
+        "title": "TypeScript Handbook — Utility Types (Extract, Omit, Record)",
+        "url": "https://www.typescriptlang.org/docs/handbook/utility-types.html"
+      },
+      {
+        "title": "TypeScript 4.9 — The `satisfies` Operator",
+        "url": "https://www.typescriptlang.org/docs/handbook/release-notes/typescript-4-9.html#the-satisfies-operator"
+      }
+    ]
   }
 ]
