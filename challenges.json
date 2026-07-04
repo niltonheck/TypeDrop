@@ -4821,5 +4821,41 @@
         "url": "https://www.typescriptlang.org/docs/handbook/release-notes/typescript-4-9.html#the-satisfies-operator"
       }
     ]
+  },
+  {
+    "date": "2026-07-04",
+    "name": "Typed Event RSVP Aggregator",
+    "difficulty": "Easy",
+    "description": "You're building the RSVP processing module for an event management platform. Raw RSVP submissions arrive as `unknown` from a webhook; your module must validate them into strongly-typed `Rsvp` records, tally responses by status, and return a fully-typed `RsvpSummary` — with zero `any`.",
+    "snippet": "\n/** The three possible RSVP responses an attendee can give. */\ntype RsvpStatus = \"attending\" | \"declined\" | \"maybe\";\n\n/** A validated RSVP record. */\ntype Rsvp = {\n  id: string;\n  eventId: string;\n  name: string;\n  email: string;\n  status: RsvpStatus;\n  guests: number;\n};\n\n/** Success-or-failure wrapper — no exceptions thrown. */\ntype Result<T> =\n  | { ok: true;  value: T }\n  | { ok: false; error: string };\n\n/** Per-status tally for a single event. */\ntype RsvpSummary = {\n  eventId: string;\n  counts: Record<RsvpStatus, number>;\n  totalGuests: number;\n};\n\n// Validate a raw webhook payload into a typed Rsvp\ndeclare function parseRsvp(raw: unknown): Result<Rsvp>;\n\n// Aggregate an array of raw payloads for one event\ndeclare function aggregateRsvps(eventId: string, raws: unknown[]): RsvpSummary;\n",
+    "goals": [
+      "Define the `Rsvp`, `Result<T>`, and `RsvpSummary` types with correct field types and constraints.",
+      "Implement `parseRsvp` to validate an `unknown` payload into a `Result<Rsvp>`, returning a failure Result for any invalid field.",
+      "Implement `aggregateRsvps` to silently skip invalid or mismatched payloads and return an `RsvpSummary` with a complete `Record<RsvpStatus, number>` — defaulting all statuses to 0.",
+      "Use `Record<RsvpStatus, number>` so the compiler enforces that every status is always present in the counts map."
+    ],
+    "hints": [
+      "To check that a string is a valid `RsvpStatus`, create a constant array `const STATUSES = ['attending', 'declined', 'maybe'] as const` and use `Array.prototype.includes` — you may need a small helper to satisfy the type checker.",
+      "Build the initial `counts` object using `Object.fromEntries` over the known statuses so TypeScript infers `Record<RsvpStatus, number>` without casting.",
+      "When narrowing `unknown`, check `typeof raw === 'object' && raw !== null` first, then use the `in` operator to verify each key exists before accessing it."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript — Narrowing",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html"
+      },
+      {
+        "title": "TypeScript — Utility Types (Record, Extract)",
+        "url": "https://www.typescriptlang.org/docs/handbook/utility-types.html"
+      },
+      {
+        "title": "TypeScript — Discriminated Unions",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html#discriminated-unions"
+      },
+      {
+        "title": "MDN — Array.prototype.includes",
+        "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/includes"
+      }
+    ]
   }
 ]
