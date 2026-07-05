@@ -4857,5 +4857,41 @@
         "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/includes"
       }
     ]
+  },
+  {
+    "date": "2026-07-05",
+    "name": "Typed Feature Flag Evaluator with Audience Targeting",
+    "difficulty": "Medium",
+    "description": "You're building the feature-flag evaluation engine for a SaaS platform. Raw flag configurations arrive as `unknown` from a remote config service; your engine must validate them into strongly-typed `FeatureFlag` records, evaluate each flag against a typed `UserContext` using discriminated targeting rules, and return a fully-typed `EvaluationResult` per flag — with zero `any`.",
+    "snippet": "// Core types and main function signatures\n\ntype PercentageRule = { kind: \"percentage\"; rolloutPercent: number };\ntype AllowlistRule  = { kind: \"allowlist\";  userIds: string[] };\ntype AttributeRule  = { kind: \"attribute\";  key: string; values: string[] };\ntype TargetingRule  = PercentageRule | AllowlistRule | AttributeRule;\n\ntype FeatureFlag = {\n  id: string; name: string; enabled: boolean;\n  rules: TargetingRule[]; defaultValue: boolean;\n};\n\ntype UserContext = { userId: string; attributes: Record<string, string> };\n\ntype EvaluationReason =\n  | { kind: \"disabled\" }\n  | { kind: \"rule_match\"; ruleIndex: number; ruleKind: TargetingRule[\"kind\"] }\n  | { kind: \"default\" };\n\ntype EvaluationResult = { flagId: string; value: boolean; reason: EvaluationReason };\n\ndeclare function parseFeatureFlag(raw: unknown): FeatureFlag;\ndeclare function evaluateFlag(flag: FeatureFlag, ctx: UserContext): EvaluationResult;\ndeclare function evaluateAll(\n  rawFlags: unknown[], ctx: UserContext\n): { results: EvaluationResult[]; parseErrors: Array<{ index: number; message: string }> };",
+    "goals": [
+      "Define a three-variant `TargetingRule` discriminated union and a three-variant `EvaluationReason` discriminated union with no `any`.",
+      "Implement `parseFeatureFlag` that validates an `unknown` payload into a fully-typed `FeatureFlag`, throwing descriptive errors for missing or mis-typed fields.",
+      "Implement `evaluateFlag` that applies the master kill-switch, then iterates targeting rules in order (percentage / allowlist / attribute), returning a typed `EvaluationResult` with the correct reason variant.",
+      "Implement `evaluateAll` that processes a mixed array of raw flags, collecting parse errors by index while still evaluating all successfully parsed flags."
+    ],
+    "hints": [
+      "Use `TargetingRule[\"kind\"]` as an indexed access type for the `ruleKind` field in `EvaluationReason` — this keeps the union in sync automatically.",
+      "In `parseFeatureFlag`, narrow each field with `typeof` guards and `Array.isArray` before assigning; never widen to `any` just to read a property — use `typeof raw === 'object' && raw !== null` first, then cast via a local `const obj = raw as Record<string, unknown>` only after confirming it's an object (a `Record<string, unknown>` assertion is the one safe bridge from `unknown` to keyed access).",
+      "For the percentage rule, `hashUserId(ctx.userId) % 100 < rolloutPercent` is the entire match condition — remember the helper is already exported for you."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript Handbook — Narrowing",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html"
+      },
+      {
+        "title": "TypeScript Handbook — Discriminated Unions",
+        "url": "https://www.typescriptlang.org/docs/handbook/typescript-in-5-minutes-func.html#discriminated-unions"
+      },
+      {
+        "title": "TypeScript Handbook — Indexed Access Types",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/indexed-access-types.html"
+      },
+      {
+        "title": "TypeScript Handbook — Utility Types (Record)",
+        "url": "https://www.typescriptlang.org/docs/handbook/utility-types.html#recordkeys-type"
+      }
+    ]
   }
 ]
