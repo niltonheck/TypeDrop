@@ -4893,5 +4893,41 @@
         "url": "https://www.typescriptlang.org/docs/handbook/utility-types.html#recordkeys-type"
       }
     ]
+  },
+  {
+    "date": "2026-07-06",
+    "name": "Typed Product Inventory Filter & Summarizer",
+    "difficulty": "Easy",
+    "description": "You're building the inventory management module for an e-commerce dashboard. Raw product entries arrive as `unknown` from a warehouse sync API; your module must validate them into strongly-typed `Product` records, filter them by availability and category, and return a fully-typed `InventorySummary` — with zero `any`.",
+    "snippet": "// Key types & main function signatures\n\nexport type Category = \"electronics\" | \"clothing\" | \"groceries\" | \"furniture\" | \"toys\";\nexport type AvailabilityStatus = \"in_stock\" | \"low_stock\" | \"out_of_stock\";\n\nexport interface Product {\n  id: string;\n  name: string;\n  category: Category;\n  priceUsd: number;    // must be > 0\n  stockCount: number;  // must be >= 0, integer\n  status: AvailabilityStatus;\n}\n\nexport type ParseResult<T> =\n  | { ok: true;  value: T }\n  | { ok: false; error: string };\n\nexport interface FilterOptions {\n  categories?:  Category[];\n  statuses?:    AvailabilityStatus[];\n  maxPriceUsd?: number;\n}\n\nexport interface InventorySummary {\n  totalProducts:   number;\n  totalStockValue: number;\n  byCategory:      Partial<Record<Category, CategorySummary>>;\n  lowOrOutOfStock: Product[];\n}\n\n// Pipeline entry point\nexport function processInventory(raw: unknown[], options: FilterOptions): InventorySummary",
+    "goals": [
+      "Implement `parseProduct` to validate an `unknown` value into a typed `Product`, returning a `ParseResult<Product>` without throwing.",
+      "Implement `parseProducts` to batch-parse an `unknown[]`, silently skipping invalid entries.",
+      "Implement `filterProducts` to AND-filter a `Product[]` by category, status, and/or max price using `FilterOptions`.",
+      "Implement `summarizeInventory` to aggregate a `Product[]` into a fully-typed `InventorySummary` with per-category breakdowns, then wire all steps together in `processInventory`."
+    ],
+    "hints": [
+      "Use a `Set<Category>` with `.has()` to narrow `unknown` strings into the `Category` union — TypeScript will accept this as a type guard when the set is typed correctly.",
+      "For `byCategory` in `summarizeInventory`, initialise each new category entry with all three `AvailabilityStatus` keys set to `0` so the `Record<AvailabilityStatus, number>` shape is always complete.",
+      "When checking `FilterOptions` criteria, treat an empty array (`length === 0`) the same as omitted — only apply the filter when the array is non-empty."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript Utility Types (Record, Partial)",
+        "url": "https://www.typescriptlang.org/docs/handbook/utility-types.html"
+      },
+      {
+        "title": "Narrowing — typeof & truthiness guards",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html"
+      },
+      {
+        "title": "TypeScript Generics",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/generics.html"
+      },
+      {
+        "title": "Set — MDN Web Docs",
+        "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Set"
+      }
+    ]
   }
 ]
