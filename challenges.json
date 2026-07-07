@@ -4929,5 +4929,41 @@
         "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Set"
       }
     ]
+  },
+  {
+    "date": "2026-07-07",
+    "name": "Typed Middleware Pipeline with Typed Context Propagation",
+    "difficulty": "Hard",
+    "description": "You're building the request-processing pipeline for an API gateway. Each incoming request flows through a chain of typed middleware layers — authentication, rate-limiting, transformation, and logging — where each layer can enrich a shared typed context object, short-circuit with a typed error response, or pass control to the next handler. The hardest part is ensuring the context type is progressively widened as middleware layers run, and that error variants are exhaustively handled.",
+    "snippet": "\n// Core result type — middleware either continues or halts\ntype MiddlewareResult<TCtx, EKind extends string> =\n  | { status: \"continue\"; ctx: TCtx }\n  | { status: \"halt\"; error: GatewayError<EKind> };\n\n// Branded error type with discriminated kind\ntype GatewayError<K extends string> = { kind: K; message: string; statusCode: number };\n\n// A single middleware layer: takes current context, returns enriched context or error\ntype Middleware<TIn, TOut, EKind extends string> = (\n  ctx: TIn\n) => Promise<MiddlewareResult<TOut, EKind>>;\n\n// Fully-typed pipeline runner — threads context through each layer in order\ndeclare function runPipeline<\n  TInitial extends BaseContext,\n  TFinal extends TInitial,\n  EKind extends string\n>(\n  initial: TInitial,\n  pipeline: readonly [...MiddlewareTuple<TInitial, TFinal, EKind>]\n): Promise<PipelineOutcome<TFinal, EKind>>;\n",
+    "goals": [
+      "Define a `MiddlewareTuple` type that statically threads the context type through a heterogeneous tuple of middleware layers, ensuring each layer's output type feeds into the next layer's input type.",
+      "Implement `runPipeline`, which executes middleware layers sequentially, short-circuiting on the first `halt` result and returning a fully-typed `PipelineOutcome`.",
+      "Implement the four concrete middleware factories — `makeAuthMiddleware`, `makeRateLimitMiddleware`, `makeTransformMiddleware`, and `makeLogMiddleware` — each of which narrows or widens the context type by adding their own typed properties.",
+      "Implement `handleOutcome`, which exhaustively matches every `GatewayError` kind in a `PipelineOutcome` and returns a typed `HttpResponse`, with a compile-time error if any error kind is unhandled."
+    ],
+    "hints": [
+      "For `MiddlewareTuple`, try defining it as a union of fixed-length tuple types (length 1 through 4), where each position constrains its input to be the output type of the previous position — the key is that intermediate context types become free type parameters.",
+      "To brand a `string` as `UserId` without using `as`, write a small construction function whose return type is declared as the branded type — TypeScript will accept the assignment since the function body is the single source of truth.",
+      "For the exhaustive `never` check in `handleOutcome`, add a default branch that calls a helper `function assertNever(x: never): never { throw new Error('Unhandled case') }` — if you forget a `GatewayError` kind, the compiler will flag the argument as not assignable to `never`."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript Handbook — Conditional Types",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/conditional-types.html"
+      },
+      {
+        "title": "TypeScript Handbook — Mapped Types",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/mapped-types.html"
+      },
+      {
+        "title": "TypeScript Handbook — Narrowing",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html"
+      },
+      {
+        "title": "TypeScript 5.x — satisfies operator",
+        "url": "https://www.typescriptlang.org/docs/handbook/release-notes/typescript-4-9.html#the-satisfies-operator"
+      }
+    ]
   }
 ]
