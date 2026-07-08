@@ -4965,5 +4965,41 @@
         "url": "https://www.typescriptlang.org/docs/handbook/release-notes/typescript-4-9.html#the-satisfies-operator"
       }
     ]
+  },
+  {
+    "date": "2026-07-08",
+    "name": "Typed Paginated API Client with Result Accumulation",
+    "difficulty": "Medium",
+    "description": "You're building the data-fetching layer for an analytics dashboard that pulls records from a cursor-based REST API. Raw pages arrive as `unknown` from each fetch; your client must validate each page, accumulate typed records across pages, respect a configurable item cap, and surface per-page errors without aborting the entire run — all with zero `any`.",
+    "snippet": "export interface AnalyticsRecord {\n  id: string;\n  eventName: string;\n  userId: string;\n  timestampMs: number;\n  metadata: Record<string, string>;\n}\n\nexport type PageError =\n  | { kind: \"validation\"; pageIndex: number; reason: string }\n  | { kind: \"network\";    pageIndex: number; message: string }\n  | { kind: \"cap-reached\"; itemsFetched: number; cap: number };\n\nexport type Result<T, E> =\n  | { ok: true;  value: T }\n  | { ok: false; error: E };\n\nexport type PageFetcher = (\n  cursor: string | null\n) => Promise<Result<RawPage, string>>;\n\n// Validate one raw API page into a typed ValidPage\nexport function validatePage(raw: RawPage): Result<ValidPage, string> { ... }\n\n// Accumulate records across cursor-paginated pages\nexport async function fetchAllPages(\n  fetcher: PageFetcher,\n  config: PaginationConfig\n): Promise<AccumulationResult> { ... }",
+    "goals": [
+      "Implement `validatePage` to narrow all `unknown` fields of a `RawPage` into a fully-typed `ValidPage`, returning a `Result` without throwing.",
+      "Implement `fetchAllPages` to drive the cursor loop, collecting records from each valid page and stopping on network errors, exhausted cursors, or page limits.",
+      "Enforce the `maxItems` cap by slicing the final page's records to fit exactly, emitting a `cap-reached` `PageError`, and halting pagination.",
+      "Surface per-page validation and network failures as typed `PageError` entries in `AccumulationResult.errors` without aborting the entire run where possible."
+    ],
+    "hints": [
+      "When narrowing `unknown` fields, use `typeof`, `Array.isArray`, and `Object.keys` — never cast with `as`.",
+      "A discriminated union on `kind` lets you handle each `PageError` variant exhaustively; lean on that in your accumulation loop.",
+      "For the `metadata` field, iterate `Object.entries` and verify every value `typeof v === 'string'` before constructing the `Record<string, string>`."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript Handbook — Narrowing",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html"
+      },
+      {
+        "title": "TypeScript Handbook — Generics",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/generics.html"
+      },
+      {
+        "title": "TypeScript Handbook — Discriminated Unions",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html#discriminated-unions"
+      },
+      {
+        "title": "MDN — Array.isArray",
+        "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/isArray"
+      }
+    ]
   }
 ]
