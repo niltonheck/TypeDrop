@@ -5001,5 +5001,41 @@
         "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/isArray"
       }
     ]
+  },
+  {
+    "date": "2026-07-09",
+    "name": "Typed Task Queue Prioritizer",
+    "difficulty": "Easy",
+    "description": "You're building the task scheduling module for a background job runner. Raw task definitions arrive as `unknown` from a job submission API; your module must validate them into strongly-typed `Task` records, sort them by priority and submission time, and return a fully-typed `ScheduleResult` — with zero `any`.",
+    "snippet": "export type Priority = \"critical\" | \"normal\" | \"low\";\n\nexport interface Task {\n  id: string;\n  name: string;\n  priority: Priority;\n  submittedAt: string;       // ISO-8601\n  timeoutMs: number;         // must be > 0\n  metadata: Record<string, string>;\n}\n\nexport interface ScheduleResult {\n  queue: Task[];             // sorted: critical → normal → low, then oldest-first\n  errors: ValidationError[];\n  totalReceived: number;\n  countByPriority: Record<Priority, number>;\n}\n\n// Validate one raw unknown value → Task on success, error string on failure\nexport function validateTask(raw: unknown): Task | string { ... }\n\n// Process a batch of raw inputs into a fully-typed ScheduleResult\nexport function buildSchedule(raws: unknown[]): ScheduleResult { ... }",
+    "goals": [
+      "Implement `validateTask` to narrow `unknown` → `Task` with ordered field checks, returning a descriptive error string on the first failure found.",
+      "Implement `buildSchedule` to process a batch of raw inputs, collecting typed `ValidationError` entries for each invalid item.",
+      "Sort valid tasks by priority tier (critical → normal → low) and then by `submittedAt` ascending within the same tier.",
+      "Populate `countByPriority` as a `Record<Priority, number>` tallying valid tasks per tier."
+    ],
+    "hints": [
+      "Use `PRIORITY_ORDER.includes(...)` to check if a value is a valid `Priority` — you may need a type predicate or a cast-free membership check via `(PRIORITY_ORDER as readonly string[]).includes(val)`.",
+      "For metadata validation, `Object.entries` lets you iterate key-value pairs and check that every value satisfies `typeof v === 'string'`.",
+      "The sort comparator can look up each task's tier weight with `PRIORITY_ORDER.indexOf(task.priority)`, then fall back to a `Date` comparison for tie-breaking."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript Narrowing",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html"
+      },
+      {
+        "title": "TypeScript Utility Types (Record)",
+        "url": "https://www.typescriptlang.org/docs/handbook/utility-types.html#recordkeys-type"
+      },
+      {
+        "title": "Array.prototype.sort — MDN",
+        "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/sort"
+      },
+      {
+        "title": "const assertions (as const) — TypeScript handbook",
+        "url": "https://www.typescriptlang.org/docs/handbook/release-notes/typescript-3-4.html#const-assertions"
+      }
+    ]
   }
 ]
