@@ -5037,5 +5037,41 @@
         "url": "https://www.typescriptlang.org/docs/handbook/release-notes/typescript-3-4.html#const-assertions"
       }
     ]
+  },
+  {
+    "date": "2026-07-10",
+    "name": "Typed Event Aggregator with Time-Window Bucketing",
+    "difficulty": "Medium",
+    "description": "You're building the analytics ingestion layer for a real-time monitoring dashboard. Raw events arrive as `unknown` from a webhook stream; your aggregator must validate them into strongly-typed `MonitoringEvent` records, bucket them into fixed time windows, and produce a fully-typed `WindowSummary` per bucket — with zero `any`.",
+    "snippet": "export type EventCategory = \"error\" | \"warning\" | \"info\" | \"metric\";\nexport type Severity      = \"low\" | \"medium\" | \"high\" | \"critical\";\n\nexport interface AlertEvent  extends BaseEvent { category: \"error\" | \"warning\"; severity: Severity; message: string; }\nexport interface InfoEvent   extends BaseEvent { category: \"info\";   description: string; }\nexport interface MetricEvent extends BaseEvent { category: \"metric\"; metricName: string; value: number; }\n\nexport type MonitoringEvent = AlertEvent | InfoEvent | MetricEvent;\nexport type BucketKey       = string;\nexport type CategoryCounts  = Record<EventCategory, number>;\nexport type SeverityCounts  = Record<Severity, number>;\n\nexport interface WindowSummary {\n  windowStart:    BucketKey;\n  totalEvents:    number;\n  categoryCounts: CategoryCounts;\n  severityCounts: SeverityCounts;\n  metricStats:    Record<string, MetricStats>;\n  sources:        string[];\n}\n\nexport function parseEvent(raw: unknown): MonitoringEvent | null { /* TODO */ }\nexport function getBucketKey(timestampMs: number, windowMs: number): BucketKey { /* TODO */ }\nexport function aggregateEvents(rawEvents: unknown[], windowMs: number): AggregationResult { /* TODO */ }\nexport function groupBy<T, K extends string>(items: T[], keyFn: (item: T) => K): Map<K, T[]> { /* TODO */ }",
+    "goals": [
+      "Implement `parseEvent` to validate `unknown` payloads and narrow them into the correct `MonitoringEvent` discriminated-union branch, returning `null` for any malformed input.",
+      "Implement `getBucketKey` to compute the ISO-8601 window-start string for a given timestamp and window duration.",
+      "Implement `aggregateEvents` to validate, bucket, and aggregate events into per-window `WindowSummary` objects with correct category counts, severity counts, metric stats, and deduplicated sources.",
+      "Implement the generic `groupBy<T, K extends string>` helper so its return type preserves the caller's specific key type K."
+    ],
+    "hints": [
+      "In `parseEvent`, switch on `category` after confirming it's a valid `EventCategory` — TypeScript will narrow the type inside each `case` branch if you structure the checks correctly.",
+      "For `CategoryCounts` and `SeverityCounts`, initialise every key explicitly (all four literals) so the `Record<…, number>` contract is satisfied from the start.",
+      "The `groupBy` generic constraint `K extends string` lets TypeScript infer K from the return type of `keyFn` at the call site — you don't need to annotate it manually."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript Handbook – Discriminated Unions",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html#discriminated-unions"
+      },
+      {
+        "title": "TypeScript Handbook – Utility Types (Record, Pick, Omit…)",
+        "url": "https://www.typescriptlang.org/docs/handbook/utility-types.html"
+      },
+      {
+        "title": "TypeScript Handbook – Generics",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/generics.html"
+      },
+      {
+        "title": "MDN – Date.prototype.toISOString()",
+        "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date/toISOString"
+      }
+    ]
   }
 ]
