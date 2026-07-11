@@ -5073,5 +5073,41 @@
         "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date/toISOString"
       }
     ]
+  },
+  {
+    "date": "2026-07-11",
+    "name": "Typed User Notification Preferences Merger",
+    "difficulty": "Easy",
+    "description": "You're building the notification settings module for a SaaS platform. Users can configure per-channel preferences (email, SMS, push), and admins can define org-level defaults. Your module must validate raw preference objects arriving as `unknown`, merge user overrides on top of org defaults, and return a fully-typed `ResolvedPreferences` record — with zero `any`.",
+    "snippet": "/** The three supported notification channels. */\ntype Channel = \"email\" | \"sms\" | \"push\";\n\n/** Delivery frequency for a channel. */\ntype Frequency = \"immediate\" | \"digest\" | \"off\";\n\ntype ChannelConfig = { frequency: Frequency; preview: boolean };\n\n/** Every channel MUST be present — use a mapped type over Channel. */\ntype PreferencesMap = unknown; // TODO: { [K in Channel]: ChannelConfig }\n\ntype ResolvedPreferences = {\n  userId: string;\n  preferences: PreferencesMap;\n  overriddenChannels: Channel[];\n  mergedAt: string;\n};\n\n// Your main function to implement:\nfunction mergePreferences(\n  userId: string,\n  orgDefaults: PreferencesMap,\n  userRaw: unknown\n): ResolvedPreferences { /* TODO */ throw new Error(\"Not implemented\"); }",
+    "goals": [
+      "Define `PreferencesMap` as a mapped type over `Channel` so every channel key is required and typed as `ChannelConfig`.",
+      "Implement `isFrequency` and `isChannelConfig` as type guards that narrow `unknown` to the correct types without `any` or casting.",
+      "Implement `parsePartialPreferences` to safely extract only valid channel entries from an `unknown` blob, returning `Partial<PreferencesMap>`.",
+      "Implement `mergePreferences` to layer user overrides on top of org defaults and return a fully-typed `ResolvedPreferences` with sorted `overriddenChannels`."
+    ],
+    "hints": [
+      "A mapped type `{ [K in Channel]: ChannelConfig }` is exactly equivalent to a `Record<Channel, ChannelConfig>` — either form works for `PreferencesMap`.",
+      "To check if a string is a valid `Channel` inside `parsePartialPreferences`, define a `CHANNELS` constant (`const CHANNELS = ['email', 'sms', 'push'] as const`) and use `.includes()` — TypeScript will need a small cast-free helper or a type predicate.",
+      "The `satisfies` operator (TS 4.9+) lets you annotate `PLATFORM_DEFAULTS` against `PreferencesMap` while keeping the narrower literal types inferred — write `= { ... } satisfies PreferencesMap`."
+    ],
+    "docs": [
+      {
+        "title": "TS Handbook — Mapped Types",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/mapped-types.html"
+      },
+      {
+        "title": "TS Handbook — Narrowing & Type Guards",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html"
+      },
+      {
+        "title": "TS Handbook — Utility Types (Partial, Record)",
+        "url": "https://www.typescriptlang.org/docs/handbook/utility-types.html"
+      },
+      {
+        "title": "TS 4.9 Release — satisfies operator",
+        "url": "https://www.typescriptlang.org/docs/handbook/release-notes/typescript-4-9.html#the-satisfies-operator"
+      }
+    ]
   }
 ]
