@@ -5109,5 +5109,41 @@
         "url": "https://www.typescriptlang.org/docs/handbook/release-notes/typescript-4-9.html#the-satisfies-operator"
       }
     ]
+  },
+  {
+    "date": "2026-07-12",
+    "name": "Typed Finite State Machine Executor",
+    "difficulty": "Hard",
+    "description": "You're building the order-lifecycle engine for an e-commerce platform. Orders move through a strict set of states (Draft → Submitted → Processing → Shipped → Delivered, with cancellation paths), and every transition must be explicitly declared, guard-checked, and side-effected — all with zero runtime surprises and zero `any`.",
+    "snippet": "// Core types at a glance\n\ntype OrderState = \"Draft\" | \"Submitted\" | \"Processing\" | \"Shipped\" | \"Delivered\" | \"Cancelled\";\n\ntype OrderEvent =\n  | { type: \"SUBMIT\"; paymentRef: string }\n  | { type: \"ACCEPT\"; warehouseId: string }\n  | { type: \"SHIP\";   trackingCode: string }\n  | { type: \"DELIVER\"; signedBy: string }\n  | { type: \"CANCEL\"; reason: string };\n\n// Each transition descriptor — E[\"type\"] narrows the event in guard/effect\ntype Transition<S extends OrderState, E extends OrderEvent> = {\n  from: S;\n  on:   E[\"type\"];\n  to:   OrderState;\n  guard?:(ctx: OrderContext, event: Extract<OrderEvent, { type: E[\"type\"] }>) => boolean;\n  effect:(ctx: OrderContext, event: Extract<OrderEvent, { type: E[\"type\"] }>) => void;\n};\n\n// Main executor — no `any`, no `as`\nfunction applyEvent(\n  current:     OrderState,\n  event:       OrderEvent,\n  ctx:         OrderContext,\n  transitions: ReadonlyArray<Transition<OrderState, OrderEvent>>\n): TransitionResult { /* TODO */ }\n",
+    "goals": [
+      "Define the `Transition<S, E>` generic type so that `guard` and `effect` receive the exact narrowed event subtype via `Extract<OrderEvent, { type: E[\"type\"] }>` — with no `any` or `as`.",
+      "Populate `TRANSITIONS` with all seven valid order-lifecycle edges (including the guarded Processing→Cancelled transition), validated with `satisfies`.",
+      "Implement `applyEvent` to look up a matching transition, run an optional guard, invoke the effect in a type-safe way, and return the correct `TransitionResult` discriminated-union variant.",
+      "Implement `runMachine` to drive a sequence of events through `applyEvent`, accumulate a log, and abort on the first failure."
+    ],
+    "hints": [
+      "The trickiest part is calling `t.effect(ctx, event)` without `as`. One clean approach: write a small generic helper `function callTransition<E extends OrderEvent>(t: Transition<OrderState, E>, ctx: OrderContext, event: E)` and invoke it inside a `switch (event.type)` block where each branch reconstructs the matching transition.",
+      "Use `satisfies ReadonlyArray<Transition<OrderState, OrderEvent>>` (not a type annotation) on `TRANSITIONS` — this validates every descriptor while preserving the tuple's literal types for later lookup.",
+      "`Extract<OrderEvent, { type: \"SUBMIT\" }>` resolves to `{ type: \"SUBMIT\"; paymentRef: string }` — lean on this in both the `Transition` definition and inside `applyEvent` to avoid widening the event to the full union."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript Handbook — Conditional Types & Extract",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/conditional-types.html"
+      },
+      {
+        "title": "TypeScript Handbook — Discriminated Unions",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html#discriminated-unions"
+      },
+      {
+        "title": "TypeScript 4.9 — `satisfies` operator",
+        "url": "https://www.typescriptlang.org/docs/handbook/release-notes/typescript-4-9.html#the-satisfies-operator"
+      },
+      {
+        "title": "TypeScript Handbook — Generics with Constraints",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/generics.html#generic-constraints"
+      }
+    ]
   }
 ]
