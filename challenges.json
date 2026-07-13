@@ -5145,5 +5145,41 @@
         "url": "https://www.typescriptlang.org/docs/handbook/2/generics.html#generic-constraints"
       }
     ]
+  },
+  {
+    "date": "2026-07-13",
+    "name": "Typed Retry-with-Backoff Fetcher",
+    "difficulty": "Medium",
+    "description": "You're building the resilient HTTP layer for a microservice that calls third-party APIs known to occasionally return transient errors. Each request must be retried with exponential backoff, errors must be classified as retryable or fatal, and every outcome — success or exhausted retries — must be surfaced as a fully-typed `FetchResult<T>` with zero `any`.",
+    "snippet": "// Key types at a glance:\n\nexport type ErrorKind = \"retryable\" | \"fatal\";\n\nexport interface ClassifiedError {\n  kind: ErrorKind;\n  status?: number;\n  message: string;\n}\n\nexport type FetchResult<T> =\n  | { outcome: \"success\"; data: T; attempts: number }\n  | { outcome: \"exhausted\"; lastError: ClassifiedError; attempts: number }\n  | { outcome: \"fatal\"; error: ClassifiedError; attempts: number };\n\nexport type FetchAdapter =\n  (url: string) => Promise<{ status: number; body: unknown }>;\n\nexport type BodyValidator<T> = (body: unknown) => T;\n\n// Your main function to implement:\nexport async function fetchWithRetry<T>(\n  url: string,\n  adapter: FetchAdapter,\n  validate: BodyValidator<T>,\n  config: RetryConfig\n): Promise<FetchResult<T>> { /* TODO */ }",
+    "goals": [
+      "Implement `classifyError` to categorize HTTP status codes and network failures into `retryable` or `fatal` kinds.",
+      "Implement `computeDelay` to calculate exponential backoff delays capped by an optional `maxDelayMs`.",
+      "Implement `fetchWithRetry<T>` to drive the retry loop: short-circuit on fatal errors, exhaust retries on persistent retryable errors, and validate the body on success.",
+      "Implement the three type-guard functions (`isSuccess`, `isExhausted`, `isFatal`) that narrow a `FetchResult<T>` to its specific variant."
+    ],
+    "hints": [
+      "The discriminant field is `outcome` — use it in your type guards with a simple `result.outcome === 'success'` check.",
+      "In `fetchWithRetry`, wrap the `adapter(url)` call in a `try/catch`: a thrown error means a network failure (no status), while a resolved value with a bad status is a classified HTTP error.",
+      "For `computeDelay`, `Math.min(x, Infinity)` is always `x` — so you can use `config.maxDelayMs ?? Infinity` without an extra branch."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript Handbook — Discriminated Unions",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html#discriminated-unions"
+      },
+      {
+        "title": "TypeScript Handbook — Type Guards & Narrowing",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html"
+      },
+      {
+        "title": "TypeScript Handbook — Generics",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/generics.html"
+      },
+      {
+        "title": "MDN — Promise and async/await",
+        "url": "https://developer.mozilla.org/en-US/docs/Learn_web/JavaScript/Asynchronous/Promises"
+      }
+    ]
   }
 ]
