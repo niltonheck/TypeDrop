@@ -5181,5 +5181,41 @@
         "url": "https://developer.mozilla.org/en-US/docs/Learn_web/JavaScript/Asynchronous/Promises"
       }
     ]
+  },
+  {
+    "date": "2026-07-14",
+    "name": "Typed Plugin Middleware Pipeline",
+    "difficulty": "Hard",
+    "description": "You're building the request-processing core for an API gateway. Plugins are registered at startup and form a typed middleware chain — each plugin declares the context fields it *reads* and *writes*, and the pipeline must enforce at the type level that every field a plugin reads has already been produced by an earlier plugin.",
+    "snippet": "// Key types and main function signature\n\ntype BaseContext = {\n  readonly requestId: string;\n  readonly method: \"GET\" | \"POST\" | \"PUT\" | \"DELETE\" | \"PATCH\";\n  readonly path: string;\n  readonly headers: Readonly<Record<string, string>>;\n  readonly body: unknown;\n};\n\ntype Plugin<Reads extends object, Writes extends object> = {\n  readonly name: string;\n  readonly execute: (ctx: Reads) => Promise<Result<Writes, PluginError>>;\n};\n\n// Accumulates all plugin Writes into one intersection, starting from BaseContext\ntype Accumulate<Plugins extends readonly Plugin<object, object>[],\n                Acc extends object = BaseContext> = /* TODO */\n\n// Validates that each plugin's Reads ⊆ accumulated context so far\ntype ValidPipeline<Plugins extends readonly Plugin<object, object>[],\n                   Acc extends object = BaseContext> = /* TODO */\n\n// Only compiles when plugin ordering is valid\nfunction createPipeline<const Plugins extends readonly Plugin<object, object>[]>(\n  plugins: ValidPipeline<Plugins> extends never ? never : Plugins\n): { run: (ctx: BaseContext) => Promise<PipelineResult<Plugins>> }",
+    "goals": [
+      "Implement `Accumulate<Plugins>` — a recursive conditional type that intersects BaseContext with each plugin's Writes in order.",
+      "Implement `ValidPipeline<Plugins>` — a recursive conditional type that rejects (returns `never`) any tuple where a plugin's Reads are not satisfied by the accumulated context so far.",
+      "Implement `makePlugin` so that `Reads` and `Writes` are inferred from the `execute` callback, producing a correctly-typed `Plugin<Reads, Writes>`.",
+      "Implement `createPipeline` with sequential execution, short-circuit on the first `Err`, and a compile-time guard that makes an out-of-order plugin tuple a type error."
+    ],
+    "hints": [
+      "For `Accumulate` and `ValidPipeline`, pattern-match the tuple with `Plugins extends [infer Head, ...infer Tail]` and recurse on `Tail` — don't forget the base case when the tuple is empty.",
+      "The compile-time ordering guard works by making the `plugins` parameter type `never` when `ValidPipeline<Plugins>` is `never` — callers can't pass `never` as a value, so the error surfaces naturally.",
+      "Inside `createPipeline`'s `run`, cast the accumulated object carefully: you'll need to widen the type at each step since TypeScript can't track the incremental intersection at runtime — consider using `Object.assign` into a typed accumulator."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript Handbook — Conditional Types",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/conditional-types.html"
+      },
+      {
+        "title": "TypeScript Handbook — Mapped Types",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/mapped-types.html"
+      },
+      {
+        "title": "TypeScript 5.0 — const Type Parameters",
+        "url": "https://www.typescriptlang.org/docs/handbook/release-notes/typescript-5-0.html#const-type-parameters"
+      },
+      {
+        "title": "TypeScript Handbook — Generics",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/generics.html"
+      }
+    ]
   }
 ]
