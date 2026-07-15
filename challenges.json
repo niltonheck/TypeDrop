@@ -5217,5 +5217,41 @@
         "url": "https://www.typescriptlang.org/docs/handbook/2/generics.html"
       }
     ]
+  },
+  {
+    "date": "2026-07-15",
+    "name": "Typed CSV Row Parser & Aggregator",
+    "difficulty": "Easy",
+    "description": "You're building the data-import feature for a budgeting app. Raw CSV rows arrive as plain strings; your module must parse and validate each row into a strongly-typed `Transaction` record, collect typed parse errors, and then aggregate the valid rows into a per-category `SpendingSummary` — with zero `any`.",
+    "snippet": "// Key types you must define and implement:\n\nexport type Category = \"food\" | \"transport\" | \"utilities\" | \"entertainment\" | \"other\";\n\nexport interface Transaction {\n  date: string;        // YYYY-MM-DD\n  amount: number;      // positive, ≤ 2 decimal places\n  category: Category;\n  description: string; // non-empty\n}\n\n// Discriminated union — you define this:\nexport type ParseResult<T> = /* TODO */ never;\n\n// Mapped type over Category — you define this:\nexport type SpendingSummary = /* TODO */ never;\n\n// Functions you must implement:\nexport function parseTransactionRow(row: string): ParseResult<Transaction>;\nexport function parseAll(rows: string[]): ParseAllResult;\nexport function summariseByCategory(transactions: Transaction[]): SpendingSummary;\n",
+    "goals": [
+      "Define `ParseResult<T>` as a generic discriminated union with `ok: true` and `ok: false` variants.",
+      "Implement `parseTransactionRow` that validates all five rules and returns the correct `ParseResult<Transaction>` variant.",
+      "Implement `parseAll` that separates valid transactions from structured error entries in a single pass.",
+      "Define `SpendingSummary` as a mapped type over `Category` and implement `summariseByCategory` so every category key is always present in the output."
+    ],
+    "hints": [
+      "For `ParseResult<T>`, a discriminated union uses a shared literal field (like `ok`) as the discriminant — TypeScript can then narrow the type in an `if` block.",
+      "For `SpendingSummary`, `{ [K in Category]: { total: number; count: number } }` ensures every category key is always present — seed them all to zero before iterating.",
+      "To validate `category`, build a `Set` or `const` array of all valid `Category` values and write a type-guard function that returns `value is Category`."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript Handbook – Discriminated Unions",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html#discriminated-unions"
+      },
+      {
+        "title": "TypeScript Handbook – Mapped Types",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/mapped-types.html"
+      },
+      {
+        "title": "TypeScript Handbook – Generics",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/generics.html"
+      },
+      {
+        "title": "MDN – Array.prototype.reduce()",
+        "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/reduce"
+      }
+    ]
   }
 ]
