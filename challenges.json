@@ -5253,5 +5253,41 @@
         "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/reduce"
       }
     ]
+  },
+  {
+    "date": "2026-07-16",
+    "name": "Typed Paginated API Client with Result Accumulation",
+    "difficulty": "Medium",
+    "description": "You're building the data-sync engine for an analytics dashboard that pulls records from a paginated REST API. Each page of results must be fetched sequentially, validated from `unknown` into a typed shape, and accumulated into a single `PagedResult<T>` — stopping early on fatal errors and surfacing per-page failures without losing successfully fetched data.",
+    "snippet": "// Core types and main function signature\n\ntype Product = { id: number; name: string; inStock: boolean };\n\n// Branded page-token — can't accidentally pass a plain string\nexport type PageToken = string & { readonly __brand: \"PageToken\" };\n\n// Discriminated error union\nexport type SyncError =\n  | { kind: \"validation\"; field: string; expected: string; received: string }\n  | { kind: \"fetch\";      page: number;  message: string };\n\n// Schema maps each key of T to its expected `typeof` string\nexport type Schema<T> = { [K in keyof T]: string };\n\n// Accumulated result — never throws, always returns this shape\nexport type PagedResult<T> = {\n  items: T[];\n  errors: SyncError[];\n  totalPagesFetched: number;\n};\n\n// Injected fetcher — returns unvalidated unknown records\nexport type Fetcher = (token: PageToken | undefined) => Promise<PagedResponse<unknown>>;\n\n// Main entry point — sequential pagination + validation + accumulation\nexport async function fetchAllPages<T>(\n  fetcher: Fetcher,\n  schema: Schema<T>\n): Promise<PagedResult<T>> { /* TODO */ throw new Error(\"Not implemented\"); }\n",
+    "goals": [
+      "Define `PageToken` as a branded string type and `SyncError` as a discriminated union of `ValidationError` and `FetchError`.",
+      "Implement `validateRecord<T>` as a type-guard that checks every key in a `Schema<T>` against the raw object using `Record<string, unknown>` — no `any`.",
+      "Implement `fetchAllPages<T>` to sequentially page through results, validate each record, and accumulate both valid items and per-page errors without ever throwing.",
+      "Ensure fetcher failures are captured as a `FetchError` (with the correct 1-based page number) and stop further fetching while preserving all previously collected data."
+    ],
+    "hints": [
+      "To cast `unknown` to an indexable shape without `any`, use `Record<string, unknown>` — first check `typeof raw === 'object' && raw !== null`.",
+      "The `Schema<T>` type uses a mapped type over `keyof T`; when iterating its keys at runtime, `Object.keys(schema)` gives you strings — cast them to `keyof T` only after you've confirmed the object has that key.",
+      "Track `totalPagesFetched` only when a fetcher call *completes successfully* — an error on page N means N-1 pages were fully fetched."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript Handbook — Narrowing & Type Guards",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html"
+      },
+      {
+        "title": "TypeScript Handbook — Mapped Types",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/mapped-types.html"
+      },
+      {
+        "title": "TypeScript Handbook — Generics",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/generics.html"
+      },
+      {
+        "title": "MDN — async function & for-await patterns",
+        "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/async_function"
+      }
+    ]
   }
 ]
