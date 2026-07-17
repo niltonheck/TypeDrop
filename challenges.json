@@ -5289,5 +5289,41 @@
         "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/async_function"
       }
     ]
+  },
+  {
+    "date": "2026-07-17",
+    "name": "Typed Dependency Injection Container",
+    "difficulty": "Hard",
+    "description": "You're building the service-locator core for a backend framework. Modules register factories under typed token keys, declare their dependencies on other tokens, and the container must resolve the full dependency graph at runtime — detecting circular dependencies, enforcing that every dependency is registered before resolution, and returning a fully-typed resolved instance — all with zero `any`.",
+    "snippet": "// Core types at a glance\n\n/** Nominal token carrying a phantom type T */\ntype Token<T> = symbol & { readonly __tokenType: T };\n\n/** Maps a tuple of Token<X> → tuple of X */\ntype ResolvedTuple<Tokens extends ReadonlyArray<Token<unknown>>> = {\n  [K in keyof Tokens]: Tokens[K] extends Token<infer U> ? U : never;\n};\n\n/** Typed factory descriptor */\ninterface ServiceFactory<T, Deps extends ReadonlyArray<Token<unknown>> = []> {\n  readonly deps: Deps;\n  readonly create: (...args: ResolvedTuple<Deps>) => T;\n}\n\ntype ResolveResult<T> =\n  | { readonly ok: true;  readonly value: T }\n  | { readonly ok: false; readonly reason: \"NOT_REGISTERED\" | \"CIRCULAR_DEP\" | \"FACTORY_THREW\"; readonly message: string };\n\n// Main API\ndeclare class Container {\n  register<T, Deps extends ReadonlyArray<Token<unknown>>>(token: Token<T>, factory: ServiceFactory<T, Deps>): this;\n  resolve<T>(token: Token<T>): ResolveResult<T>;\n  isRegistered<T>(token: Token<T>): boolean;\n  unregister<T>(token: Token<T>): boolean;\n}\n",
+    "goals": [
+      "Define `Token<T>` as a branded phantom type backed by a plain `symbol`, and implement `createToken<T>()` so tokens for different types are mutually incompatible.",
+      "Implement `ResolvedTuple<Tokens>` as a homomorphic mapped type that extracts the phantom type from each `Token<X>` in a tuple, and wire it into `ServiceFactory` and `provide()` so dependency types flow through without any annotations at call sites.",
+      "Implement `Container.register` and `Container.resolve` with singleton caching, recursive transitive dependency resolution, and cycle detection via a `visiting` set — all surfaces through the discriminated-union `ResolveResult<T>` type.",
+      "Implement `Container.unregister` and `Container.isRegistered`, ensuring that unregistering a token also evicts its cached singleton so a subsequent re-registration starts fresh."
+    ],
+    "hints": [
+      "For `Token<T>`, the phantom field only needs to exist at the type level — `Symbol() as Token<T>` is the one place an assertion is acceptable, or you can use a helper overload that hides it. Focus on making the *public* API assertion-free.",
+      "In `provide()`, annotate `deps` as `Deps` (constrained to `ReadonlyArray<Token<unknown>>`) and let TypeScript infer `Deps` from the passed-in `as const` tuple — then `ResolvedTuple<Deps>` will automatically type the `create` parameters.",
+      "For cycle detection, pass a *new* `Set` into the top-level `resolve` call and `add`/`delete` the current token around each recursive `resolveInner` call — this correctly handles diamond dependencies (shared non-circular deps) without false positives."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript Handbook — Generics",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/generics.html"
+      },
+      {
+        "title": "TypeScript Handbook — Conditional Types & infer",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/conditional-types.html"
+      },
+      {
+        "title": "TypeScript Handbook — Mapped Types",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/mapped-types.html"
+      },
+      {
+        "title": "TypeScript 4.9 — satisfies operator",
+        "url": "https://www.typescriptlang.org/docs/handbook/release-notes/typescript-4-9.html#the-satisfies-operator"
+      }
+    ]
   }
 ]
