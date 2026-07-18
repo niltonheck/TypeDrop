@@ -5325,5 +5325,41 @@
         "url": "https://www.typescriptlang.org/docs/handbook/release-notes/typescript-4-9.html#the-satisfies-operator"
       }
     ]
+  },
+  {
+    "date": "2026-07-18",
+    "name": "Typed In-Memory Event Emitter",
+    "difficulty": "Easy",
+    "description": "You're building the notification hub for a real-time dashboard. UI components subscribe to named events and expect their callbacks to receive exactly the right payload shape — no more, no less. Your task is to implement a strongly-typed `EventEmitter` that maps event names to their payload types and enforces that relationship at every call site.",
+    "snippet": "\n// Core event map shape — maps event names → payload types\ninterface DashboardEventMap {\n  userLoggedIn:    { userId: string; timestamp: number };\n  metricUpdated:   { metricName: string; value: number };\n  alertTriggered:  { severity: \"low\" | \"medium\" | \"high\"; message: string };\n  connectionClosed:{ code: number };\n}\n\n// Your job: implement this class\nclass EventEmitter<EventMap extends Record<string, unknown>> {\n  on<K extends keyof EventMap>(\n    event: K,\n    listener: (payload: EventMap[K]) => void\n  ): this { ... }\n\n  off<K extends keyof EventMap>(\n    event: K,\n    listener: (payload: EventMap[K]) => void\n  ): this { ... }\n\n  emit<K extends keyof EventMap>(event: K, payload: EventMap[K]): boolean { ... }\n\n  once<K extends keyof EventMap>(\n    event: K,\n    listener: (payload: EventMap[K]) => void\n  ): this { ... }\n\n  listenerCount<K extends keyof EventMap>(event: K): number { ... }\n}\n",
+    "goals": [
+      "Implement a generic `EventEmitter<EventMap>` class where `EventMap` maps event name strings to payload types.",
+      "Ensure `on`, `off`, and `once` enforce that listeners receive exactly the payload type declared in `EventMap[K]`.",
+      "Implement `once` so the listener auto-unsubscribes after its first invocation.",
+      "Return `this` from `on`, `off`, and `once` to enable fluent method chaining — without using `any` or type assertions."
+    ],
+    "hints": [
+      "The key to type safety is the double-generic pattern: `<K extends keyof EventMap>` on each method lets TypeScript infer the exact event name and look up `EventMap[K]` for the payload.",
+      "For `once`, wrap the user's listener in an inner function that calls `off` on itself before invoking the original — store the wrapper, not the original, in your listener map.",
+      "A `Map<keyof EventMap, Set<...>>` works well for storage, but you'll need to think carefully about what type the `Set` holds to avoid `any`."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript Handbook — Generics",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/generics.html"
+      },
+      {
+        "title": "TypeScript Handbook — Indexed Access Types",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/indexed-access-types.html"
+      },
+      {
+        "title": "TypeScript Handbook — keyof Type Operator",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/keyof-types.html"
+      },
+      {
+        "title": "Node.js EventEmitter (real-world inspiration)",
+        "url": "https://nodejs.org/en/learn/asynchronous-work/the-nodejs-event-emitter"
+      }
+    ]
   }
 ]
