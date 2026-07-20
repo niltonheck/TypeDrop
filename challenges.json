@@ -5397,5 +5397,41 @@
         "url": "https://www.typescriptlang.org/docs/handbook/2/indexed-access-types.html"
       }
     ]
+  },
+  {
+    "date": "2026-07-20",
+    "name": "Typed Retry-with-Backoff Task Queue",
+    "difficulty": "Medium",
+    "description": "You're building the background job runner for a data-pipeline service. Tasks arrive with typed inputs and outputs, and each task must be retried up to a configurable limit on failure — using exponential backoff — before being marked as permanently failed. The queue must surface per-task results without losing successful jobs, and the whole run must respect a shared AbortSignal for graceful shutdown.",
+    "snippet": "// Key types and main function signatures\n\ntype TaskResult<T> =\n  | { status: \"fulfilled\"; value: T }\n  | { status: \"failed\"; attempts: number; lastError: Error };\n\ntype Task<I, O> = {\n  id: string;\n  input: I;\n  execute: (input: I, signal: AbortSignal) => Promise<O>;\n};\n\ntype RetryPolicy = {\n  maxAttempts: number;\n  baseDelayMs: number;\n  backoffFactor: number;\n};\n\ntype QueueResult<I, O> = { id: string; input: I; result: TaskResult<O> };\n\ndeclare function runWithRetry<I, O>(\n  task: Task<I, O>,\n  policy: RetryPolicy,\n  signal: AbortSignal,\n): Promise<TaskResult<O>>;\n\ndeclare function runQueue<I, O>(\n  tasks: ReadonlyArray<Task<I, O>>,\n  policy: RetryPolicy,\n  signal: AbortSignal,\n): Promise<ReadonlyArray<QueueResult<I, O>>>;\n",
+    "goals": [
+      "Define `TaskResult<T>` as a discriminated union and `Task<I, O>` / `RetryPolicy` / `QueueResult<I, O>` as fully-typed structures with no `any`.",
+      "Implement `runWithRetry` with exponential backoff, stopping early when the `AbortSignal` fires during a delay.",
+      "Implement `runQueue` to run all tasks concurrently via `Promise.all`, ensuring per-task failures never prevent other tasks from completing.",
+      "Return results in the same order as the input array, each paired with its task `id`, `input`, and `TaskResult`."
+    ],
+    "hints": [
+      "The discriminant in `TaskResult<T>` lets TypeScript narrow the union — use `result.status === 'fulfilled'` to safely access `value`.",
+      "Wrap `abortableSleep` in a `try/catch` inside the retry loop: if it rejects with 'Aborted', return a failed result immediately rather than continuing.",
+      "In `runQueue`, map tasks to `runWithRetry` calls and wrap each in `Promise.all` — `runWithRetry` already resolves (never rejects), so `Promise.all` will always settle."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript Discriminated Unions",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html#discriminated-unions"
+      },
+      {
+        "title": "AbortSignal – MDN Web Docs",
+        "url": "https://developer.mozilla.org/en-US/docs/Web/API/AbortSignal"
+      },
+      {
+        "title": "Promise.all – MDN Web Docs",
+        "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise/all"
+      },
+      {
+        "title": "TypeScript Generics",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/generics.html"
+      }
+    ]
   }
 ]
