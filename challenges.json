@@ -5433,5 +5433,41 @@
         "url": "https://www.typescriptlang.org/docs/handbook/2/generics.html"
       }
     ]
+  },
+  {
+    "date": "2026-07-21",
+    "name": "Typed Middleware Pipeline with Branching & Typed Context",
+    "difficulty": "Hard",
+    "description": "You're building the request-processing core for an API gateway. Incoming requests flow through a chain of middleware functions that can read and write a strictly-typed context object, short-circuit the pipeline by returning an early response, or pass control to the next middleware — all while preserving full type safety across every stage of the chain.",
+    "snippet": "// Core types + main builder signature\n\nexport type OkResponse    = { readonly kind: \"ok\";    readonly status: number; readonly body: unknown };\nexport type ErrorResponse = { readonly kind: \"error\"; readonly status: number; readonly message: string };\nexport type PipelineResponse = OkResponse | ErrorResponse;\n\n/** Merges two object shapes, with B overriding A on key conflicts. */\nexport type Merge<A, B> = Omit<A, keyof B> & B;\n\nexport type NextFn<TCtx, TPatch extends object> =\n  (patch: TPatch) => Promise<PipelineResponse>;\n\nexport type MiddlewareFn<TCtx, TPatch extends object> =\n  (ctx: TCtx, next: NextFn<TCtx, TPatch>) => Promise<PipelineResponse>;\n\n/** Fluent builder — each .use() widens the context type. */\nexport interface Pipeline<TCtx> {\n  use<TPatch extends object>(\n    fn: MiddlewareFn<TCtx, TPatch>\n  ): Pipeline<Merge<TCtx, TPatch>>;\n  run(ctx: TCtx): Promise<PipelineResponse>;\n}\n\nexport function createPipeline<TCtx>(): Pipeline<TCtx> { /* TODO */ }\n",
+    "goals": [
+      "Implement `createPipeline` so that middleware registered via `.use()` runs in order, each receiving the context enriched by all previous patches, and the chain short-circuits on the first returned `PipelineResponse`.",
+      "Ensure `.use()` correctly widens the pipeline's context type using `Merge<TCtx, TPatch>` so downstream middleware see all previously added fields at compile time.",
+      "Implement the three pre-built middleware (`withLogging`, `withAuth`, `withRateLimit`) so they compile without errors against their declared `TCtx` constraints and pass all five test assertions.",
+      "Enforce at the type level that `withAuth` can only be placed after a context containing `token: string`, and `withRateLimit` only after a context containing `userId: string` — incorrect ordering must produce a compile error."
+    ],
+    "hints": [
+      "The key to `.use()` returning a richer `Pipeline` is to store middleware as an array of `(ctx: unknown, next: ...) => Promise<PipelineResponse>` internally and cast only at the boundary — but avoid `any` by using a private generic accumulator class that satisfies the `Pipeline<TCtx>` interface.",
+      "To chain middleware in `run()`, build the handler chain from right to left (like Koa/Express): start with the default 200 handler, then wrap each middleware around it in reverse order, passing the merged context forward via the `patch` argument.",
+      "For `withLogging`, check whether `(ctx as Record<string, unknown>).log` is already an array using `Array.isArray` — this lets you append to an existing log without using `any` or type assertions on the patch."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript Handbook — Generics",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/generics.html"
+      },
+      {
+        "title": "TypeScript Handbook — Utility Types (Omit, Record, Extract)",
+        "url": "https://www.typescriptlang.org/docs/handbook/utility-types.html"
+      },
+      {
+        "title": "TypeScript Handbook — Conditional Types & infer",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/conditional-types.html"
+      },
+      {
+        "title": "MDN — Promise.resolve & async/await patterns",
+        "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise/resolve"
+      }
+    ]
   }
 ]
