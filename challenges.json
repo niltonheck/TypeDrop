@@ -5469,5 +5469,41 @@
         "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise/resolve"
       }
     ]
+  },
+  {
+    "date": "2026-07-22",
+    "name": "Typed Paginated API Client with Result Aggregation",
+    "difficulty": "Medium",
+    "description": "You're building the data-fetching layer for an analytics dashboard. The backend exposes a cursor-based paginated endpoint, and your client must walk every page, accumulate records, handle per-page errors gracefully, and surface a fully-typed aggregated result — all without losing type information or resorting to `any`.",
+    "snippet": "// Core types you'll be working with:\n\ninterface Page<T> {\n  items: T[];\n  nextCursor: string | null; // null = last page\n  totalCount: number;\n}\n\ntype Ok<T>  = { ok: true;  value: T };\ntype Err<E> = { ok: false; error: E };\ntype Result<T, E> = Ok<T> | Err<E>;\n\ntype FetchPage<T, E> = (cursor: string | undefined) => Promise<Result<Page<T>, E>>;\n\ninterface AggregatedResult<T, E> {\n  items: T[];\n  totalCount: number;\n  pagesFetched: number;\n  errors: E[];\n}\n\n// Main function to implement:\nasync function fetchAllPages<T, E>(\n  fetchPage: FetchPage<T, E>\n): Promise<AggregatedResult<T, E>> { /* TODO */ }\n\n// Bonus utilities:\nfunction pluckField<T, E, K extends keyof T>(result: AggregatedResult<T, E>, key: K): Array<T[K]> { /* TODO */ }\nfunction mapFetchPage<A, B, E>(fetchPage: FetchPage<A, E>, transform: (item: A) => B): FetchPage<B, E> { /* TODO */ }",
+    "goals": [
+      "Implement the `ok` and `err` constructors that produce correctly-typed discriminated union values.",
+      "Implement `fetchAllPages` to walk a cursor chain sequentially, collecting items and errors into an `AggregatedResult<T, E>`.",
+      "Implement `pluckField` so its return type is inferred as `Array<T[K]>` using a `keyof` constraint and indexed access type.",
+      "Implement `mapFetchPage` to wrap a `FetchPage<A, E>` and produce a `FetchPage<B, E>` by transforming each page's items, passing errors through unchanged."
+    ],
+    "hints": [
+      "For `fetchAllPages`, a `while (cursor !== null)` loop with `cursor` typed as `string | undefined | null` lets you distinguish 'first call' from 'done' naturally.",
+      "In `pluckField`, the constraint `K extends keyof T` is all you need — TypeScript will infer `T[K]` as the element type of the returned array without any casting.",
+      "`mapFetchPage` should return an async arrow function that calls the inner `fetchPage`, then checks `result.ok` to decide whether to map items or forward the `Err` unchanged — discriminated union narrowing does the heavy lifting."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript Handbook — Discriminated Unions",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html#discriminated-unions"
+      },
+      {
+        "title": "TypeScript Handbook — Generics",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/generics.html"
+      },
+      {
+        "title": "TypeScript Handbook — Indexed Access Types",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/indexed-access-types.html"
+      },
+      {
+        "title": "MDN — async function / await",
+        "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/async_function"
+      }
+    ]
   }
 ]
