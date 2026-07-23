@@ -5505,5 +5505,41 @@
         "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/async_function"
       }
     ]
+  },
+  {
+    "date": "2026-07-23",
+    "name": "Typed GroupBy & Aggregation Pipeline",
+    "difficulty": "Easy",
+    "description": "You're building the reporting layer for a sales dashboard. Raw transaction records need to be bucketed by an arbitrary key, then summarised with typed aggregation functions — all without losing the shape of the original data or reaching for `any`.",
+    "snippet": "/** A record whose values can be safely used as Map keys. */\ntype Keyable = string | number | boolean;\n\n/** Each distinct key maps to the subset of items that share it. */\ntype Grouped<K extends Keyable, T> = Map<K, T[]>;\n\n/** One aggregated summary entry produced from a single group. */\ntype GroupSummary<K extends Keyable, S> = {\n  key: K;\n  summary: S;\n};\n\n// Group items by an arbitrary key —————————————————————————————\ndeclare function groupBy<T, K extends Keyable>(\n  items: T[],\n  keySelector: (item: T) => K\n): Grouped<K, T>;\n\n// Reduce each group to a typed summary ————————————————————————\ndeclare function aggregateGroups<K extends Keyable, T, S>(\n  grouped: Grouped<K, T>,\n  summarise: (items: T[]) => S\n): GroupSummary<K, S>[];\n\n// Pipeline convenience: group + aggregate in one call —————————\ndeclare function groupAndAggregate<T, K extends Keyable, S>(\n  items: T[],\n  keySelector: (item: T) => K,\n  summarise: (items: T[]) => S\n): GroupSummary<K, S>[];\n\n// Return the top-n summaries ranked by a numeric score ————————\ndeclare function topN<K extends Keyable, S>(\n  summaries: GroupSummary<K, S>[],\n  score: (summary: S) => number,\n  n: number\n): GroupSummary<K, S>[];",
+    "goals": [
+      "Implement `groupBy` using a generic `Map<K, T[]>` where `K extends Keyable`, correctly bucketing items by their computed key.",
+      "Implement `aggregateGroups` to transform a `Grouped<K, T>` into `GroupSummary<K, S>[]` by applying a typed `summarise` reducer to each bucket.",
+      "Implement `groupAndAggregate` as a single-call pipeline that composes the two functions above with fully inferred generic parameters.",
+      "Implement `topN` to return the highest-scoring `n` summaries in descending order without mutating the input array."
+    ],
+    "hints": [
+      "The `Grouped` type is just a `Map` — reach for `Map.get`, `Map.set`, and `Map.entries()` / `for...of` to iterate it without losing key types.",
+      "For `topN`, spreading the array before sorting (`[...summaries]`) keeps the original intact and satisfies the no-mutation requirement.",
+      "`groupAndAggregate` can be a one-liner that delegates entirely to `groupBy` and `aggregateGroups` — TypeScript will infer all three type parameters from the arguments."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript Handbook — Generics",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/generics.html"
+      },
+      {
+        "title": "TypeScript Handbook — keyof & Mapped Types",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/mapped-types.html"
+      },
+      {
+        "title": "MDN — Map",
+        "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Map"
+      },
+      {
+        "title": "TypeScript Handbook — Utility Types",
+        "url": "https://www.typescriptlang.org/docs/handbook/utility-types.html"
+      }
+    ]
   }
 ]
