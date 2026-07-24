@@ -5541,5 +5541,41 @@
         "url": "https://www.typescriptlang.org/docs/handbook/utility-types.html"
       }
     ]
+  },
+  {
+    "date": "2026-07-24",
+    "name": "Typed Event Emitter with Wildcard Subscriptions & Replay",
+    "difficulty": "Hard",
+    "description": "You're building the real-time notification backbone for a collaborative document editor. Components subscribe to strongly-typed events (e.g. `\"cursor:moved\"`, `\"doc:saved\"`, `\"user:joined\"`), and late-joining subscribers can replay the last N events they missed — all with zero type-unsafe escape hatches.",
+    "snippet": "// Core types you must define and implement:\n\nexport type BaseEventMap = Record<string, unknown>;\n\n// TODO: make this a distributive mapped type — a discriminated union\n// where each member is { event: K; payload: TMap[K] } for every K in TMap.\nexport type AnyEvent<TMap extends BaseEventMap> = never; // ← your work here\n\nexport type Unsubscribe = () => void;\nexport type EventHandler<TPayload> = (payload: TPayload) => void;\nexport type AnyEventHandler<TMap extends BaseEventMap> = (event: AnyEvent<TMap>) => void;\n\nexport interface Emitter<TMap extends BaseEventMap> {\n  on<K extends keyof TMap>(event: K, handler: EventHandler<TMap[K]>): Unsubscribe;\n  once<K extends keyof TMap>(event: K, handler: EventHandler<TMap[K]>): Unsubscribe;\n  onAny(handler: AnyEventHandler<TMap>): Unsubscribe;\n  emit<K extends keyof TMap>(event: K, payload: TMap[K]): void;\n  replay<K extends keyof TMap>(event: K, n: number, handler: EventHandler<TMap[K]>): Unsubscribe;\n  history<K extends keyof TMap>(event: K): ReadonlyArray<TMap[K]>;\n  off<K extends keyof TMap>(event: K, handler: EventHandler<TMap[K]>): void;\n}\n\nexport function createEmitter<TMap extends BaseEventMap>(): Emitter<TMap> {\n  throw new Error(\"TODO: implement createEmitter\");\n}",
+    "goals": [
+      "Define `AnyEvent<TMap>` as a distributive mapped type that produces a discriminated union `{ event: K; payload: TMap[K] }` for every key `K` in `TMap`.",
+      "Implement `createEmitter<TMap>()` with internal per-event handler sets and a history store — all typed without `any`.",
+      "Implement `.replay(event, n, handler)` so it immediately delivers the last `n` historical payloads oldest-first, then keeps the handler subscribed for future emissions.",
+      "Ensure `.history(event)` returns `ReadonlyArray<TMap[K]>` for the specific key `K` — never a wider union type."
+    ],
+    "hints": [
+      "For `AnyEvent<TMap>`, try a mapped type that distributes over `keyof TMap`: `{ [K in keyof TMap]: { event: K; payload: TMap[K] } }[keyof TMap]`.",
+      "Store handlers in a `Map<keyof TMap, Set<EventHandler<TMap[keyof TMap]>>>` — you'll need a small type cast-free helper to retrieve and widen per-key, or store them as `Map<K, Set<...>>` inside a generic helper function.",
+      "For `.replay`, slice `history(event).slice(-n)` to get the last N entries, iterate oldest-first, then call `.on` and return its unsubscribe handle."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript — Mapped Types",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/mapped-types.html"
+      },
+      {
+        "title": "TypeScript — Distributive Conditional Types",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/conditional-types.html#distributive-conditional-types"
+      },
+      {
+        "title": "TypeScript — Indexed Access Types",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/indexed-access-types.html"
+      },
+      {
+        "title": "TypeScript — keyof and Generics",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/generics.html#using-type-parameters-in-generic-constraints"
+      }
+    ]
   }
 ]
