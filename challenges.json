@@ -5577,5 +5577,41 @@
         "url": "https://www.typescriptlang.org/docs/handbook/2/generics.html#using-type-parameters-in-generic-constraints"
       }
     ]
+  },
+  {
+    "date": "2026-07-25",
+    "name": "Typed LRU Cache with TTL & Typed Eviction Callbacks",
+    "difficulty": "Medium",
+    "description": "You're building the in-process caching layer for a high-traffic API server. Cached entries must expire after a configurable TTL, the cache must evict the least-recently-used entry when it reaches capacity, and callers need strongly-typed eviction callbacks so downstream systems can react (e.g. flush to disk, emit metrics) without losing the shape of the evicted value.",
+    "snippet": "// Key types and main factory signature — enough to understand the challenge\n\nexport type EvictionReason =\n  | { kind: \"capacity\" }\n  | { kind: \"ttl\"; expiredAt: number }\n  | { kind: \"manual\" };\n\nexport type EvictionCallback<K, V> = (\n  key: K,\n  value: V,\n  reason: EvictionReason\n) => void;\n\nexport type LRUCacheOptions<K, V> = {\n  capacity: number;\n  ttlMs?: number;\n  onEvict?: EvictionCallback<K, V>;\n};\n\nexport interface ILRUCache<K, V> {\n  set(key: K, value: V): void;\n  get(key: K): V | undefined;\n  has(key: K): boolean;\n  delete(key: K): boolean;\n  clear(): void;\n  readonly size: number;\n  keys(): K[];\n}\n\n// TODO: implement this 👇\nexport function createLRUCache<K, V>(\n  options: LRUCacheOptions<K, V>\n): ILRUCache<K, V> {\n  throw new Error(\"Not implemented\");\n}\n",
+    "goals": [
+      "Define a three-variant discriminated union `EvictionReason` and wire it into a generic `EvictionCallback<K,V>` type.",
+      "Implement `createLRUCache<K,V>` backed by a `Map`, using the delete-and-reinsert trick to maintain LRU order without a doubly-linked list.",
+      "Correctly handle TTL expiry in `get()` and `has()` — firing `onEvict` with the `ttl` variant only on an actual cache read, not on a peek.",
+      "Return entries in MRU-first order from `keys()`, filtering out any stale (expired) entries."
+    ],
+    "hints": [
+      "A plain `Map<K, CacheEntry<V>>` preserves insertion order — deleting a key and re-inserting it on every access is all you need to implement LRU without any extra data structure.",
+      "For the `EvictionReason` discriminated union, the `kind` property is your type-narrowing tag — make sure every call site constructs the exact variant object (e.g. `{ kind: 'ttl', expiredAt: Date.now() }`).",
+      "`has()` must NOT call `get()` internally — it should peek without updating `lastUsedAt`, so implement it by reading the Map directly and checking the TTL manually."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript — Discriminated Unions",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html#discriminated-unions"
+      },
+      {
+        "title": "TypeScript — Generics",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/generics.html"
+      },
+      {
+        "title": "MDN — Map (insertion order & iteration)",
+        "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Map"
+      },
+      {
+        "title": "TypeScript — Utility Types (Readonly, Pick, etc.)",
+        "url": "https://www.typescriptlang.org/docs/handbook/utility-types.html"
+      }
+    ]
   }
 ]
