@@ -5613,5 +5613,41 @@
         "url": "https://www.typescriptlang.org/docs/handbook/utility-types.html"
       }
     ]
+  },
+  {
+    "date": "2026-07-26",
+    "name": "Typed Safe JSON Parser with Result Type",
+    "difficulty": "Easy",
+    "description": "You're building the configuration-loading layer for a CLI tool. Raw JSON strings arrive from config files, environment variables, and remote endpoints — any of which can be malformed or structurally wrong. You need a small, strongly-typed parsing toolkit that turns `unknown` blobs into validated, shaped data without ever reaching for `any` or unsafe type assertions.",
+    "snippet": "// Core types you must define and implement:\n\ntype Result<T, E> =\n  | { ok: true;  value: T }\n  | { ok: false; error: E };\n\ntype ParseError =\n  | { kind: \"SyntaxError\";     message: string }\n  | { kind: \"ValidationError\"; message: string }\n  | { kind: \"EmptyInput\";      message: string };\n\ntype Validator<T> = (value: unknown) => Result<T, ParseError>;\n\n// Compose them all in the top-level entry point:\nfunction parseTo<T>(\n  raw: string,\n  validator: Validator<T>\n): Result<T, ParseError> { ... }\n\n// Example schema-driven object validator:\nconst configValidator = validateObject<{ host: string; port: number }>({\n  host: validateString,\n  port: validateNumber,\n});",
+    "goals": [
+      "Define a two-variant discriminated-union Result<T, E> and a three-kind ParseError union.",
+      "Implement safeParseJSON that maps empty input, syntax failures, and valid JSON to the correct Result variants.",
+      "Build validateString, validateNumber, validateBoolean, and a generic validateObject using a mapped-type schema.",
+      "Compose everything in parseTo<T> and implement the generic mapResult helper."
+    ],
+    "hints": [
+      "The schema parameter of validateObject should be typed as `{ [K in keyof T]: Validator<T[K]> }` — let the mapped type do the heavy lifting so callers get field-level type checking for free.",
+      "In validateObject, after confirming the input is a non-null, non-array object, iterate over Object.keys(schema) and run each validator — cast the field lookup with a keyof assertion only where the compiler can't narrow automatically.",
+      "mapResult only needs a single if/else on `result.ok` — the discriminated union will narrow both branches for you with no type assertions needed."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript Handbook — Discriminated Unions",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html#discriminated-unions"
+      },
+      {
+        "title": "TypeScript Handbook — Mapped Types",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/mapped-types.html"
+      },
+      {
+        "title": "TypeScript Handbook — Generics",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/generics.html"
+      },
+      {
+        "title": "MDN — JSON.parse",
+        "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/JSON/parse"
+      }
+    ]
   }
 ]
