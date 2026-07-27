@@ -5649,5 +5649,41 @@
         "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/JSON/parse"
       }
     ]
+  },
+  {
+    "date": "2026-07-27",
+    "name": "Typed Retry & Concurrency-Limited Task Runner",
+    "difficulty": "Medium",
+    "description": "You're building the job-execution engine for a data-pipeline orchestrator. Individual tasks are async functions that can fail transiently, so the runner must retry them with exponential back-off, enforce a global concurrency cap so the host isn't overwhelmed, and return a fully-typed settled report for every task — success value or final error — without losing the original task's return type.",
+    "snippet": "/** A named async task that returns a value of type T. */\ninterface Task<T> {\n  readonly name: string;\n  readonly run: () => Promise<T>;\n}\n\n/** Discriminated union: fulfilled arm */\ntype TaskSuccess<T> = {\n  readonly status: \"fulfilled\";\n  readonly name: string;\n  readonly value: T;\n};\n\n/** Discriminated union: rejected arm */\ntype TaskFailure = {\n  readonly status: \"rejected\";\n  readonly name: string;\n  readonly attempts: number;\n  readonly error: unknown;\n};\n\ntype TaskReport<T> = TaskSuccess<T> | TaskFailure;\n\ninterface RunnerConfig {\n  readonly maxAttempts: number;\n  readonly baseDelayMs: number;\n  readonly concurrency: number;\n}\n\n// Wraps one task with exponential-backoff retry — always resolves.\ndeclare function withRetry<T>(task: Task<T>, config: RetryConfig): Promise<TaskReport<T>>;\n\n// Runs all tasks with a concurrency cap — results in submission order.\ndeclare function runWithConcurrencyLimit<T>(tasks: Task<T>[], config: RunnerConfig): Promise<TaskReport<T>[]>;\n",
+    "goals": [
+      "Implement `withRetry<T>` so it retries a failing task up to `maxAttempts` times with exponential back-off and always resolves with a `TaskReport<T>` (never rejects).",
+      "Implement `runWithConcurrencyLimit<T>` so that at most `config.concurrency` tasks run simultaneously and results are returned in the original submission order.",
+      "Define the `ReportFor<Tasks>` mapped type that converts a tuple of `Task<T>` types into a positionally-matched tuple of `TaskReport<T>` types.",
+      "Use discriminated unions and type narrowing (`report.status === 'fulfilled'`) throughout — no `any`, `as`, or non-null assertions."
+    ],
+    "hints": [
+      "For the concurrency cap, spawn exactly `concurrency` 'worker' async functions that each loop over a shared index pointer — no external library needed.",
+      "Exponential back-off: delay before retry N (1-indexed) is `baseDelayMs * 2^(N-1)`. Use the provided `sleep` helper.",
+      "For `ReportFor`, map over the tuple with `[K in keyof Tasks]: Tasks[K] extends Task<infer T> ? TaskReport<T> : never` — TypeScript preserves tuple positions when you map over `keyof` of a tuple type."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript Handbook — Mapped Types",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/mapped-types.html"
+      },
+      {
+        "title": "TypeScript Handbook — Conditional Types & infer",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/conditional-types.html"
+      },
+      {
+        "title": "MDN — Promise.all",
+        "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise/all"
+      },
+      {
+        "title": "TypeScript Handbook — Narrowing (discriminated unions)",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html#discriminated-unions"
+      }
+    ]
   }
 ]
