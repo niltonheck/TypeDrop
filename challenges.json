@@ -5685,5 +5685,41 @@
         "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html#discriminated-unions"
       }
     ]
+  },
+  {
+    "date": "2026-07-28",
+    "name": "Typed HTTP API Client Builder",
+    "difficulty": "Easy",
+    "description": "You're building the typed HTTP client layer for a mobile app's backend SDK. Consumers should be able to declare their API endpoints once — including method, path params, query params, and response shape — and get back a fully-typed `fetch` wrapper with zero `any` or unsafe casts.",
+    "snippet": "// Key types at a glance\n\ntype HttpMethod = \"GET\" | \"POST\" | \"PUT\" | \"PATCH\" | \"DELETE\";\n\ntype EndpointDef<TPath extends string, TResponse> = {\n  method: HttpMethod;\n  path: TPath;\n  _response?: TResponse; // phantom field — carries TResponse into the type system\n};\n\n// Extracts \":id\" | \":postId\" names from a path string at the type level\ntype ExtractPathParams<T extends string> = /* your recursive conditional type */;\n\n// Requires `pathParams` only when the path actually has segments\ntype CallOptions<TPath extends string> = /* conditional type */;\n\ntype ApiResult<TResponse> =\n  | { ok: true;  status: number; data: TResponse }\n  | { ok: false; status: number; error: string   };\n\n// Curried: first call infers TPath, second call pins TResponse\ndeclare function defineEndpoint<TPath extends string>(\n  method: HttpMethod,\n  path: TPath\n): <TResponse>() => EndpointDef<TPath, TResponse>;\n\n// Usage:\nconst getUser = defineEndpoint(\"GET\", \"/users/:id\")<User>();\nconst caller  = buildCaller(getUser, \"https://api.example.com\");\nconst result  = await caller({ pathParams: { id: \"42\" } }); // fully typed!",
+    "goals": [
+      "Implement `ExtractPathParams<T>` as a recursive template-literal conditional type that unions all `:param` names found in a path string.",
+      "Implement `CallOptions<TPath>` as a conditional type that requires `pathParams: Record<ExtractPathParams<TPath>, string>` only when path params exist.",
+      "Implement the curried `defineEndpoint` factory so the first call infers `TPath` from the path argument and the second (empty) call pins `TResponse` via an explicit type parameter.",
+      "Implement `buildCaller` and `createApiClient` with correct runtime behaviour — path interpolation, query string appending, error and network-failure handling — all without losing the inferred response type."
+    ],
+    "hints": [
+      "For `ExtractPathParams`, match the pattern `` `${string}/:${infer Param}/${infer Rest}` `` first (segment in the middle), then `` `${string}/:${infer Param}` `` (segment at the end) — order matters in conditional types.",
+      "To make `pathParams` conditionally required, wrap the check as `[ExtractPathParams<TPath>] extends [never]` (tuple wrapping avoids distributivity issues).",
+      "For the curried `defineEndpoint`, the outer function returns `<TResponse>() => EndpointDef<TPath, TResponse>` — the caller writes `defineEndpoint('GET', '/users/:id')<User>()` to fix the response type without passing a runtime value."
+    ],
+    "docs": [
+      {
+        "title": "Template Literal Types — TypeScript Handbook",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/template-literal-types.html"
+      },
+      {
+        "title": "Conditional Types — TypeScript Handbook",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/conditional-types.html"
+      },
+      {
+        "title": "Mapped Types — TypeScript Handbook",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/mapped-types.html"
+      },
+      {
+        "title": "URLSearchParams — MDN Web Docs",
+        "url": "https://developer.mozilla.org/en-US/docs/Web/API/URLSearchParams"
+      }
+    ]
   }
 ]
