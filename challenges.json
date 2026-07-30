@@ -5721,5 +5721,41 @@
         "url": "https://developer.mozilla.org/en-US/docs/Web/API/URLSearchParams"
       }
     ]
+  },
+  {
+    "date": "2026-07-30",
+    "name": "Typed Pagination Aggregator with Cursor-Based Fetching",
+    "difficulty": "Medium",
+    "description": "You're building the data-loading layer for an analytics dashboard that must pull all records from cursor-paginated REST APIs (think GitHub, Stripe, or Notion). Each endpoint returns a typed page of items plus an opaque next-cursor, and you need a generic aggregator that fetches all pages sequentially, enforces a per-fetch timeout via AbortController, and returns a strongly-typed settled result — collected items or a structured error — without any unsafe escape hatches.",
+    "snippet": "// Core types and main function signature\n\ntype Widget = { id: number; name: string };\n\ntype Page<T> = {\n  items: T[];\n  nextCursor: string | null;\n};\n\ntype FetchError =\n  | { kind: \"timeout\";   pageIndex: number }\n  | { kind: \"aborted\";   pageIndex: number }\n  | { kind: \"network\";   pageIndex: number; message: string }\n  | { kind: \"max_pages\"; limit: number };\n\ntype AggregatorResult<T> =\n  | { status: \"ok\";    items: T[];       pagesFetched: number }\n  | { status: \"error\"; reason: FetchError; pagesFetched: number; partialItems: T[] };\n\ntype PaginatorConfig<T> = {\n  fetchPage: (cursor: string | null, signal: AbortSignal) => Promise<Page<T>>;\n  pageTimeoutMs: number;\n  maxPages: number;\n};\n\nasync function aggregatePages<T>(\n  config: PaginatorConfig<T>\n): Promise<AggregatorResult<T>> { /* TODO */ }\n",
+    "goals": [
+      "Define `Page<T>`, `PaginatorConfig<T>`, `FetchError`, and `AggregatorResult<T>` as fully typed, generic discriminated unions with no `any`.",
+      "Implement `aggregatePages<T>` to fetch pages sequentially, race each fetch against a per-page `AbortController` timeout, and return a typed `AggregatorResult<T>` — never throwing.",
+      "Handle all four `FetchError` kinds exhaustively: `timeout`, `aborted`, `network`, and `max_pages`.",
+      "Implement `paginatorFor<T>` as a typed builder that wraps a URL and `transform` function into a valid `PaginatorConfig<T>` with sensible defaults."
+    ],
+    "hints": [
+      "To race a fetch against a timeout, create an `AbortController`, schedule `controller.abort()` with `setTimeout`, then `Promise.race` the real fetch (passing `controller.signal`) against a promise that rejects on abort — check `signal.aborted` or catch `DOMException` with name `'AbortError'` to distinguish timeout from external abort.",
+      "Use `instanceof DOMException && err.name === 'AbortError'` inside your catch block to tell timeouts/aborts apart from generic network errors — then check the outer timeout controller's signal to know which it was.",
+      "The `transform` callback in `paginatorFor` is the boundary where `unknown` becomes `Page<T>` — keep it typed as `(raw: unknown) => Page<T>` and let callers own the narrowing, so your builder stays free of `any`."
+    ],
+    "docs": [
+      {
+        "title": "AbortController (MDN)",
+        "url": "https://developer.mozilla.org/en-US/docs/Web/API/AbortController"
+      },
+      {
+        "title": "Promise.race (MDN)",
+        "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise/race"
+      },
+      {
+        "title": "TypeScript Discriminated Unions",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html#discriminated-unions"
+      },
+      {
+        "title": "TypeScript Generics",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/generics.html"
+      }
+    ]
   }
 ]
