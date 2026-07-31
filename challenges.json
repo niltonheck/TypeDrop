@@ -5757,5 +5757,41 @@
         "url": "https://www.typescriptlang.org/docs/handbook/2/generics.html"
       }
     ]
+  },
+  {
+    "date": "2026-07-31",
+    "name": "Typed Event-Sourced State Machine",
+    "difficulty": "Hard",
+    "description": "You're building the order-lifecycle engine for an e-commerce platform. Orders move through a strict set of states (e.g. `Pending → Confirmed → Shipped → Delivered`, with cancellation possible from some states), and every transition must be recorded as an immutable event in an append-only log. The hardest part is making TypeScript enforce — at the type level — which events are legal from each state, so invalid transitions are caught at compile time, not at runtime.",
+    "snippet": "/** All possible order states. */\ntype OrderState = \"Pending\" | \"Confirmed\" | \"Shipped\" | \"Delivered\" | \"Cancelled\" | \"Refunded\";\n\ntype BaseEvent<T extends string, P extends object = Record<string, never>> =\n  { type: T; occurredAt: string } & P;\n\ntype OrderConfirmed = BaseEvent<\"OrderConfirmed\", { confirmedBy: string }>;\ntype OrderShipped   = BaseEvent<\"OrderShipped\",   { trackingNumber: string; carrier: string }>;\ntype OrderCancelled = BaseEvent<\"OrderCancelled\", { reason: string }>;\n// ... (OrderPlaced, OrderDelivered, OrderRefunded follow the same pattern)\n\ntype OrderEvent = OrderPlaced | OrderConfirmed | OrderShipped\n                | OrderDelivered | OrderCancelled | OrderRefunded;\n\n/** Resolves to the union of events legally applicable in state S. */\ntype LegalEvents<S extends OrderState> = Extract<OrderEvent, { type: typeof TRANSITIONS[S][number] }>;\n\n// LegalEvents<\"Pending\">   → OrderConfirmed | OrderCancelled\n// LegalEvents<\"Delivered\"> → OrderRefunded\n// LegalEvents<\"Cancelled\"> → never\n\nfunction applyEvent<S extends OrderState>(\n  aggregate: OrderAggregate & { state: S },\n  event: LegalEvents<S>       // ← illegal events are compile-time errors\n): OrderAggregate { /* ... */ }\n",
+    "goals": [
+      "Define `TransitionMap` as a mapped type over `OrderState` and provide a `TRANSITIONS` constant that `satisfies` it, preserving literal tuple types.",
+      "Implement `LegalEvents<S>` as a conditional/indexed-access type that resolves to the exact `OrderEvent` sub-union legal from state `S`, making illegal `applyEvent` calls compile-time errors.",
+      "Implement `createOrder`, `applyEvent`, `isTerminal`, and `getEventsByType` with correct generic constraints, type predicates, and immutability — without `any` or unsafe casts.",
+      "Implement `rehydrate` to replay an event log, using `TRANSITIONS` for runtime transition validation and throwing descriptive errors for illegal sequences."
+    ],
+    "hints": [
+      "For `LegalEvents<S>`, index into `typeof TRANSITIONS[S][number]` to get the union of allowed type-string literals, then use `Extract<OrderEvent, { type: ... }>` to narrow to the matching event sub-types.",
+      "Use `satisfies TransitionMap` (not `: TransitionMap`) on `TRANSITIONS` so TypeScript widens to `TransitionMap` for assignability checks but keeps the literal tuple types — this is what makes `typeof TRANSITIONS[S][number]` work.",
+      "In `rehydrate`, you can't track the generic `S` across loop iterations; use `TRANSITIONS[aggregate.state].includes(event.type)` as a runtime guard, then use a single type assertion on the `applyEvent` call (with a comment explaining the safety invariant)."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript Handbook — Mapped Types",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/mapped-types.html"
+      },
+      {
+        "title": "TypeScript Handbook — Conditional Types",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/conditional-types.html"
+      },
+      {
+        "title": "TypeScript Handbook — The `satisfies` Operator",
+        "url": "https://www.typescriptlang.org/docs/handbook/release-notes/typescript-4-9.html#the-satisfies-operator"
+      },
+      {
+        "title": "TypeScript Handbook — Narrowing & Type Predicates",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html#using-type-predicates"
+      }
+    ]
   }
 ]
