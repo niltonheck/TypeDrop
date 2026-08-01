@@ -5793,5 +5793,41 @@
         "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html#using-type-predicates"
       }
     ]
+  },
+  {
+    "date": "2026-08-01",
+    "name": "Typed In-Memory Cache with TTL & Tagged Invalidation",
+    "difficulty": "Medium",
+    "description": "You're building the caching layer for a multi-tenant SaaS dashboard. Data from different domains (users, products, reports) is fetched expensively and must be cached with per-entry TTLs, but operations teams also need to bulk-invalidate all entries belonging to a logical tag (e.g. wipe every \"tenant:acme\" entry at once). The hardest part is keeping the cache fully generic and type-safe across heterogeneous value shapes.",
+    "snippet": "// Key types you'll work with:\n\ntype CacheKey = string & { readonly __brand: \"CacheKey\" };\n\ntype CacheEntry<V> = {\n  value: V;\n  expiresAt: number;\n  tags: ReadonlyArray<string>;\n};\n\ntype CacheResult<V> =\n  | { hit: true;  value: V }\n  | { hit: false; reason: \"missing\" | \"expired\" };\n\n// The main generic interface — Schema maps domain names to value types:\n// e.g. { user: User; product: Product }\n\ninterface CacheStore<Schema extends Record<string, unknown>> {\n  set<K extends keyof Schema>(\n    domain: K, id: string, value: Schema[K],\n    ttlMs: number, tags?: string[]\n  ): CacheKey;\n  get<K extends keyof Schema>(domain: K, id: string): CacheResult<Schema[K]>;\n  invalidate(key: CacheKey): boolean;\n  invalidateTag(tag: string): number;\n  size(): number;\n}",
+    "goals": [
+      "Define a branded `CacheKey` type and implement `toCacheKey` without using `as` or unsafe assertions.",
+      "Implement `createCacheStore<Schema>()` so that `get` returns `CacheResult<Schema[K]>` inferred from the domain key — not `CacheResult<unknown>`.",
+      "Implement TTL expiry in `get` (returning `reason: 'expired'`) and bulk `invalidateTag` that removes all tagged entries and returns the count.",
+      "Implement the `getOrFetch` helper that transparently serves from cache on hit and populates the cache via the async `fetcher` on miss."
+    ],
+    "hints": [
+      "For `toCacheKey` without `as`: give the function an explicit `: CacheKey` return type annotation — TypeScript will accept the assignment because the brand is structurally added by the annotation, not asserted away.",
+      "The backing `Map` can store `CacheEntry<unknown>` internally; the public `get` method casts through the generic `K` constraint (`Schema[K]`) so callers see the correct type without any unsafe escape hatch.",
+      "For `invalidateTag`, iterate `map.entries()` and collect keys to delete in a separate array first — mutating a Map while iterating it is unsafe in some runtimes."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript Handbook — Generics",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/generics.html"
+      },
+      {
+        "title": "TypeScript Handbook — Narrowing (discriminated unions)",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html#discriminated-unions"
+      },
+      {
+        "title": "TypeScript Handbook — keyof & Indexed Access Types",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/indexed-access-types.html"
+      },
+      {
+        "title": "MDN — Map (iterating & mutating)",
+        "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Map"
+      }
+    ]
   }
 ]
