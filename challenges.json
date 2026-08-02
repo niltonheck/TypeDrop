@@ -5829,5 +5829,41 @@
         "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Map"
       }
     ]
+  },
+  {
+    "date": "2026-08-02",
+    "name": "Typed GroupBy & Aggregation Pipeline",
+    "difficulty": "Easy",
+    "description": "You're building the reporting layer for a small e-commerce analytics dashboard. Raw order records arrive as a flat array and must be grouped by an arbitrary key, then reduced into a typed summary — all without losing type information or reaching for `any`.",
+    "snippet": "interface Order {\n  id: string;\n  customerId: string;\n  region: \"NA\" | \"EU\" | \"APAC\";\n  status: \"pending\" | \"fulfilled\" | \"cancelled\";\n  amountUsd: number;\n  itemCount: number;\n}\n\ninterface OrderSummary {\n  count: number;\n  totalAmountUsd: number;\n  averageAmountUsd: number;\n  totalItemCount: number;\n  orderIds: string[];\n}\n\n// Helper type — your job to define this:\ntype StringKeys<T> = never; // TODO\n\n// The three functions you must implement:\nfunction groupBy<T>(items: T[], keyFn: (item: T) => string): Record<string, T[]>;\n\nfunction summariseGroup(orders: Order[]): OrderSummary;\n\nfunction buildReport<K extends StringKeys<Order>>(\n  orders: Order[],\n  groupKey: K        // only string-valued keys of Order are accepted\n): Record<string, OrderSummary>;\n",
+    "goals": [
+      "Implement a generic `groupBy` that groups any array by a string key function, preserving item order.",
+      "Implement `summariseGroup` that reduces an array of Orders into a fully-typed `OrderSummary`, handling the empty-array edge case.",
+      "Define the `StringKeys<T>` helper type that resolves to only the keys of `T` whose value type is `string`.",
+      "Implement `buildReport` using `StringKeys<Order>` to reject non-string keys at compile time, composing `groupBy` and `summariseGroup` internally."
+    ],
+    "hints": [
+      "For `StringKeys<T>`, think about mapped types combined with `keyof` — you want to keep only those keys `K` where `T[K]` extends `string`.",
+      "In `summariseGroup`, a single `reduce` pass can accumulate all fields at once — no need for multiple iterations.",
+      "`buildReport` can call `groupBy(orders, o => o[groupKey])` — TypeScript will accept this once `K extends StringKeys<Order>` guarantees the value is a string."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript Handbook — Mapped Types",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/mapped-types.html"
+      },
+      {
+        "title": "TypeScript Handbook — Generics",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/generics.html"
+      },
+      {
+        "title": "TypeScript Handbook — keyof Type Operator",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/keyof-types.html"
+      },
+      {
+        "title": "MDN — Array.prototype.reduce()",
+        "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/reduce"
+      }
+    ]
   }
 ]
