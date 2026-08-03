@@ -5865,5 +5865,41 @@
         "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/reduce"
       }
     ]
+  },
+  {
+    "date": "2026-08-03",
+    "name": "Typed Concurrent Task Scheduler with Priority & Retry",
+    "difficulty": "Hard",
+    "description": "You're building the background job engine for a data-pipeline platform. Tasks arrive with priorities, concurrency slots are limited, and flaky tasks must be retried with exponential back-off — all while the scheduler exposes a strongly-typed, generic result stream so callers never lose track of which task produced which outcome.",
+    "snippet": "// Key types & main factory signature\n\nexport type TaskId = string & { readonly __brand: \"TaskId\" };\nexport type Priority = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10;\n\nexport type RetryPolicy =\n  | { kind: \"none\" }\n  | { kind: \"fixed\"; maxAttempts: number; delayMs: number }\n  | { kind: \"exponential\"; maxAttempts: number; baseDelayMs: number; maxDelayMs: number };\n\nexport interface Task<T> {\n  readonly id: TaskId;\n  readonly priority: Priority;\n  readonly retry: RetryPolicy;\n  readonly work: (attempt: number) => Promise<T>;\n}\n\nexport type TaskResult<T> =\n  | { status: \"fulfilled\"; id: TaskId; value: T;      attempts: number }\n  | { status: \"rejected\";  id: TaskId; reason: unknown; attempts: number };\n\n// Scheduler factory — implement this\nexport function createScheduler(config: SchedulerConfig): Scheduler { ... }\n\n// Phantom-typed fluent builder — build() only appears after\n// withPriority() AND withWork() have both been called\nexport function taskBuilder<T>(): TaskBuilder<T, { hasPriority: false; hasWork: false }> { ... }",
+    "goals": [
+      "Implement `createScheduler` so it runs tasks with correct concurrency limits, priority ordering (desc), and all three retry policies (none / fixed / exponential back-off).",
+      "Make `globalTimeoutMs` race against the work loop and settle every pending or in-flight task as rejected with a `TimeoutError`.",
+      "Implement `extractFulfilled<T>` so that a user-supplied type guard narrows `unknown` results to `T[]` with no unsafe casts.",
+      "Implement the phantom-type `taskBuilder<T>()` fluent API so that calling `.build()` is a compile-time error unless both `.withPriority()` and `.withWork()` have been called in the chain."
+    ],
+    "hints": [
+      "For the concurrency loop, maintain a `running` counter and a `next()` function that dequeues the highest-priority task and starts it only when `running < config.concurrency`; call `next()` again each time a task slot frees up.",
+      "For `globalTimeoutMs`, create a single `Promise<never>` that rejects with `TimeoutError` after the timeout, then `Promise.race` it against each individual task's work promise inside your retry loop — abort early and mark remaining queued tasks rejected if the race fires.",
+      "For the phantom-type builder, store state in a plain object literal and cast the return type of each `with*` method to the narrower `TaskBuilder<T, S & { hasPriority: true }>` intersection — the trick is that `build` lives on the *type* but the runtime object always has it; TypeScript simply hides it until the state constraint is met."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript Handbook — Conditional Types",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/conditional-types.html"
+      },
+      {
+        "title": "TypeScript Handbook — Generics",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/generics.html"
+      },
+      {
+        "title": "MDN — Promise.race()",
+        "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise/race"
+      },
+      {
+        "title": "TypeScript Deep Dive — Branded Types",
+        "url": "https://basarat.gitbook.io/typescript/main-1/nominaltyping"
+      }
+    ]
   }
 ]
