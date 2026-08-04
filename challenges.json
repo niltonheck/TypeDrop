@@ -5901,5 +5901,41 @@
         "url": "https://basarat.gitbook.io/typescript/main-1/nominaltyping"
       }
     ]
+  },
+  {
+    "date": "2026-08-04",
+    "name": "Typed Middleware Pipeline with Context Narrowing",
+    "difficulty": "Medium",
+    "description": "You're building the request-processing core for an HTTP API gateway. Each incoming request passes through a chain of middleware functions that progressively enrich a shared context object — attaching a parsed auth token, validated body, rate-limit metadata, and more — before reaching the final route handler. The hardest part is making TypeScript track exactly which properties have been added to the context at each stage, so the final handler only compiles when all required enrichments are present.",
+    "snippet": "// Core types — understand these before implementing\n\ninterface BaseContext {\n  requestId: string;\n  method: \"GET\" | \"POST\" | \"PUT\" | \"DELETE\" | \"PATCH\";\n  path: string;\n  headers: Record<string, string>;\n  startedAt: number;\n}\n\ntype MiddlewareResult<TCtx> =\n  | { ok: true; ctx: TCtx }\n  | { ok: false; status: number; message: string };\n\n// A middleware widens the context: output must extend input\ntype Middleware<TIn, TOut extends TIn> =\n  (ctx: TIn) => Promise<MiddlewareResult<TOut>>;\n\n// Pipeline threads types through each stage\ndeclare function createPipeline<T0 extends BaseContext, T1 extends T0, T2 extends T1>(\n  m0: Middleware<T0, T1>,\n  m1: Middleware<T1, T2>,\n): { run: (ctx: T0) => Promise<MiddlewareResult<T2>> };\n",
+    "goals": [
+      "Define and use the `Middleware<TIn, TOut>` generic type so each stage's output type flows into the next stage's input type.",
+      "Implement `createPipeline` with overloads for 1–4 middleware that thread the accumulated context type through the chain and short-circuit on the first failure.",
+      "Implement the four middleware factories (`makeAuthMiddleware`, `makeBodyParserMiddleware`, `makeBodyValidatorMiddleware`, `makeRateLimitMiddleware`) using bounded generics and intersection types to widen the context.",
+      "Implement `makeHandler` to wrap a pipeline and a typed handler function, returning a unified `HandlerResponse<TResponse>` discriminated union."
+    ],
+    "hints": [
+      "Each middleware factory should return `{ ...ctx, <newField>: value }` — TypeScript will infer the intersection type `TIn & AuthContext` from the spread if your return type annotation is correct.",
+      "For `createPipeline`'s implementation body, cast the rest parameter to `Middleware<BaseContext, BaseContext>[]` — the overloads above it provide precise types to callers; the implementation just needs to compile.",
+      "Use `result.ok` as a discriminant to narrow `MiddlewareResult<T>` — after `if (!result.ok) return result`, TypeScript knows the happy path has `result.ctx`."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript Handbook — Function Overloads",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/functions.html#function-overloads"
+      },
+      {
+        "title": "TypeScript Handbook — Intersection Types",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/objects.html#intersection-types"
+      },
+      {
+        "title": "TypeScript Handbook — Generic Constraints",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/generics.html#generic-constraints"
+      },
+      {
+        "title": "TypeScript Handbook — Narrowing (Discriminated Unions)",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html#discriminated-unions"
+      }
+    ]
   }
 ]

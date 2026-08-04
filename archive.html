@@ -32,6 +32,13 @@
         </thead>
         <tbody>
         <tr>
+          <td>2026-08-04</td>
+          <td><span class="badge medium">Medium</span></td>
+          <td>Typed Middleware Pipeline with Context Narrowing</td>
+          <td>You're building the request-processing core for an HTTP API gateway. Each incoming request passes through a chain of middleware functions that progressively enrich a shared context object — attaching a parsed auth token, validated body, rate-limit metadata, and more — before reaching the final route handler. The hardest part is making TypeScript track exactly which properties have been added to the context at each stage, so the final handler only compiles when all required enrichments are present.</td>
+          <td><a href="archive/2026-08-04/typed-middleware-pipeline-with-context-narrowing.html">See</a></td>
+        </tr>
+        <tr>
           <td>2026-08-03</td>
           <td><span class="badge hard">Hard</span></td>
           <td>Typed Concurrent Task Scheduler with Priority &amp; Retry</td>
