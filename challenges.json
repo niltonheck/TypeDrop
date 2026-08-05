@@ -5937,5 +5937,41 @@
         "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html#discriminated-unions"
       }
     ]
+  },
+  {
+    "date": "2026-08-05",
+    "name": "Typed Safe JSON Parser & Result Unwrapper",
+    "difficulty": "Easy",
+    "description": "You're building a lightweight data-ingestion utility for a dashboard that consumes JSON payloads from third-party webhooks. Payloads can be malformed, partially missing required fields, or entirely the wrong shape — so every parse must return a typed `Result<T, ParseError>` instead of throwing, and callers must exhaustively handle both branches.",
+    "snippet": "// Key types — understand these before writing any logic\n\nexport type Ok<T>  = { readonly kind: \"ok\";  readonly value: T };\nexport type Err<E> = { readonly kind: \"err\"; readonly error: E };\nexport type Result<T, E> = Ok<T> | Err<E>;\n\nexport type ParseError =\n  | { readonly kind: \"invalid_json\";  readonly raw: string }\n  | { readonly kind: \"missing_field\"; readonly field: string }\n  | { readonly kind: \"wrong_type\";    readonly field: string; readonly expected: string };\n\nexport interface OrderPayload {\n  readonly orderId: string;\n  readonly customerId: string;\n  readonly totalCents: number;\n  readonly placedAt: string;\n}\n\n// Core functions you must implement:\nexport function safeParseJSON(raw: string): Result<unknown, ParseError> { ... }\nexport function getString(obj: unknown, field: string): Result<string, ParseError> { ... }\nexport function parseOrderPayload(raw: string): Result<OrderPayload, ParseError> { ... }\nexport function unwrapOr<T, E>(result: Result<T, E>, fallback: T): T { ... }\nexport function describeError(error: ParseError): string { ... }",
+    "goals": [
+      "Implement the `ok` and `err` smart constructors and use them consistently so callers never construct `Result` objects by hand.",
+      "Implement `getString` and `getNumber` using `typeof` narrowing on `unknown` — no type assertions allowed.",
+      "Implement `parseOrderPayload` and `parseRefundPayload` with fail-fast error propagation, returning the first `ParseError` encountered.",
+      "Make `describeError` exhaustively handle every `ParseError` variant so TypeScript raises a compile error if a new variant is ever added without updating the function."
+    ],
+    "hints": [
+      "For `getString`/`getNumber`, first check `typeof obj === 'object' && obj !== null` before indexing — TypeScript will narrow `obj` to `object`, then use `field in obj` to confirm the key exists.",
+      "For exhaustiveness in `describeError`, add a `default` branch that assigns `error` to a variable typed `never` — the compiler will error if any variant slips through.",
+      "In `parseOrderPayload`, chain your field extractions imperatively: call `getString(parsed, 'orderId')`, check `.kind === 'err'` and early-return, then move to the next field — this is simpler than monadic `flatMap` for a first pass."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript Handbook — Narrowing",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html"
+      },
+      {
+        "title": "TypeScript Handbook — Discriminated Unions",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html#discriminated-unions"
+      },
+      {
+        "title": "TypeScript Handbook — Generics",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/generics.html"
+      },
+      {
+        "title": "MDN — JSON.parse",
+        "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/JSON/parse"
+      }
+    ]
   }
 ]
