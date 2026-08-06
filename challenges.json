@@ -5973,5 +5973,41 @@
         "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/JSON/parse"
       }
     ]
+  },
+  {
+    "date": "2026-08-06",
+    "name": "Typed Paginated API Client with Cursor-Based Iteration",
+    "difficulty": "Medium",
+    "description": "You're building the data-fetching layer for an admin dashboard that consumes a paginated REST API. Responses arrive in cursor-based pages, and the client must lazily iterate through all pages, accumulate typed results, and surface per-page errors as a typed `Result<T, FetchError>` — never throwing, and never losing the shape of the resource being fetched.",
+    "snippet": "// Core types you must define and implement:\n\ninterface Page<T> {\n  items: T[];\n  nextCursor: string | null;\n  total: number;\n}\n\ntype Result<T, E> =\n  | { tag: \"ok\"; value: T }\n  | { tag: \"err\"; error: E };\n\ntype FetchError =\n  | { kind: \"network\"; message: string }\n  | { kind: \"http\"; status: number; body: string }\n  | { kind: \"parse\"; raw: string };\n\ntype PageFetcher<T> = (cursor: string | null) => Promise<Result<Page<T>, FetchError>>;\n\ninterface PageOutcome<T> {\n  result: Result<Page<T>, FetchError>;\n  pageIndex: number;\n  cursorUsed: string | null;\n}\n\n// Main function you must implement:\nasync function* fetchPages<T>(\n  config: PaginatedClientConfig<T>\n): AsyncGenerator<PageOutcome<T>, void, unknown> { /* ... */ }\n",
+    "goals": [
+      "Define a discriminated Result<T,E> union and a FetchError variant union with three error kinds.",
+      "Implement the fetchPages<T> async generator that walks a cursor chain, respects maxPages and AbortSignal, and yields a typed PageOutcome<T> for every fetch attempt.",
+      "Implement collectAll<T> to drain the generator and accumulate items and errors into a typed summary without ever throwing.",
+      "Define the ExtractOk<R> conditional type that infers and returns the Ok value type from any Result<T,E>."
+    ],
+    "hints": [
+      "For ExtractOk, use `R extends Result<infer T, infer _E> ? T : never` — the `infer` keyword lets you pull T out of the Result structure.",
+      "An async generator function uses `yield` to emit values and `return` to finish; give it the explicit return type `AsyncGenerator<PageOutcome<T>, void, unknown>` so TypeScript validates every yield site.",
+      "To narrow a Result inside collectAll, check `outcome.result.tag === 'ok'` — TypeScript will then know `.value` exists and has type `Page<T>`."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript Handbook — Conditional Types & infer",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/conditional-types.html"
+      },
+      {
+        "title": "TypeScript Handbook — Narrowing (Discriminated Unions)",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html#discriminated-unions"
+      },
+      {
+        "title": "MDN — Async Iterators and Generators",
+        "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/AsyncGenerator"
+      },
+      {
+        "title": "MDN — AbortSignal",
+        "url": "https://developer.mozilla.org/en-US/docs/Web/API/AbortSignal"
+      }
+    ]
   }
 ]
