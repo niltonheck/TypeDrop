@@ -6009,5 +6009,41 @@
         "url": "https://developer.mozilla.org/en-US/docs/Web/API/AbortSignal"
       }
     ]
+  },
+  {
+    "date": "2026-08-08",
+    "name": "Typed Event Emitter with Discriminated Payloads",
+    "difficulty": "Easy",
+    "description": "You're building the notification layer for a real-time collaboration tool. Components fire strongly-typed domain events (user joined, document edited, cursor moved) and listeners must only receive the exact payload shape for the event they subscribed to — no casting, no `any`.",
+    "snippet": "// Key types you'll define and implement:\n\nexport interface EventMap {\n  \"user:joined\": { userId: string; roomId: string; timestamp: number };\n  \"doc:edited\":  { docId: string; delta: string; authorId: string };\n  \"cursor:moved\": { userId: string; x: number; y: number };\n}\n\nexport type Listener<E extends EventMap, K extends keyof E> = /* TODO */ never;\n\nexport class TypedEmitter<E extends EventMap> {\n  on<K extends keyof E>(event: K, listener: Listener<E, K>): void { /* TODO */ }\n  off<K extends keyof E>(event: K, listener: Listener<E, K>): void { /* TODO */ }\n  emit<K extends keyof E>(event: K, payload: E[K]): void { /* TODO */ }\n  once<K extends keyof E>(event: K, listener: Listener<E, K>): void { /* TODO */ }\n}\n\nexport function createRoomEmitter(): TypedEmitter<EventMap> { /* TODO */ }\n",
+    "goals": [
+      "Define an `EventMap` interface that binds three event name literals to their distinct payload shapes.",
+      "Implement the `Listener<E, K>` generic type alias so callbacks are constrained to exactly `E[K]`.",
+      "Build the `TypedEmitter<E>` class with `on`, `off`, `emit`, and `once` methods that preserve full payload types.",
+      "Export a `createRoomEmitter` factory with an explicit `TypedEmitter<EventMap>` return type annotation."
+    ],
+    "hints": [
+      "An indexed access type like `E[K]` is the key to connecting an event name to its payload — use it in both the `Listener` alias and the `emit` signature.",
+      "For internal storage, a `Map<keyof E, Array<Listener<E, keyof E>>>` works, but you may need a small cast-free trick: store each bucket as `Set<Function>` keyed by the event string — think about why `Map<K, Set<Listener<E,K>>>` is tricky with a single Map and how to work around it.",
+      "`once` can be implemented entirely in terms of `on` and `off` — wrap the user's listener in a new closure that calls `off` on itself before invoking the original."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript Handbook — Generics",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/generics.html"
+      },
+      {
+        "title": "TypeScript Handbook — Indexed Access Types",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/indexed-access-types.html"
+      },
+      {
+        "title": "TypeScript Handbook — keyof Type Operator",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/keyof-types.html"
+      },
+      {
+        "title": "MDN — EventTarget (real-world inspiration)",
+        "url": "https://developer.mozilla.org/en-US/docs/Web/API/EventTarget"
+      }
+    ]
   }
 ]
