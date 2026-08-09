@@ -6045,5 +6045,41 @@
         "url": "https://developer.mozilla.org/en-US/docs/Web/API/EventTarget"
       }
     ]
+  },
+  {
+    "date": "2026-08-09",
+    "name": "Typed In-Memory LRU Cache with TTL & Typed Eviction Events",
+    "difficulty": "Medium",
+    "description": "You're building a client-side caching layer for a dashboard that fetches expensive computed metrics from a backend. The cache must evict the least-recently-used entries when it hits capacity, expire entries after a configurable TTL, and emit strongly-typed eviction events so callers can react (e.g. log, re-fetch, or update UI) without casting.",
+    "snippet": "export type EvictionReason = \"expired\" | \"evicted\" | \"deleted\";\n\nexport type EvictionEvent<K, V> =\n  | { reason: \"expired\"; key: K; value: V; expiredAt: number }\n  | { reason: \"evicted\"; key: K; value: V }\n  | { reason: \"deleted\"; key: K; value: V };\n\nexport type EvictionListener<K, V> = (event: EvictionEvent<K, V>) => void;\n\nexport interface LRUCacheOptions {\n  capacity: number;\n  defaultTTL?: number;\n}\n\n// TODO: export const DEFAULT_OPTIONS = { ... } satisfies LRUCacheOptions;\n\nexport class LRUCache<K, V> {\n  constructor(options: LRUCacheOptions) { /* TODO */ }\n  get(key: K): V | undefined { /* TODO */ }\n  set(key: K, value: V, ttl?: number): this { /* TODO */ }\n  delete(key: K): boolean { /* TODO */ }\n  on(listener: EvictionListener<K, V>): () => void { /* TODO */ }\n  get size(): number { /* TODO */ }\n  has(key: K): boolean { /* TODO */ }\n  clear(): void { /* TODO */ }\n}",
+    "goals": [
+      "Implement a generic `LRUCache<K, V>` class that evicts the least-recently-used entry (using a single insertion-ordered `Map`) when the cache reaches its configured capacity.",
+      "Honour per-entry and default TTLs so that an expired `get` returns `undefined`, removes the entry, and fires an `\"expired\"` eviction event.",
+      "Emit strongly-typed `EvictionEvent<K, V>` discriminated-union values to all registered listeners for each of the three eviction reasons: `\"expired\"`, `\"evicted\"`, and `\"deleted\"`.",
+      "Declare `DEFAULT_OPTIONS` using the `satisfies` operator so TypeScript verifies it conforms to `LRUCacheOptions` without widening its inferred type."
+    ],
+    "hints": [
+      "A JavaScript `Map` iterates keys in insertion order — deleting a key and re-inserting it moves it to the end, giving you O(1) LRU tracking without a separate linked list.",
+      "Use `Date.now()` when storing an entry (`expiresAt = Date.now() + ttl`) and again inside `get` to compare; store `null` when there is no expiry.",
+      "Narrow `EvictionEvent<K, V>` by switching on `event.reason` — TypeScript will narrow each branch to the exact variant, ensuring you access only the fields that exist on that variant."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript — Discriminated Unions",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html#discriminated-unions"
+      },
+      {
+        "title": "TypeScript — Generics",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/generics.html"
+      },
+      {
+        "title": "TypeScript — `satisfies` operator",
+        "url": "https://www.typescriptlang.org/docs/handbook/release-notes/typescript-4-9.html#the-satisfies-operator"
+      },
+      {
+        "title": "MDN — Map (insertion-order iteration)",
+        "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Map"
+      }
+    ]
   }
 ]
