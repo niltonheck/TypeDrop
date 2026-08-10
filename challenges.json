@@ -6081,5 +6081,41 @@
         "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Map"
       }
     ]
+  },
+  {
+    "date": "2026-08-10",
+    "name": "Typed GroupBy Aggregator with Summary Statistics",
+    "difficulty": "Easy",
+    "description": "You're building the reporting layer for a sales dashboard that receives a flat list of transaction records and must group them by a chosen key, then compute per-group summary statistics (count, sum, min, max, average) — all without losing the original record's type.",
+    "snippet": "// Key types at a glance\n\ninterface Transaction {\n  id: string;\n  region: \"north\" | \"south\" | \"east\" | \"west\";\n  category: \"hardware\" | \"software\" | \"services\";\n  salesperson: string;\n  amount: number;   // ← numeric field\n  units: number;    // ← numeric field\n}\n\ninterface NumericSummary {\n  count: number; sum: number;\n  min: number;   max: number; average: number;\n}\n\n// stats only contains keys whose value type is `number`\ntype Group<T, K extends keyof T> = {\n  key: T[K];\n  items: T[];\n  stats: { [F in keyof T as T[F] extends number ? F : never]: NumericSummary };\n};\n\nexport function groupBy<T extends object, K extends keyof T>(\n  records: T[],\n  key: K\n): Record<string, Group<T, K>> { /* TODO */ throw new Error(\"Not implemented\"); }",
+    "goals": [
+      "Implement `groupBy` so records are bucketed by the chosen key field and the return type is exactly `GroupByResult<T, K>`.",
+      "Compute a correct `NumericSummary` (count, sum, min, max, average) for every numeric field on T inside each group's `stats` object.",
+      "Implement the `NumericKeys<T>` utility type using a mapped + conditional type so it resolves to only the number-valued keys of T.",
+      "Ensure the implementation compiles under `strict: true` with no `any`, type assertions, or manual field listings."
+    ],
+    "hints": [
+      "To discover numeric field names at runtime, iterate `Object.keys(records[0])` and filter by `typeof record[field] === 'number'` — mirror what your conditional type does at the type level.",
+      "The `stats` object in `Group<T, K>` uses a mapped type with `as` key remapping — your runtime code must produce an object with the same shape; build it field-by-field in a loop.",
+      "Cast the accumulated `stats` object to the correct type only at the boundary where TypeScript can't infer the shape — but avoid `as any`; prefer a well-typed intermediate `Record<string, NumericSummary>` and a single targeted cast."
+    ],
+    "docs": [
+      {
+        "title": "TS Handbook — Mapped Types",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/mapped-types.html"
+      },
+      {
+        "title": "TS Handbook — Conditional Types",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/conditional-types.html"
+      },
+      {
+        "title": "TS Handbook — Key Remapping via `as`",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/mapped-types.html#key-remapping-via-as"
+      },
+      {
+        "title": "TS Handbook — Generics (Constraints)",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/generics.html#generic-constraints"
+      }
+    ]
   }
 ]
