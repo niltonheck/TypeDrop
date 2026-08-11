@@ -6117,5 +6117,41 @@
         "url": "https://www.typescriptlang.org/docs/handbook/2/generics.html#generic-constraints"
       }
     ]
+  },
+  {
+    "date": "2026-08-11",
+    "name": "Typed Async Task Scheduler with Concurrency Limits & Retry",
+    "difficulty": "Hard",
+    "description": "You're building the job-execution engine for a data-pipeline platform. Hundreds of heterogeneous tasks arrive at once, each with its own input/output type, priority, and retry policy — the scheduler must cap concurrent execution, retry failed tasks with typed error classification, and return a discriminated settlement record for every task so callers can exhaustively handle successes and failures without casting.",
+    "snippet": "\n// Key types at a glance\ntype TaskId = string & { readonly __brand: \"TaskId\" };\n\nexport type RetryPolicy =\n  | { kind: \"none\" }\n  | { kind: \"fixed\";       attempts: number; delayMs: number }\n  | { kind: \"exponential\"; attempts: number; baseDelayMs: number; maxDelayMs: number };\n\nexport interface Task<I, O> {\n  readonly id: TaskId;\n  readonly input: I;\n  readonly priority: \"high\" | \"medium\" | \"low\";\n  readonly timeoutMs: number;\n  readonly retryPolicy: RetryPolicy;\n  readonly execute: (input: I, signal: AbortSignal) => Promise<O>;\n  readonly classify: (thrown: unknown) => TaskError;\n}\n\nexport type TaskSettlement<O> =\n  | { status: \"fulfilled\"; taskId: TaskId; output: O;      attempts: number }\n  | { status: \"rejected\";  taskId: TaskId; error: TaskError; attempts: number };\n\n// The mapped tuple type YOU must implement:\nexport type TaskSettlements<T extends readonly Task<unknown, unknown>[]> = {\n  [K in keyof T]: never; // ← replace never\n};\n\n// Main entry point:\nexport async function runScheduler<const T extends readonly Task<unknown, unknown>[]>(\n  tasks: T,\n  options: SchedulerOptions\n): Promise<TaskSettlements<T>>\n",
+    "goals": [
+      "Implement `TaskSettlements<T>` as a mapped tuple type that uses `infer` to extract the output type `O` from each `Task<I, O>` element, producing `TaskSettlement<O>` per slot.",
+      "Implement `runScheduler` with a slot-based concurrency semaphore, priority sorting (high → medium → low), per-task AbortController timeout racing, and all three retry policy variants (none, fixed, exponential) while never retrying permanent errors.",
+      "Implement `handleSettlement` using `Extract<>` to narrow the discriminated union and dispatch to the correct typed handler without any casting.",
+      "Ensure the returned settlements are in the original task input order (not priority order), and that `attempts` accurately counts how many executions were made per task."
+    ],
+    "hints": [
+      "For `TaskSettlements`, try `T[K] extends Task<infer _I, infer O> ? TaskSettlement<O> : never` inside the mapped type — `const T` preserves tuple indices so `keyof T` iterates positional slots.",
+      "For the concurrency semaphore, maintain a counter of active slots; when a slot frees up, pull the next task off the priority-sorted queue and start it — `Promise` chaining or a recursive drain loop both work.",
+      "For the timeout race, create an `AbortController`, call `controller.abort()` in a `setTimeout`, and `Promise.race([task.execute(input, controller.signal), timeoutPromise])` — make sure to clear the timer on success to avoid leaks."
+    ],
+    "docs": [
+      {
+        "title": "TS Handbook — Conditional Types & infer",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/conditional-types.html"
+      },
+      {
+        "title": "TS Handbook — Mapped Types",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/mapped-types.html"
+      },
+      {
+        "title": "MDN — AbortController",
+        "url": "https://developer.mozilla.org/en-US/docs/Web/API/AbortController"
+      },
+      {
+        "title": "MDN — Promise.allSettled",
+        "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise/allSettled"
+      }
+    ]
   }
 ]
