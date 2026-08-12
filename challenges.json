@@ -6153,5 +6153,41 @@
         "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise/allSettled"
       }
     ]
+  },
+  {
+    "date": "2026-08-12",
+    "name": "Typed Safe JSON Parser with Result & Schema Validation",
+    "difficulty": "Easy",
+    "description": "You're building the data-ingestion layer for a configuration management tool. Raw JSON strings arrive from multiple untrusted sources (files, environment variables, API responses) and must be safely parsed, validated against a known shape, and returned as a typed `Result<T, ParseError>` — never throwing, never widening to `unknown` without a guard.",
+    "snippet": "// Core Result type & error union\ntype Result<T, E> = { ok: true; value: T } | { ok: false; error: E };\n\ntype ParseError =\n  | { kind: \"SyntaxError\";     message: string; raw: string }\n  | { kind: \"ValidationError\"; message: string; field: string };\n\n// Schema descriptor → inferred TS type (your job to implement!)\ntype FieldKind = \"string\" | \"number\" | \"boolean\" | \"string[]\";\n\ntype InferSchema<S extends Record<string, FieldKind>> = {\n  [K in keyof S]: never; // TODO: map each FieldKind to its TS type\n};\n\n// Functions you must implement:\ndeclare function safeParseJSON(raw: string): Result<unknown, ParseError>;\n\ndeclare function validateShape<S extends Record<string, FieldKind>>(\n  value: unknown,\n  schema: S\n): Result<InferSchema<S>, ParseError>;\n\ndeclare function parseAndValidate<S extends Record<string, FieldKind>>(\n  raw: string,\n  schema: S\n): Result<InferSchema<S>, ParseError>;",
+    "goals": [
+      "Implement the `InferSchema<S>` conditional mapped type that converts a schema descriptor object into its corresponding TypeScript type.",
+      "Implement `safeParseJSON` so it wraps `JSON.parse` in a try/catch and always returns a typed `Result` — never throwing.",
+      "Implement `validateShape` to check each field's runtime type against its `FieldKind` descriptor and return a `ValidationError` naming the first failing field.",
+      "Compose both utilities in `parseAndValidate` to form a single safe pipeline that propagates either error kind without losing type information."
+    ],
+    "hints": [
+      "For `InferSchema`, use a mapped type `[K in keyof S]: ...` combined with a conditional type `S[K] extends \"string\" ? string : S[K] extends \"number\" ? number : ...`.",
+      "In `safeParseJSON`, catch the error as `unknown`, then check `instanceof Error` to safely read `.message` before constructing your `SyntaxParseError`.",
+      "In `validateShape`, iterate over `Object.keys(schema)` and use `typeof (obj as Record<string, unknown>)[key]` to check each field — one localised assertion is acceptable inside this function only."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript Handbook — Conditional Types",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/conditional-types.html"
+      },
+      {
+        "title": "TypeScript Handbook — Mapped Types",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/mapped-types.html"
+      },
+      {
+        "title": "TypeScript Handbook — Narrowing",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html"
+      },
+      {
+        "title": "MDN — JSON.parse",
+        "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/JSON/parse"
+      }
+    ]
   }
 ]
