@@ -6189,5 +6189,41 @@
         "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/JSON/parse"
       }
     ]
+  },
+  {
+    "date": "2026-08-13",
+    "name": "Typed Paginated API Client with Cursor-Based Iteration",
+    "difficulty": "Medium",
+    "description": "You're building the data-access layer for an analytics dashboard that streams records from a paginated REST API. The API uses cursor-based pagination, returns heterogeneous resource types, and can fail mid-stream — your client must expose a strongly-typed async generator that yields individual records, handles errors as typed Results, and supports early cancellation via AbortSignal.",
+    "snippet": "interface User { id: number; name: string }\n\ntype Ok<T>  = { ok: true;  value: T };\ntype Err<E> = { ok: false; error: E };\ntype Result<T, E> = Ok<T> | Err<E>;\n\ntype FetchError =\n  | { kind: \"network\"; message: string; retryable: boolean }\n  | { kind: \"parse\";   message: string; raw: string }\n  | { kind: \"abort\";   message: string };\n\ntype Page<T> = {\n  items:       T[];\n  nextCursor:  string | null;\n  totalCount?: number;\n};\n\ntype PaginatedFetchOptions<T, U = T> = {\n  fetcher:      (cursor: string | null, signal: AbortSignal) => Promise<Page<T>>;\n  signal:       AbortSignal;\n  transform?:   (item: T) => U;\n  startCursor?: string | null;\n};\n\nexport async function* paginatedFetch<T, U = T>(\n  options: PaginatedFetchOptions<T, U>\n): AsyncGenerator<Result<U, FetchError>> { /* TODO */ }",
+    "goals": [
+      "Define a discriminated-union Result<T,E> type with Ok/Err variants and a three-way FetchError union identified by a `kind` literal.",
+      "Implement Page<T> and PaginatedFetchOptions<T,U> with a default generic parameter and an optional per-item transform.",
+      "Build the paginatedFetch async generator that handles AbortSignal cancellation, network errors, and cursor advancement — yielding typed Results.",
+      "Implement collectResults to drain the generator into separate values/errors arrays, plus isOk/isErr type-guard functions that correctly narrow the union."
+    ],
+    "hints": [
+      "For the default generic parameter trick in PaginatedFetchOptions, try `transform?: (item: T) => U` — when omitted, the caller gets U = T automatically.",
+      "An async generator is declared with `async function*`; use `yield` inside a `for...of` loop over `page.items`, and check `signal.aborted` before every fetcher call.",
+      "To distinguish an AbortError from a generic network error, check `err instanceof DOMException && err.name === 'AbortError'` inside your catch block."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript Handbook — Generics",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/generics.html"
+      },
+      {
+        "title": "TypeScript Handbook — Conditional Types & infer",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/conditional-types.html"
+      },
+      {
+        "title": "MDN — Async iteration & for-await-of",
+        "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/for-await...of"
+      },
+      {
+        "title": "MDN — AbortController / AbortSignal",
+        "url": "https://developer.mozilla.org/en-US/docs/Web/API/AbortController"
+      }
+    ]
   }
 ]
