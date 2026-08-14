@@ -6225,5 +6225,41 @@
         "url": "https://developer.mozilla.org/en-US/docs/Web/API/AbortController"
       }
     ]
+  },
+  {
+    "date": "2026-08-14",
+    "name": "Typed Middleware Pipeline with Typed Context & Error Boundaries",
+    "difficulty": "Hard",
+    "description": "You're building the request-handling core for an internal API gateway. Every inbound request flows through a chain of middleware — authentication, rate-limiting, validation, transformation — each of which can enrich the shared context object, short-circuit with a typed error, or pass control to the next handler. The pipeline must be fully type-safe: each middleware declares what context properties it *reads* and what it *adds*, the compiler enforces correct ordering, and every short-circuit produces an exhaustively-matchable typed error.",
+    "snippet": "\n// Core types at a glance\n\ndeclare const __brand: unique symbol;\ntype Brand<T, B extends string> = T & { readonly [__brand]: B };\n\nexport type RequestId = Brand<string, \"RequestId\">;\nexport type HttpMethod = \"GET\" | \"POST\" | \"PUT\" | \"PATCH\" | \"DELETE\";\n\nexport type Result<T, E> =\n  | { ok: true;  value: T }\n  | { ok: false; error: E };\n\nexport type PipelineError =\n  | { kind: \"auth\";       message: string; statusCode: 401 | 403 }\n  | { kind: \"rate_limit\"; retryAfterMs: number }\n  | { kind: \"validation\"; fields: string[]; message: string }\n  | { kind: \"upstream\";   cause: unknown;  statusCode: number };\n\n// Middleware<In, Out, FinalOutput>\nexport type Middleware<In, Out, FinalOutput> = (\n  ctx: In,\n  next: (enriched: Out) => Promise<Result<FinalOutput, PipelineError>>\n) => Promise<Result<FinalOutput, PipelineError>>;\n\n// Pipeline — each .use() narrows Ctx to NextCtx\nexport class Pipeline<Ctx, FinalOutput> {\n  use<NextCtx>(mw: Middleware<Ctx, NextCtx, FinalOutput>): Pipeline<NextCtx, FinalOutput> { … }\n  run(terminal: (ctx: Ctx) => Promise<Result<FinalOutput, PipelineError>>): Promise<Result<FinalOutput, PipelineError>> { … }\n}\n",
+    "goals": [
+      "Define the `Result<T,E>` discriminated union and all four `PipelineError` variants so every error kind is exhaustively matchable.",
+      "Implement the `Pipeline<Ctx, FinalOutput>` class so that `.use()` chains middleware and correctly threads the enriched context type through each step, and `.run()` short-circuits on the first `{ ok: false }` result.",
+      "Implement `withAuth`, `withRateLimit`, and `withBodyValidation` middleware factories with correct generic signatures — no `any`, no type assertions.",
+      "Ensure the branded `RequestId` type is created via the `Brand` helper so plain strings are rejected by the compiler wherever `RequestId` is expected."
+    ],
+    "hints": [
+      "For `Pipeline.use()`, store the existing chain as a closure: the new pipeline's internal runner calls the middleware with the old runner as `next`, threading context enrichment automatically.",
+      "The `Middleware<In, Out, FinalOutput>` triple-generic is key — `In` is what you read, `Out` is what you pass to `next`, and `FinalOutput` stays fixed across the whole chain.",
+      "To avoid `as` in `makeRequestId`, use an object spread trick or a helper function that returns `Brand<string, B>` — remember the brand field only exists at the type level (it's a `unique symbol`)."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript Handbook — Conditional & Mapped Types",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/types-from-types.html"
+      },
+      {
+        "title": "TypeScript Handbook — Generics",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/generics.html"
+      },
+      {
+        "title": "TypeScript Handbook — Narrowing & Discriminated Unions",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html#discriminated-unions"
+      },
+      {
+        "title": "TypeScript Deep Dive — Branded Types",
+        "url": "https://basarat.gitbook.io/typescript/main-1/nominaltyping"
+      }
+    ]
   }
 ]

@@ -32,6 +32,13 @@
         </thead>
         <tbody>
         <tr>
+          <td>2026-08-14</td>
+          <td><span class="badge hard">Hard</span></td>
+          <td>Typed Middleware Pipeline with Typed Context &amp; Error Boundaries</td>
+          <td>You're building the request-handling core for an internal API gateway. Every inbound request flows through a chain of middleware — authentication, rate-limiting, validation, transformation — each of which can enrich the shared context object, short-circuit with a typed error, or pass control to the next handler. The pipeline must be fully type-safe: each middleware declares what context properties it *reads* and what it *adds*, the compiler enforces correct ordering, and every short-circuit produces an exhaustively-matchable typed error.</td>
+          <td><a href="archive/2026-08-14/typed-middleware-pipeline-with-typed-context-and-error-boundaries.html">See</a></td>
+        </tr>
+        <tr>
           <td>2026-08-13</td>
           <td><span class="badge medium">Medium</span></td>
           <td>Typed Paginated API Client with Cursor-Based Iteration</td>
