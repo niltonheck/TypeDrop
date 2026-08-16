@@ -6261,5 +6261,41 @@
         "url": "https://basarat.gitbook.io/typescript/main-1/nominaltyping"
       }
     ]
+  },
+  {
+    "date": "2026-08-16",
+    "name": "Typed Event Emitter with Discriminated Payloads",
+    "difficulty": "Medium",
+    "description": "You're building the real-time notification hub for a collaborative document editor. Components across the app subscribe to strongly-typed events (cursor moves, edits, presence changes, errors) — the emitter must guarantee that every listener receives exactly the payload shape its event name promises, with no casting and no missed cases.",
+    "snippet": "// Key types and main class signature\n\nexport interface EventMap {\n  [event: string]: unknown;\n}\n\nexport type Listener<TPayload> = (payload: TPayload) => void;\nexport type Unsubscribe = () => void;\n\nexport interface DocEventMap extends EventMap {\n  cursorMoved:      CursorMovedPayload;\n  textEdited:       TextEditedPayload;\n  presenceChanged:  PresenceChangedPayload;\n  docError:         DocErrorPayload;\n}\n\nexport class TypedEmitter<TMap extends EventMap> {\n  emit<K extends keyof TMap>(event: K, payload: TMap[K]): void;\n  on<K extends keyof TMap>(event: K, listener: Listener<TMap[K]>): Unsubscribe;\n  once<K extends keyof TMap>(event: K, listener: Listener<TMap[K]>): Unsubscribe;\n  off<K extends keyof TMap>(event: K, listener: Listener<TMap[K]>): void;\n  listenerCount<K extends keyof TMap>(event: K): number;\n}",
+    "goals": [
+      "Implement TypedEmitter<TMap> so that emit, on, once, off, and listenerCount are fully type-safe — the compiler must infer the correct payload type from the event name alone.",
+      "Implement replayLast so that a late subscriber immediately receives the most-recently emitted payload synchronously, while storing the cache on the emitter instance without polluting its public API.",
+      "Implement mergeEmitters so that a single returned emitter transparently re-emits events from all source emitters and can also be used as a standalone emitter.",
+      "Ensure the entire file compiles under strict: true with zero use of `any`, `as`, or type assertions."
+    ],
+    "hints": [
+      "For the listener store, a `Map<keyof TMap, Set<Listener<...>>>` won't directly work because of the index type mismatch — consider how `Map<string | symbol, Set<Listener<unknown>>>` combined with a cast-free accessor helper can satisfy the compiler.",
+      "For `replayLast`, a `WeakMap<TypedEmitter<TMap>, Map<K, TMap[K]>>` keyed on the emitter instance lets you store last-payload state without touching the class or using `any`.",
+      "For `mergeEmitters`, subscribe to every event key of each source emitter — you'll need to iterate `Object.keys` or keep a known set of keys, then forward each emission to the merged emitter via its own `emit`."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript Handbook — Generics",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/generics.html"
+      },
+      {
+        "title": "TypeScript Handbook — Mapped Types",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/mapped-types.html"
+      },
+      {
+        "title": "TypeScript Handbook — keyof Type Operator",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/keyof-types.html"
+      },
+      {
+        "title": "MDN — WeakMap",
+        "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/WeakMap"
+      }
+    ]
   }
 ]
