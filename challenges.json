@@ -6297,5 +6297,41 @@
         "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/WeakMap"
       }
     ]
+  },
+  {
+    "date": "2026-08-17",
+    "name": "Typed LRU Cache with TTL, Generics & Branded Keys",
+    "difficulty": "Hard",
+    "description": "You're building the in-process caching layer for a multi-tenant SaaS platform. Every service — user sessions, feature flags, rate-limit counters — needs a cache that evicts the least-recently-used entry when full, respects per-entry TTLs, and enforces that keys are branded strings so callers can't accidentally mix cache namespaces at the type level.",
+    "snippet": "// Key types & cache result — core of the challenge\ntype Brand<Base, Tag> = Base & { readonly __tag: Tag };\n\ntype SessionKey     = Brand<string, \"SessionKey\">;\ntype FeatureFlagKey = Brand<string, \"FeatureFlagKey\">;\n\ntype CacheResult<V> =\n  | { status: \"hit\";     value: V      }\n  | { status: \"miss\"                   }\n  | { status: \"expired\"; key: string   };\n\ninterface CacheEntry<V> {\n  value:     V;\n  expiresAt: number | null;\n  prev:      CacheEntry<V> | null;\n  next:      CacheEntry<V> | null;\n}\n\n// Main class signature — your task is to implement it\nclass LRUCache<K extends string, V> {\n  constructor(options: LRUCacheOptions<K, V>) { /* … */ }\n  set(key: K, value: V, opts?: SetOptions): void { /* … */ }\n  get(key: K): CacheResult<V>              { /* … */ }\n  delete(key: K): boolean                  { /* … */ }\n  peek(key: K): V | undefined              { /* … */ }\n  stats(): Readonly<CacheStats>            { /* … */ }\n  size(): number                           { /* … */ }\n}",
+    "goals": [
+      "Define `Brand<Base, Tag>` and three concrete branded key types (`SessionKey`, `FeatureFlagKey`, `RateLimitKey`) so the compiler rejects mixing cache namespaces.",
+      "Implement `LRUCache<K extends string, V>` with O(1) doubly-linked-list eviction, per-entry TTL, and a `CacheResult<V>` discriminated union returned from `get()`.",
+      "Track hit, miss, expiration, and eviction counters in `CacheStats` and expose them via a `Readonly` snapshot from `stats()`.",
+      "Implement `createNamespacedCaches()` with a mapped return type that preserves the branded key type and value type inferred from each entry in the options map."
+    ],
+    "hints": [
+      "For `Brand<Base, Tag>`, intersect `Base` with `{ readonly __tag: Tag }` — the `__tag` property never exists at runtime but makes each brand structurally distinct to the compiler.",
+      "For the doubly-linked-list, maintain a sentinel `head` (most-recent) and `tail` (least-recent) node; `moveToHead` and `removeTail` give you O(1) `get` and eviction.",
+      "For `createNamespacedCaches`, look at how mapped types can index into `M` with `M[NS]` and use helper types to extract the `K` and `V` type parameters from an `LRUCacheOptions<K, V>`."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript Handbook — Mapped Types",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/mapped-types.html"
+      },
+      {
+        "title": "TypeScript Handbook — Generics",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/generics.html"
+      },
+      {
+        "title": "TypeScript Handbook — Narrowing & Discriminated Unions",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html#discriminated-unions"
+      },
+      {
+        "title": "TypeScript Deep Dive — Nominal Typing / Branded Types",
+        "url": "https://basarat.gitbook.io/typescript/main-1/nominaltyping"
+      }
+    ]
   }
 ]
