@@ -6333,5 +6333,41 @@
         "url": "https://basarat.gitbook.io/typescript/main-1/nominaltyping"
       }
     ]
+  },
+  {
+    "date": "2026-08-18",
+    "name": "Typed Concurrent Task Scheduler with Priority Queues & Result Aggregation",
+    "difficulty": "Medium",
+    "description": "You're building the background job runner for a data-pipeline platform. Tasks arrive with different priorities and async work functions; the scheduler must run at most N tasks concurrently, drain them in priority order, and return a strongly-typed aggregated report — successes, failures, and per-task durations — without ever widening to `unknown` unsafely or swallowing errors silently.",
+    "snippet": "\n// Key types & main function signature at a glance\n\ntype Priority = \"critical\" | \"high\" | \"normal\" | \"low\";\n\ninterface Task<T> {\n  readonly id: string;\n  readonly priority: Priority;\n  readonly run: () => Promise<T>;\n}\n\ntype TaskSuccess<T> = { status: \"fulfilled\"; id: string; priority: Priority;\n                        value: T; durationMs: number };\ntype TaskFailure    = { status: \"rejected\";  id: string; priority: Priority;\n                        reason: unknown; durationMs: number };\ntype TaskResult<T>  = TaskSuccess<T> | TaskFailure;\n\ntype SchedulerReport<T> = {\n  readonly results:          ReadonlyArray<TaskResult<T>>;\n  readonly totalDurationMs:  number;\n  readonly successCount:     number;\n  readonly failureCount:     number;\n  readonly topResult:        TaskSuccess<T> | null;\n};\n\n// Branded positive-integer concurrency limit\ntype Concurrency = Brand<number, \"Concurrency\">;\n\nasync function runScheduler<T>(\n  tasks: ReadonlyArray<Task<T>>,\n  concurrency: Concurrency\n): Promise<SchedulerReport<T>>\n",
+    "goals": [
+      "Implement `makeConcurrency` to produce a branded `Concurrency` type, throwing `TypeError` for invalid inputs.",
+      "Implement `sortByPriority` to return a stable-sorted copy of tasks using `PRIORITY_WEIGHT`, without mutating the input.",
+      "Implement the `isSuccess` type predicate to correctly narrow `TaskResult<T>` to `TaskSuccess<T>`.",
+      "Implement `runScheduler` to execute tasks concurrently up to the given limit, in priority order, capturing both successes and failures, and returning a fully-typed `SchedulerReport<T>` with correct `topResult` tie-breaking."
+    ],
+    "hints": [
+      "For the concurrency pool in `runScheduler`, maintain a Set of in-flight Promises and use a recursive 'start-next' helper — each time a slot frees up, pull the next task from the sorted queue.",
+      "To satisfy requirement 4h (original-index tie-breaking for `topResult`), tag each task with its original array index before sorting, then use that index when comparing successes of equal priority.",
+      "A type predicate function has the return type `result is TaskSuccess<T>` — the compiler will use this to automatically narrow the union inside `if` blocks and `.filter()` calls."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript — Branded / Nominal Types pattern",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/template-literal-types.html"
+      },
+      {
+        "title": "TypeScript — Type Predicates (Narrowing)",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html#using-type-predicates"
+      },
+      {
+        "title": "TypeScript — satisfies operator",
+        "url": "https://www.typescriptlang.org/docs/handbook/release-notes/typescript-4-9.html#the-satisfies-operator"
+      },
+      {
+        "title": "MDN — Promise: concurrency methods",
+        "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise#promise_concurrency"
+      }
+    ]
   }
 ]
