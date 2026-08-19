@@ -6369,5 +6369,41 @@
         "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise#promise_concurrency"
       }
     ]
+  },
+  {
+    "date": "2026-08-19",
+    "name": "Typed Schema-Validated API Response Normalizer with Result Monad & Conditional Types",
+    "difficulty": "Hard",
+    "description": "You're building the ingestion layer for a multi-source data warehouse. Raw API responses arrive as `unknown` JSON blobs from heterogeneous vendors — each with its own shape, required fields, and numeric/string quirks. Your normalizer must validate, coerce, and reshape each blob into a strongly-typed domain record, surfacing structured, exhaustively-matchable validation errors — all without a single `any` or unsafe cast.",
+    "snippet": "// Key types & main function signatures\n\nexport type Brand<T, B extends string> = T & { readonly __brand: B };\nexport type ISODateString  = Brand<string, \"ISODateString\">;\nexport type PositiveNumber = Brand<number, \"PositiveNumber\">;\nexport type NonEmptyString = Brand<string, \"NonEmptyString\">;\n\nexport type Result<T, E> = { readonly tag: \"ok\"; readonly value: T }\n                         | { readonly tag: \"err\"; readonly error: E };\n\nexport type FieldSchema<T> = {\n  readonly key: string;\n  readonly validate: (raw: unknown) => Result<T, FieldError>;\n};\n\nexport type Schema<R extends Record<string, unknown>> = {\n  [K in keyof R]: FieldSchema<R[K]>;   // ← mapped type to complete\n};\n\n// Normalize a single unknown blob against a schema\nexport function normalize<R extends Record<string, unknown>>(\n  schema: Schema<R>,\n  raw: unknown,\n  source: string\n): Result<R, ValidationError> { /* TODO */ }\n\n// Dispatch to the correct schema by registry key\nexport function normalizeFromRegistry<\n  M extends Record<string, Record<string, unknown>>,\n  K extends keyof M & string\n>(registry: SchemaRegistry<M>, source: K, raw: unknown): Result<M[K], ValidationError> { /* TODO */ }\n\n// Conditional type: extract T from FieldSchema<T>\nexport type NormalizedOutput<S> = /* TODO: conditional + infer */ never;\n",
+    "goals": [
+      "Implement the Result<T,E> monad helpers (ok, err, isOk, isErr) and the three branded primitive validators (nonEmptyString, positiveNumber, isoDateString).",
+      "Implement normalize<R>() so it collects ALL field errors in a single pass rather than short-circuiting on the first failure, returning Ok<R> or Err<ValidationError>.",
+      "Complete the Schema<R> mapped type, the SchemaRegistry<M> generic registry, and normalizeFromRegistry so the return type is inferred as Result<M[K], ValidationError> without any type assertions.",
+      "Define the NormalizedOutput<S> conditional type using infer to extract T from FieldSchema<T>, and wire up orderSchema and userSchema with the satisfies constraint."
+    ],
+    "hints": [
+      "For branded types, you can 'stamp' a value at runtime with `value as Brand<typeof value, 'X'>` — but only inside the validator that has already confirmed the value is safe.",
+      "In normalize(), iterate over Object.keys(schema) and accumulate FieldError[] before deciding whether to return ok or err — the tricky part is assembling the result record with the right type.",
+      "For NormalizedOutput<S>, think: `S extends FieldSchema<infer T> ? T : never` — the conditional type pattern mirrors how zod's z.infer works."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript Handbook: Conditional Types & infer",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/conditional-types.html"
+      },
+      {
+        "title": "TypeScript Handbook: Mapped Types",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/mapped-types.html"
+      },
+      {
+        "title": "TypeScript Handbook: Narrowing",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html"
+      },
+      {
+        "title": "TypeScript 5.x: satisfies operator",
+        "url": "https://www.typescriptlang.org/docs/handbook/release-notes/typescript-4-9.html#the-satisfies-operator"
+      }
+    ]
   }
 ]
