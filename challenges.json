@@ -6405,5 +6405,41 @@
         "url": "https://www.typescriptlang.org/docs/handbook/release-notes/typescript-4-9.html#the-satisfies-operator"
       }
     ]
+  },
+  {
+    "date": "2026-08-20",
+    "name": "Typed groupBy & Aggregation with Mapped Types",
+    "difficulty": "Easy",
+    "description": "You're building the analytics dashboard for a small e-commerce platform. Sales records stream in from the backend and you need to group them by a chosen key, then compute per-group summaries — all without losing type information about which keys are valid grouping fields.",
+    "snippet": "export type Category = \"electronics\" | \"clothing\" | \"books\" | \"home\";\nexport type Region   = \"north\" | \"south\" | \"east\" | \"west\";\n\nexport interface SaleRecord {\n  id: string;\n  category: Category;\n  region:   Region;\n  amount:   number;\n  quantity: number;\n}\n\nexport interface GroupSummary {\n  totalAmount: number;\n  totalQuantity: number;\n  count: number;\n  avgAmount: number;\n}\n\n// Keys of SaleRecord whose value is a string — derived via conditional type\nexport type GroupableKey = { [K in keyof SaleRecord]: SaleRecord[K] extends string ? K : never }[keyof SaleRecord];\n\n// Mapped type: GroupedSummary<\"category\"> ≡ Record<Category, GroupSummary>\nexport type GroupedSummary<K extends GroupableKey> = Record<SaleRecord[K], GroupSummary>;\n\nexport function groupAndSummarise<K extends GroupableKey>(\n  records: SaleRecord[],\n  key: K,\n  allValues: ReadonlyArray<SaleRecord[K]>,\n): GroupedSummary<K> { throw new Error(\"Not implemented\"); }\n\nexport function topGroup<K extends GroupableKey>(\n  summary: GroupedSummary<K>,\n): SaleRecord[K] { throw new Error(\"Not implemented\"); }",
+    "goals": [
+      "Define `GroupableKey` using a conditional mapped type that automatically filters SaleRecord keys whose values are strings.",
+      "Define `GroupedSummary<K>` as a mapped/Record type whose keys are exactly the value union of `SaleRecord[K]`.",
+      "Implement `groupAndSummarise` generically so it groups records, computes per-group summaries, and pre-populates zero entries for every possible group value.",
+      "Implement `topGroup` returning the highest-`totalAmount` group key typed as `SaleRecord[K]`, not `string`."
+    ],
+    "hints": [
+      "For `GroupableKey`, map over `keyof SaleRecord`, emit `K` when `SaleRecord[K] extends string`, emit `never` otherwise, then index the result with `[keyof SaleRecord]`.",
+      "For `GroupedSummary<K>`, think of it as `Record<SaleRecord[K], GroupSummary>` — the key of the Record is an indexed-access type.",
+      "In `topGroup`, `Object.entries` returns `[string, GroupSummary][]`; you'll need one cast at the return site from `string` to `SaleRecord[K]` — this is the one place a cast is acceptable since the keys come from the Record itself."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript Handbook – Conditional Types",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/conditional-types.html"
+      },
+      {
+        "title": "TypeScript Handbook – Mapped Types",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/mapped-types.html"
+      },
+      {
+        "title": "TypeScript Handbook – Indexed Access Types",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/indexed-access-types.html"
+      },
+      {
+        "title": "TypeScript Utility Types – Record<K, V>",
+        "url": "https://www.typescriptlang.org/docs/handbook/utility-types.html#recordkeys-type"
+      }
+    ]
   }
 ]
