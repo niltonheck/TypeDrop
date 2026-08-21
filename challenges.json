@@ -6441,5 +6441,41 @@
         "url": "https://www.typescriptlang.org/docs/handbook/utility-types.html#recordkeys-type"
       }
     ]
+  },
+  {
+    "date": "2026-08-21",
+    "name": "Typed Paginated API Client with Cursor-Based Iteration & Result Monad",
+    "difficulty": "Medium",
+    "description": "You're building the data-fetching layer for a feed-based social platform. Timelines, notifications, and search results all arrive in cursor-paginated API responses — your client must iterate pages lazily, surface typed success/failure results per page, and aggregate items across pages into a single strongly-typed collection without ever widening to `unknown` unsafely.",
+    "snippet": "// Key types & main function signature\n\ntype Ok<T>  = { readonly status: \"ok\";  readonly value: T };\ntype Err<E> = { readonly status: \"err\"; readonly error: E };\ntype Result<T, E> = Ok<T> | Err<E>;\n\ntype Cursor = string & { readonly __cursorBrand: unique symbol };\n\ntype Page<T> = {\n  readonly items: ReadonlyArray<T>;\n  readonly nextCursor: string | null;\n  readonly totalCount?: number;\n};\n\ntype FetchError = {\n  readonly kind: \"network\" | \"timeout\" | \"parse\" | \"auth\";\n  readonly message: string;\n  readonly retryable: boolean;\n};\n\ntype PageFetcher<T> = (\n  cursor: Cursor | undefined\n) => Promise<Result<Page<T>, FetchError>>;\n\n// Sequentially drain all pages and aggregate results\nasync function fetchAllPages<T>(\n  fetcher: PageFetcher<T>\n): Promise<FetchAllResult<T>> { /* TODO */ }\n",
+    "goals": [
+      "Implement the Result<T,E> monad constructors (ok, err) and the isOk type guard so it correctly narrows the discriminated union.",
+      "Define the Cursor branded type and makeCursor factory so plain strings are never assignable to Cursor without an explicit call.",
+      "Implement fetchAllPages<T> to iterate pages sequentially, stop on the first error, and return a FetchAllResult<T> with partial items, page count, totalCount, and the error.",
+      "Implement mapFetcher and withRetry as generic higher-order functions that transform or wrap a PageFetcher<T> without losing type information or swallowing errors."
+    ],
+    "hints": [
+      "A branded type is just an intersection with a unique phantom property — `unique symbol` as a property type is the idiomatic TS approach.",
+      "For withRetry, a simple recursive or loop-based approach works — check `FetchError.retryable` before deciding to recurse.",
+      "mapFetcher only needs to touch the `items` array inside an Ok<Page<A>> — forward Err results untouched by checking isOk first."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript Handbook — Narrowing & Type Guards",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html"
+      },
+      {
+        "title": "TypeScript Handbook — Generics",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/generics.html"
+      },
+      {
+        "title": "TypeScript Handbook — Symbols (unique symbol)",
+        "url": "https://www.typescriptlang.org/docs/handbook/symbols.html"
+      },
+      {
+        "title": "MDN — Using Promises (async iteration patterns)",
+        "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Using_promises"
+      }
+    ]
   }
 ]
