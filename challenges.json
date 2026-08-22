@@ -6477,5 +6477,41 @@
         "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Using_promises"
       }
     ]
+  },
+  {
+    "date": "2026-08-22",
+    "name": "Typed Event Emitter with Discriminated Union Payloads",
+    "difficulty": "Easy",
+    "description": "You're building the real-time notification layer for a project management app. UI components subscribe to named events (task assigned, comment posted, status changed), and every listener must receive a payload that is already narrowed to the correct shape — no casting, no guessing.",
+    "snippet": "// Key types you must define:\n\ntype AppEvent =\n  | TaskAssignedEvent\n  | CommentPostedEvent\n  | StatusChangedEvent;\n\n// EventMap maps each discriminant string → its full event shape:\n// { \"task:assigned\": TaskAssignedEvent; \"comment:posted\": ...; ... }\ntype EventMap = { [E in AppEvent as E[\"type\"]]: E };\n\ntype Listener<K extends keyof EventMap> = (event: EventMap[K]) => void;\n\n// Main class you must implement:\nclass TypedEventEmitter {\n  on<K extends keyof EventMap>(event: K, listener: Listener<K>): void;\n  off<K extends keyof EventMap>(event: K, listener: Listener<K>): void;\n  emit<K extends keyof EventMap>(event: EventMap[K]): void;\n  listenerCount(event: keyof EventMap): number;\n}",
+    "goals": [
+      "Define `AppEvent` as a discriminated union and derive `EventMap` automatically using a distributive mapped type — no hand-written object literal.",
+      "Type `Listener<K>` so that each callback receives a payload already narrowed to the specific event shape, enforced by the generic parameter.",
+      "Implement `on`, `off`, and `emit` with bounded generics so the compiler rejects mismatched event-name / payload pairs at call sites.",
+      "Implement `listenerCount` and ensure `off` correctly removes only the first matching listener reference."
+    ],
+    "hints": [
+      "For `EventMap`, look into key-remapping in mapped types: `{ [E in AppEvent as E[\"type\"]]: E }` — this lets you pivot a union into a lookup map.",
+      "The `emit` method receives a full event object (which already has `.type`); use `event.type` as the key into `_listeners` — you may need a small type assertion inside the private implementation body only.",
+      "For `_listeners`, a `Map<keyof EventMap, Listener<keyof EventMap>[]>` is a pragmatic internal type — the public API generics enforce correctness at call sites."
+    ],
+    "docs": [
+      {
+        "title": "TS Handbook — Mapped Types & Key Remapping",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/mapped-types.html#key-remapping-via-as"
+      },
+      {
+        "title": "TS Handbook — Discriminated Unions",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html#discriminated-unions"
+      },
+      {
+        "title": "TS Handbook — Generic Constraints (extends keyof)",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/generics.html#using-type-parameters-in-generic-constraints"
+      },
+      {
+        "title": "MDN — Map (for the listener registry)",
+        "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Map"
+      }
+    ]
   }
 ]
