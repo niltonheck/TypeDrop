@@ -6513,5 +6513,41 @@
         "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Map"
       }
     ]
+  },
+  {
+    "date": "2026-08-23",
+    "name": "Typed Middleware Pipeline with Branded Types & Conditional Inference",
+    "difficulty": "Hard",
+    "description": "You're building the request-processing core for an internal HTTP gateway. Every incoming request passes through a chain of typed middleware — authentication, rate-limiting, body parsing, and authorization — each of which may enrich the context object or short-circuit with a typed error response. The hardest part is ensuring the TypeScript compiler tracks exactly which context properties have been added by each middleware stage, so downstream handlers never access fields that haven't been populated yet.",
+    "snippet": "// Key types & main function signature\n\ntype Brand<T, B extends string> = T & { readonly __brand: B };\n\ntype RequestId = Brand<string, \"RequestId\">;\ntype UserId    = Brand<string, \"UserId\">;\ntype AuthToken = Brand<string, \"AuthToken\">;\n\ntype MiddlewareResult<T, E> =\n  | { status: \"continue\"; ctx: T }\n  | { status: \"halt\";     error: E };\n\ntype MiddlewareFn<In, Out, E> =\n  (ctx: In) => Promise<MiddlewareResult<Out, E>>;\n\ntype GatewayError =\n  | { kind: \"unauthenticated\"; message: string }\n  | { kind: \"rate_limited\";    retryAfterMs: number }\n  | { kind: \"parse_error\";     field: string; reason: string }\n  | { kind: \"forbidden\";       requiredRole: string };\n\n// Infer the output context of the LAST middleware in the tuple:\ntype LastOutput<T extends readonly MiddlewareFn<unknown, unknown, GatewayError>[]> = /* TODO */;\n\n// Compose an ordered tuple of middleware into one async function:\ndeclare function composeMiddleware<\n  const Stages extends readonly MiddlewareFn<unknown, unknown, GatewayError>[]\n>(stages: Stages): (ctx: RawContext) => Promise<MiddlewareResult<LastOutput<Stages>, GatewayError>>;\n",
+    "goals": [
+      "Define `Brand<T, B>` and use it to create nominal `RequestId`, `UserId`, and `AuthToken` types that are structurally distinct from plain `string`.",
+      "Implement `MiddlewareResult<T, E>` as a discriminated union and `MiddlewareFn<In, Out, E>` as a typed async function, then implement `GatewayError` covering all four variants.",
+      "Implement `LastOutput<T>` using conditional types and `infer` to extract the output context of the last element in a middleware tuple, and implement `composeMiddleware` to thread context through each stage.",
+      "Implement all four concrete middleware functions and `handleRequest`, ensuring each stage only accesses fields present on its specific input context type, and implement exhaustive `matchGatewayError`."
+    ],
+    "hints": [
+      "For `LastOutput<T>`, try indexing the tuple with its last index — `T extends readonly [...infer _, infer Last] ? Last extends MiddlewareFn<unknown, infer Out, GatewayError> ? Out : never : never` is a useful pattern.",
+      "Inside `composeMiddleware`, you'll need to cast the running context between stages at runtime (a single internal `as unknown as NextIn` is acceptable inside the implementation body — but not in the type stubs).",
+      "For exhaustive matching in `matchGatewayError`, add a `default` branch that assigns `error` to `never` — the compiler will complain if any variant is unhandled."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript Handbook — Conditional Types & infer",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/conditional-types.html"
+      },
+      {
+        "title": "TypeScript Handbook — Template Literal & Branded Types",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/template-literal-types.html"
+      },
+      {
+        "title": "TypeScript Handbook — Generics (Constraints & Tuple Inference)",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/generics.html"
+      },
+      {
+        "title": "TypeScript 5.0 — const Type Parameters",
+        "url": "https://www.typescriptlang.org/docs/handbook/release-notes/typescript-5-0.html#const-type-parameters"
+      }
+    ]
   }
 ]

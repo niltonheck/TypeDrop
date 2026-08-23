@@ -32,6 +32,13 @@
         </thead>
         <tbody>
         <tr>
+          <td>2026-08-23</td>
+          <td><span class="badge hard">Hard</span></td>
+          <td>Typed Middleware Pipeline with Branded Types &amp; Conditional Inference</td>
+          <td>You're building the request-processing core for an internal HTTP gateway. Every incoming request passes through a chain of typed middleware — authentication, rate-limiting, body parsing, and authorization — each of which may enrich the context object or short-circuit with a typed error response. The hardest part is ensuring the TypeScript compiler tracks exactly which context properties have been added by each middleware stage, so downstream handlers never access fields that haven't been populated yet.</td>
+          <td><a href="archive/2026-08-23/typed-middleware-pipeline-with-branded-types-and-conditional-inference.html">See</a></td>
+        </tr>
+        <tr>
           <td>2026-08-22</td>
           <td><span class="badge easy">Easy</span></td>
           <td>Typed Event Emitter with Discriminated Union Payloads</td>
