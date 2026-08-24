@@ -6549,5 +6549,41 @@
         "url": "https://www.typescriptlang.org/docs/handbook/release-notes/typescript-5-0.html#const-type-parameters"
       }
     ]
+  },
+  {
+    "date": "2026-08-24",
+    "name": "Typed LRU Cache with Generic Constraints & Branded Keys",
+    "difficulty": "Easy",
+    "description": "You're building a client-side cache for a recipe discovery app. Frequently-fetched recipes, user profiles, and search results all need to be memoized with an eviction policy — and each cache instance must be strongly typed to its value shape and use branded string keys to prevent accidental cross-cache lookups.",
+    "snippet": "// Key types you must define & use:\n\ntype Brand<K, T> = K & { readonly __brand: T };\ntype CacheKey<T extends string> = Brand<string, T>;\n\n// Factory — the ONE permitted type assertion:\nfunction makeCacheKey<T extends string>(namespace: T, raw: string): CacheKey<T>;\n\n// Generic LRU cache class:\nclass LRUCache<TKey extends string, TValue> {\n  constructor(capacity: number);\n  get(key: CacheKey<TKey>): TValue | undefined;\n  set(key: CacheKey<TKey>, value: TValue): void;\n  delete(key: CacheKey<TKey>): boolean;\n  get size(): number;\n  clear(): void;\n}\n\n// Memoize wrapper:\nfunction memoize<TKey extends string, TValue>(\n  cache: LRUCache<TKey, TValue>,\n  namespace: TKey,\n  fn: (raw: string) => TValue\n): (raw: string) => TValue;",
+    "goals": [
+      "Define a `Brand<K,T>` phantom type and a `CacheKey<T>` branded string so keys from different cache namespaces are mutually incompatible at compile time.",
+      "Implement `LRUCache<TKey, TValue>` with correct generic constraints, using a `Map`'s insertion-order guarantee to achieve O(1) LRU eviction.",
+      "Implement `makeCacheKey` as the single safe boundary between plain strings and branded keys, and use it inside `memoize` so callers never touch branded types directly.",
+      "Verify that the type system rejects cross-namespace key usage (e.g. passing a `CacheKey<'profile'>` to a `LRUCache<'recipe', …>`) without any runtime overhead."
+    ],
+    "hints": [
+      "A `Map` preserves insertion order — deleting a key and re-inserting it moves it to the 'end', so `map.keys().next()` always gives you the least-recently-used entry.",
+      "Branded types are just intersections: `type Brand<K, T> = K & { readonly __brand: T }`. The `__brand` property only exists in the type system, never at runtime.",
+      "In `memoize`, call `makeCacheKey(namespace, raw)` internally so the returned `(raw: string) => TValue` function has a clean, unbranded public API."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript Handbook — Generics",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/generics.html"
+      },
+      {
+        "title": "TypeScript Handbook — Utility Types",
+        "url": "https://www.typescriptlang.org/docs/handbook/utility-types.html"
+      },
+      {
+        "title": "MDN — Map (insertion order & iteration)",
+        "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Map"
+      },
+      {
+        "title": "TypeScript Deep Dive — Branded Types",
+        "url": "https://basarat.gitbook.io/typescript/main-1/nominaltyping"
+      }
+    ]
   }
 ]
