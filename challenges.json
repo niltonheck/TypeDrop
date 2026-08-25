@@ -6585,5 +6585,41 @@
         "url": "https://basarat.gitbook.io/typescript/main-1/nominaltyping"
       }
     ]
+  },
+  {
+    "date": "2026-08-25",
+    "name": "Typed Concurrent Task Scheduler with Priority Queues & Result Monads",
+    "difficulty": "Hard",
+    "description": "You're building the background job engine for a data-pipeline platform. Jobs arrive with different priorities, resource tags, and retry budgets — the scheduler must run them concurrently up to a configurable concurrency limit, respect priority ordering, surface per-job typed results, and propagate structured errors without ever widening to `unknown` unsafely.",
+    "snippet": "// Key types and main function signatures\n\ntype Brand<T, B extends string> = T & { readonly [__brand]: B };\n\nexport type JobId   = Brand<string, \"JobId\">;\nexport type TagName = Brand<string, \"TagName\">;\nexport type Priority = \"critical\" | \"high\" | \"normal\" | \"low\";\n\nexport type Result<T, E> = Ok<T> | Err<E>;\nexport type SchedulerError =\n  | { kind: \"job_failed\";       jobId: JobId; attempt: number; cause: unknown }\n  | { kind: \"retries_exhausted\"; jobId: JobId; totalAttempts: number; lastCause: unknown }\n  | { kind: \"invalid_job\";      jobId: JobId; reason: string };\n\nexport interface Job<O> {\n  readonly id: JobId;\n  readonly priority: Priority;\n  readonly tags: ReadonlyArray<TagName>;\n  readonly maxRetries: number;\n  readonly run: () => Promise<O>;\n}\n\n// Run one job, retrying up to job.maxRetries times\nexport async function runJobWithRetry<O>(job: Job<O>): Promise<JobOutcome<O>>;\n\n// Run all jobs respecting concurrency limit and priority order\nexport async function runScheduler<O>(\n  jobs: ReadonlyArray<Job<O>>,\n  config: SchedulerConfig,\n): Promise<SchedulerReport<O>>;\n\n// Aggregate outcomes by tag across the report\nexport function summarizeByTag<O>(\n  jobs: ReadonlyArray<Job<O>>,\n  report: SchedulerReport<O>,\n): Map<TagName, { succeeded: number; failed: number }>;",
+    "goals": [
+      "Implement `makeJobId` and `makeTagName` so they validate input and return correctly branded types — without using `as` or type assertions.",
+      "Implement `runJobWithRetry` with a typed retry loop that emits structured `SchedulerError` discriminated union values and returns a fully-typed `JobOutcome<O>`.",
+      "Implement `runScheduler` with a concurrency-limited promise pool that sorts jobs by priority, validates them, collects all outcomes, and returns a `SchedulerReport<O>` with accurate `elapsedMs`.",
+      "Implement `summarizeByTag` that builds a `Map<TagName, { succeeded: number; failed: number }>` by correlating the original job list with the scheduler report outcomes."
+    ],
+    "hints": [
+      "For the concurrency pool in `runScheduler`, maintain a `Set` of in-flight promises and `await` the fastest one to finish whenever the set reaches `config.concurrency` — `Promise.race` is your friend.",
+      "To construct a branded type without `as`, use a function that returns the value cast through the `Brand` helper — the key insight is that the brand is enforced at the *construction site*, not at every call site.",
+      "When building `summarizeByTag`, build a `Map<JobId, JobOutcome<O>>` first so you can look up each job's outcome in O(1) while iterating over tags."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript Handbook — Generics",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/generics.html"
+      },
+      {
+        "title": "TypeScript Handbook — Conditional Types & infer",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/conditional-types.html"
+      },
+      {
+        "title": "MDN — Promise.allSettled()",
+        "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise/allSettled"
+      },
+      {
+        "title": "TypeScript 4.9 — satisfies operator",
+        "url": "https://www.typescriptlang.org/docs/handbook/release-notes/typescript-4-9.html#the-satisfies-operator"
+      }
+    ]
   }
 ]
