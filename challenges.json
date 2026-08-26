@@ -6621,5 +6621,41 @@
         "url": "https://www.typescriptlang.org/docs/handbook/release-notes/typescript-4-9.html#the-satisfies-operator"
       }
     ]
+  },
+  {
+    "date": "2026-08-26",
+    "name": "Typed CSV Report Aggregator with Schema Validation & Grouped Statistics",
+    "difficulty": "Medium",
+    "description": "You're building the analytics backend for a SaaS billing platform. Raw sales CSVs arrive from multiple regional offices — each row must be validated against a typed schema, invalid rows collected as structured errors, and valid rows aggregated into per-region, per-product summaries with typed statistics.",
+    "snippet": "// Core types at a glance:\n\ndeclare const __brand: unique symbol;\ntype Brand<T, B> = T & { readonly [__brand]: B };\n\ntype RegionCode = Brand<string, \"RegionCode\">;\ntype ProductSku  = Brand<string, \"ProductSku\">;\n\ninterface SalesRecord {\n  readonly region:  RegionCode;\n  readonly sku:     ProductSku;\n  readonly units:   number;\n  readonly revenue: number;\n  readonly date:    Date;\n}\n\ntype Ok<T>  = { readonly ok: true;  readonly value: T };\ntype Err<E> = { readonly ok: false; readonly error: E };\ntype Result<T, E> = Ok<T> | Err<E>;\n\n// Main functions you must implement:\nfunction validateRow(raw: Record<string, string>, rowIndex: number): Result<SalesRecord, ParseError>;\n\nfunction aggregateReport(rows: Record<string, string>[]): AggregateReport;\n\nfunction groupBy<T, K extends string>(\n  items: readonly T[],\n  keyFn: (item: T) => K\n): Record<K, T[]>;\n",
+    "goals": [
+      "Implement branded-type factory functions (`toRegionCode`, `toProductSku`) that validate raw strings and return a branded type or `null` — without type assertions.",
+      "Implement `validateRow` to parse a raw CSV row into a `SalesRecord`, returning a discriminated `Result<SalesRecord, ParseError>` with first-field-wins error reporting.",
+      "Implement `aggregateReport` to validate all rows in a single pass, collect structured errors, and group valid records into a nested `Map<RegionCode, Map<ProductSku, GroupStats>>` with correct statistics.",
+      "Implement the generic `groupBy<T, K extends string>` utility whose return type is the narrowed `Record<K, T[]>` — not a wider `Record<string, T[]>`."
+    ],
+    "hints": [
+      "Branded types can be 'created' without `as` by using a helper function whose return type is explicitly declared as the branded type — the compiler trusts the annotation at the function boundary.",
+      "For `validateRow`, validate each field sequentially and return early on the first failure; this naturally implements first-field-wins without any complex logic.",
+      "For the `summary` mapped type, write `{ [K in keyof Omit<GroupStats, 'region' | 'sku'>]: number }` — iterate over your `byRegion` Map's entries in a second pass to accumulate totals."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript — Branded / Nominal Types pattern",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/types-from-types.html"
+      },
+      {
+        "title": "TypeScript — Mapped Types",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/mapped-types.html"
+      },
+      {
+        "title": "TypeScript — Utility Types (Record, Omit, keyof)",
+        "url": "https://www.typescriptlang.org/docs/handbook/utility-types.html"
+      },
+      {
+        "title": "TypeScript — Narrowing (type guards & discriminated unions)",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html"
+      }
+    ]
   }
 ]
