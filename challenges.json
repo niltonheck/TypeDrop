@@ -6657,5 +6657,41 @@
         "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html"
       }
     ]
+  },
+  {
+    "date": "2026-08-27",
+    "name": "Typed GraphQL-Style Query Builder with Conditional Field Selection & Recursive Inference",
+    "difficulty": "Hard",
+    "description": "You're building the typed query layer for an internal developer portal that fetches data from a REST API mirroring a GraphQL-like selection model. Consumers describe *exactly* which fields they want at compile time — including nested relations — and the return type must reflect only those selected fields, nothing more and nothing less.",
+    "snippet": "// Key types and main function signatures\n\ntype Address   = { street: string; city: string; country: string; postalCode: string };\ntype Repository = { id: string; name: string; isPrivate: boolean; starCount: number };\ntype User = {\n  id: string; username: string; email: string; age: number;\n  address: Address; repositories: Repository[];\n};\n\n// SelectionSet<T> — describe which fields you want (stub shown)\ntype SelectionSet<T> = { [K in keyof T]?: /* true | SelectionSet<nested> */ unknown };\n\n// Selected<T, S> — the return type contains ONLY the selected fields (stub shown)\ntype Selected<T, S extends SelectionSet<T>> = { [K in keyof T]: T[K] };\n\n// Synchronous pruning: returns only the selected fields at compile time AND runtime\nfunction buildQuerySync<T extends object, S extends SelectionSet<T>>(\n  data: T,\n  selection: S\n): Selected<T, S>;\n\n// Async: resolves via fetcher, then prunes identically\nfunction buildQuery<T extends object, S extends SelectionSet<T>>(\n  fetcher: () => Promise<T>,\n  selection: S\n): Promise<Selected<T, S>>;\n",
+    "goals": [
+      "Define `SelectionSet<T>` so each key maps to `true` for scalars or a nested `SelectionSet` for object/array fields — all keys optional.",
+      "Define `Selected<T, S>` as a recursive mapped/conditional type that includes only the keys present in `S`, narrowing nested objects and array elements accordingly.",
+      "Implement the recursive runtime function `stripToSelection` that mirrors the type-level recursion, pruning keys not in the selection at every nesting level.",
+      "Wire `buildQuerySync` and `buildQuery` to delegate to `stripToSelection`, preserving the full generic return type through both the sync and async paths."
+    ],
+    "hints": [
+      "For `SelectionSet<T>`, use a conditional on `NonNullable<T[K]> extends object` to decide whether the value type is `true` or `SelectionSet<UnwrapArray<T[K]>>` — scalars map to `true`, objects/arrays map to a nested selection.",
+      "For `Selected<T, S>`, use key remapping (`as`) with `K extends keyof S ? K : never` to exclude un-selected keys, then branch on whether `S[K]` is `true` or a sub-object to decide the value type — remember to handle arrays separately from plain objects.",
+      "The runtime `stripToSelection` must check `Array.isArray` to branch between array and plain-object handling; for arrays, map each element through a recursive `stripToSelection` call, and for objects iterate `Object.keys(selection)` to copy only the chosen fields."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript Handbook — Mapped Types",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/mapped-types.html"
+      },
+      {
+        "title": "TypeScript Handbook — Conditional Types",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/conditional-types.html"
+      },
+      {
+        "title": "TypeScript Handbook — Template Literal & Key Remapping",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/mapped-types.html#key-remapping-via-as"
+      },
+      {
+        "title": "TypeScript 5.x — `satisfies` Operator",
+        "url": "https://www.typescriptlang.org/docs/handbook/release-notes/typescript-4-9.html#the-satisfies-operator"
+      }
+    ]
   }
 ]
