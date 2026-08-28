@@ -6693,5 +6693,41 @@
         "url": "https://www.typescriptlang.org/docs/handbook/release-notes/typescript-4-9.html#the-satisfies-operator"
       }
     ]
+  },
+  {
+    "date": "2026-08-28",
+    "name": "Typed Notification Dispatcher with Discriminated Unions & Template Literal Channels",
+    "difficulty": "Easy",
+    "description": "You're building the notification service for a project-management app. Users can subscribe to different event channels (email, SMS, push), and each notification type carries its own payload shape. The compiler must guarantee that every notification kind is handled, every channel is valid, and the dispatcher always returns a fully-typed delivery receipt.",
+    "snippet": "// Key types you must define:\n\ntype Channel = \"email\" | \"sms\" | \"push\";\ntype ChannelTag = `channel:${Channel}`;\n\n// Discriminated union — one variant shown:\ntype TaskAssignedNotification = {\n  kind: \"task_assigned\";\n  payload: { taskId: string; assigneeId: string };\n};\n// ... plus \"comment_added\" and \"deadline_approaching\"\ntype Notification = TaskAssignedNotification | /* ... */ never;\n\n// Generic receipt tied to the exact Notification variant:\ninterface DeliveryReceipt<N extends Notification> {\n  notificationKind: N[\"kind\"];\n  channel: Channel;\n  channelTag: ChannelTag;\n  sentAt: number;\n  success: boolean;\n}\n\n// Main function you must implement:\nfunction dispatch<N extends Notification>(\n  notification: N,\n  channel: Channel\n): DeliveryReceipt<N> { /* TODO */ }\n",
+    "goals": [
+      "Define a three-variant discriminated union `Notification` with typed payloads and `kind` literal fields.",
+      "Create `Channel` and `ChannelTag` template-literal types and wire them into the `DeliveryReceipt<N>` generic interface.",
+      "Implement `dispatch` with an exhaustive switch over `notification.kind`, using `assertNever` in the default branch.",
+      "Implement `groupReceiptsByChannel` returning a `Record<Channel, DeliveryReceipt<Notification>[]>` with all three channel keys always present."
+    ],
+    "hints": [
+      "Index into a generic `N extends Notification` with `N[\"kind\"]` to pull the literal type into `DeliveryReceipt` without widening to `string`.",
+      "A template-literal expression like `` `channel:${channel}` `` narrows to `ChannelTag` automatically when `channel` is typed as `Channel` — no cast needed.",
+      "`Record<Channel, DeliveryReceipt<Notification>[]>` forces you to initialise all three keys; seed the accumulator with `{ email: [], sms: [], push: [] }` before reducing."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript Handbook — Discriminated Unions",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html#discriminated-unions"
+      },
+      {
+        "title": "TypeScript Handbook — Template Literal Types",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/template-literal-types.html"
+      },
+      {
+        "title": "TypeScript Handbook — Generics",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/generics.html"
+      },
+      {
+        "title": "TypeScript Handbook — Utility Types (Record)",
+        "url": "https://www.typescriptlang.org/docs/handbook/utility-types.html#recordkeys-type"
+      }
+    ]
   }
 ]
