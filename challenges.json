@@ -6729,5 +6729,41 @@
         "url": "https://www.typescriptlang.org/docs/handbook/utility-types.html#recordkeys-type"
       }
     ]
+  },
+  {
+    "date": "2026-08-29",
+    "name": "Typed Middleware Pipeline with Inferred Context Accumulation",
+    "difficulty": "Hard",
+    "description": "You're building the request-handling core for an internal HTTP gateway. Middleware layers run sequentially, each one reading from — and optionally enriching — a typed context object. The compiler must guarantee that a middleware can only access fields that prior layers have already attached, and that the final handler receives the exact accumulated context type — no more, no less.",
+    "snippet": "// Key types — understand these before implementing:\n\ntype BaseCtx = Record<string, unknown>;\n\ntype MiddlewareResult<TOut extends BaseCtx> =\n  | { ok: true;  ctx: TOut }\n  | { ok: false; error: MiddlewareError };\n\ntype Middleware<TIn extends BaseCtx, TOut extends TIn> = {\n  name: string;\n  handler: (ctx: TIn) => Promise<MiddlewareResult<TOut>>;\n};\n\n// The builder interface — TCtx grows with each `.use()` call:\ninterface Pipeline<TCtx extends BaseCtx> {\n  use<TOut extends TCtx>(mw: Middleware<TCtx, TOut>): Pipeline<TOut>;\n  run(initialCtx: TCtx): Promise<MiddlewareResult<TCtx>>;\n}\n\n// Entry point — start with your seed context shape:\ndeclare function createPipeline<T extends BaseCtx>(): Pipeline<T>;",
+    "goals": [
+      "Implement `createPipeline` as a type-safe fluent builder that threads an ever-growing context type through sequential middleware layers.",
+      "Implement `run` to execute layers in order, short-circuiting immediately on the first `{ ok: false }` result.",
+      "Implement `composeMiddleware` to fuse two compatible middleware into one, propagating failures from the first before invoking the second.",
+      "Implement the `ExtractCtx` and `ContextDiff` utility types using `infer` and mapped-type key remapping respectively."
+    ],
+    "hints": [
+      "The `Pipeline` interface's `use` method must return `Pipeline<TOut>` — store handlers in a plain array internally and cast the return type of `use` at the boundary (the one place a cast is acceptable in a builder pattern).",
+      "For `ContextDiff`, use a mapped type with an `as` clause: `[K in keyof TAfter as K extends keyof TBefore ? never : K]` to filter out pre-existing keys.",
+      "In `run`, iterate the stored handlers with a `for...of` loop and an `await` inside — if any result has `ok: false`, return it immediately; only return success after the loop completes."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript Handbook — Conditional Types & infer",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/conditional-types.html"
+      },
+      {
+        "title": "TypeScript Handbook — Mapped Types (key remapping with as)",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/mapped-types.html#key-remapping-via-as"
+      },
+      {
+        "title": "TypeScript Handbook — Generics with Constraints",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/generics.html#generic-constraints"
+      },
+      {
+        "title": "MDN — Promise (sequential async patterns)",
+        "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise"
+      }
+    ]
   }
 ]
