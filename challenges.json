@@ -6765,5 +6765,41 @@
         "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise"
       }
     ]
+  },
+  {
+    "date": "2026-08-30",
+    "name": "Typed Paginated API Client with Result Chaining & Cursor Inference",
+    "difficulty": "Medium",
+    "description": "You're building the data-access layer for an internal admin dashboard that fetches paginated resources from a REST API. Each endpoint returns a different resource shape, and the client must handle cursor-based pagination, surface typed per-page results, accumulate all pages into a final collection, and propagate fetch errors without losing their structure.",
+    "snippet": "// Core types you'll work with:\n\ntype Ok<T>     = { readonly status: \"ok\";  readonly value: T };\ntype Err<E>    = { readonly status: \"err\"; readonly error: E };\ntype Result<T, E> = Ok<T> | Err<E>;\n\ntype Page<T> = {\n  readonly items: T[];\n  readonly nextCursor: string | null;\n  readonly totalCount: number;\n};\n\ntype FetchAllResult<T> = {\n  readonly items: T[];\n  readonly pagesFetched: number;\n  readonly reportedTotal: number;\n};\n\ntype PageFetcher<T, E> = (\n  opts: { readonly cursor: string | undefined; readonly pageSize: number }\n) => Promise<Result<Page<T>, E>>;\n\n// Main function you must implement:\nasync function fetchAllPages<T, E>(\n  fetcher: PageFetcher<T, E>,\n  pageSize: number\n): Promise<Result<FetchAllResult<T>, E>> { /* TODO */ }\n",
+    "goals": [
+      "Implement `ok` and `err` constructors that preserve narrow literal types without widening.",
+      "Implement `fetchAllPages` to sequentially follow cursors, short-circuit on the first `Err`, and accumulate all items into a typed `FetchAllResult<T>`.",
+      "Implement `mapFetchResult` to transform items inside an `Ok` result while passing `Err` values through unchanged, fully generic over T, U, and E.",
+      "Implement `matchResult` so TypeScript infers the return type R from the two callback signatures without the caller providing it explicitly."
+    ],
+    "hints": [
+      "For `fetchAllPages`, a `while (true)` loop that checks `nextCursor` each iteration is cleaner than recursion — break when `nextCursor` is `null`.",
+      "The discriminant `.status === 'ok'` is all TypeScript needs to narrow `Result<T,E>` into `Ok<T>` — no type assertions required.",
+      "To keep `matchResult`'s return type R inferred, simply declare it as a third type parameter after T and E and let the compiler unify it from both callbacks."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript Handbook — Narrowing",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html"
+      },
+      {
+        "title": "TypeScript Handbook — Generics",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/generics.html"
+      },
+      {
+        "title": "TypeScript Handbook — Utility Types (Pick, Omit, …)",
+        "url": "https://www.typescriptlang.org/docs/handbook/utility-types.html"
+      },
+      {
+        "title": "MDN — Using Promises (chaining & error propagation)",
+        "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Using_promises"
+      }
+    ]
   }
 ]
