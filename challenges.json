@@ -6801,5 +6801,41 @@
         "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Using_promises"
       }
     ]
+  },
+  {
+    "date": "2026-08-31",
+    "name": "Typed In-Memory Event Emitter with Listener Registry",
+    "difficulty": "Easy",
+    "description": "You're building the event bus for a real-time dashboard application. UI components subscribe to typed events (user login, metric update, alert fired), and the compiler must guarantee that every listener receives exactly the right payload shape — no casting, no guessing.",
+    "snippet": "// Key types you must define and use:\n\nexport type AppEventMap = {\n  \"user:login\":    { userId: string; timestamp: number };\n  \"metric:update\": { metricId: string; value: number; unit: string };\n  \"alert:fired\":   { alertId: string; severity: \"low\" | \"medium\" | \"high\"; message: string };\n};\n\nexport type Listener<E extends keyof AppEventMap> = (\n  payload: AppEventMap[E]\n) => void;\n\n// Helper registry — maps every event name to its listener array:\ntype ListenerRegistry = { [E in keyof AppEventMap]: Listener<E>[] };\n\nexport class EventEmitter {\n  private registry: ListenerRegistry; // no `any` allowed!\n\n  on<E extends keyof AppEventMap>(event: E, listener: Listener<E>): void { /* TODO */ }\n  off<E extends keyof AppEventMap>(event: E, listener: Listener<E>): void { /* TODO */ }\n  emit<E extends keyof AppEventMap>(event: E, payload: AppEventMap[E]): void { /* TODO */ }\n  listenerCount<E extends keyof AppEventMap>(event: E): number { /* TODO */ return 0; }\n}",
+    "goals": [
+      "Define AppEventMap with three precisely typed event entries including a union-typed severity field.",
+      "Create the ListenerRegistry mapped type so each event key maps to the correct array of typed listeners.",
+      "Implement on(), off(), emit(), and listenerCount() using generic constraints so the compiler enforces payload shapes at every call site.",
+      "Initialise the registry in the constructor so every event slot starts as an empty array without using `any`."
+    ],
+    "hints": [
+      "The ListenerRegistry mapped type looks like `{ [E in keyof AppEventMap]: Listener<E>[] }` — each slot's element type depends on its own key.",
+      "To seed the registry in the constructor without `any`, cast the accumulator through `as ListenerRegistry` only once after building it with `Object.fromEntries` — or simply assign each key manually.",
+      "Inside off(), use `Array.prototype.indexOf` or `.filter` to remove the exact listener reference; remember that function identity matters, not deep equality."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript Handbook — Mapped Types",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/mapped-types.html"
+      },
+      {
+        "title": "TypeScript Handbook — Generics",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/generics.html"
+      },
+      {
+        "title": "TypeScript Handbook — Indexed Access Types",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/indexed-access-types.html"
+      },
+      {
+        "title": "MDN — EventTarget (real-world inspiration)",
+        "url": "https://developer.mozilla.org/en-US/docs/Web/API/EventTarget"
+      }
+    ]
   }
 ]
