@@ -6837,5 +6837,41 @@
         "url": "https://developer.mozilla.org/en-US/docs/Web/API/EventTarget"
       }
     ]
+  },
+  {
+    "date": "2026-09-01",
+    "name": "Typed Job Queue with Priority Scheduling & Retry Budgets",
+    "difficulty": "Medium",
+    "description": "You're building the background-job engine for a SaaS platform. Jobs arrive with different priorities and payload shapes, each worker declares which job kinds it handles, and failed jobs must be retried up to a per-kind budget — all with the compiler catching mismatches before they reach production.",
+    "snippet": "export type Job = EmailJob | ResizeJob | ReportJob;\n\nexport type RetryBudget = Record<Job[\"kind\"], number>;\n\nexport interface Worker<K extends Job[\"kind\"]> {\n  handles: K[];\n  execute(job: Extract<Job, { kind: K }>): Promise<void>;\n}\n\nexport type QueueSummary = {\n  succeeded: number;\n  failed: number;\n  skipped: number;\n};\n\nexport function createQueue(budget: RetryBudget): {\n  enqueue(job: Job): void;\n  registerWorker<K extends Job[\"kind\"]>(worker: Worker<K>): void;\n  runAll(): Promise<QueueSummary>;\n} {\n  throw new Error(\"Not implemented\");\n}",
+    "goals": [
+      "Define an exhaustive discriminated union `Job` with three variants, each carrying a `priority` and kind-specific payload fields.",
+      "Implement the `Worker<K>` generic interface so `execute` only receives jobs whose `kind` matches `K`, enforced via `Extract<Job, { kind: K }>`.",
+      "Implement `createQueue` so `runAll` processes jobs in priority order, dispatches to the correct registered worker, and retries failures up to the per-kind budget.",
+      "Return a correctly tallied `QueueSummary` distinguishing succeeded, failed (budget exhausted), and skipped (no worker registered) jobs."
+    ],
+    "hints": [
+      "The `Extract<Job, { kind: K }>` utility type narrows the full `Job` union down to only the variant(s) where `kind` matches `K` — use it in the `Worker` interface's `execute` signature.",
+      "Inside `runAll`, you'll need to narrow a `Job` to the specific variant before passing it to a worker — a `kind` check in an `if`/`switch` is enough for TypeScript to infer the narrowed type.",
+      "Model the internal worker registry as a `Map` or a `Partial<Record<Job['kind'], Worker<Job['kind']>>>` — just make sure you handle the 'no worker found' case without a non-null assertion."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript – Discriminated Unions",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html#discriminated-unions"
+      },
+      {
+        "title": "TypeScript – Extract Utility Type",
+        "url": "https://www.typescriptlang.org/docs/handbook/utility-types.html#extracttype-union"
+      },
+      {
+        "title": "TypeScript – Generic Constraints (extends)",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/generics.html#generic-constraints"
+      },
+      {
+        "title": "TypeScript – Record Utility Type",
+        "url": "https://www.typescriptlang.org/docs/handbook/utility-types.html#recordkeys-type"
+      }
+    ]
   }
 ]
