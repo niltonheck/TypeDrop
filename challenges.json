@@ -6873,5 +6873,41 @@
         "url": "https://www.typescriptlang.org/docs/handbook/utility-types.html#recordkeys-type"
       }
     ]
+  },
+  {
+    "date": "2026-09-02",
+    "name": "Typed Shopping Cart with Discount Strategy & Line-Item Aggregation",
+    "difficulty": "Easy",
+    "description": "You're building the checkout engine for a small e-commerce storefront. Each cart holds typed line items, and the store supports several mutually-exclusive discount strategies (percentage off, fixed amount off, buy-X-get-Y free). The compiler must guarantee that every discount kind is fully handled and that the cart summary is always correctly typed.",
+    "snippet": "export interface LineItem {\n  readonly product: Product;\n  readonly quantity: number;\n}\n\nexport type Discount =\n  | { kind: \"percentage\"; percent: number }\n  | { kind: \"fixed\"; amountCents: number }\n  | { kind: \"buyXgetY\"; productId: string; buyQuantity: number; freeQuantity: number };\n\nexport type DiscountKind = Discount[\"kind\"];\n\nexport type DiscountByKind = {\n  [K in DiscountKind]: Extract<Discount, { kind: K }>;\n};\n\nexport function computeSubtotal(lineItems: readonly LineItem[]): number;\n\nexport function computeDiscountAmount(\n  subtotalCents: number,\n  discount: Discount,\n  lineItems: readonly LineItem[]\n): number;\n\nexport function buildCartSummary(\n  lineItems: readonly LineItem[],\n  discount: Discount | null\n): CartSummary;",
+    "goals": [
+      "Derive `DiscountKind` from the `Discount` union using an indexed access type, and build `DiscountByKind` as a mapped type using `Extract`.",
+      "Implement `computeSubtotal` to aggregate line-item costs in a single pass.",
+      "Implement `computeDiscountAmount` with an exhaustive `switch` on `discount.kind`, correctly handling all three strategies including the buy-X-get-Y free calculation.",
+      "Implement `buildCartSummary` and `getDiscountLabel` so the compiler guarantees every discount branch is covered and all return types are fully typed."
+    ],
+    "hints": [
+      "For `DiscountByKind`, iterate over `DiscountKind` with a mapped type and use `Extract<Discount, { kind: K }>` as the value — TypeScript will narrow each member automatically.",
+      "In `computeDiscountAmount`, a `switch (discount.kind)` with a `default: { const _exhaustive: never = discount; }` guard ensures the compiler catches any unhandled future discount kinds.",
+      "For buy-X-get-Y, the number of free units from `n` total units is `Math.floor(n / (buyQuantity + freeQuantity)) * freeQuantity`."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript Handbook — Discriminated Unions",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html#discriminated-unions"
+      },
+      {
+        "title": "TypeScript Handbook — Mapped Types",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/mapped-types.html"
+      },
+      {
+        "title": "TypeScript Handbook — Extract Utility Type",
+        "url": "https://www.typescriptlang.org/docs/handbook/utility-types.html#extracttype-union"
+      },
+      {
+        "title": "TypeScript Handbook — Function Overloads",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/functions.html#function-overloads"
+      }
+    ]
   }
 ]
