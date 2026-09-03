@@ -6909,5 +6909,41 @@
         "url": "https://www.typescriptlang.org/docs/handbook/2/functions.html#function-overloads"
       }
     ]
+  },
+  {
+    "date": "2026-09-03",
+    "name": "Typed Schema-Validated ETL Pipeline with Branded Results",
+    "difficulty": "Hard",
+    "description": "You're building the ingestion layer for a data-warehouse platform. Raw records arrive as `unknown` JSON blobs, must be validated against per-table schemas, transformed into strongly-typed domain rows, and either committed to a typed sink or collected into a structured error report — all without a single `any` or unsafe cast in sight.",
+    "snippet": "// Core types you must define and connect:\n\ntype FieldSchema =\n  | { kind: \"string\" }\n  | { kind: \"number\" }\n  | { kind: \"boolean\" }\n  | { kind: \"literal\"; value: string | number | boolean };\n\ntype TableSchema = {\n  fields: Record<string, FieldSchema>;\n  required?: readonly string[];\n};\n\n// Branded wrapper — only producible via validateRow\ntype Validated<T> = T & { readonly __validated: unique symbol };\n\n// Mapped + conditional type (yours to implement)\ntype inferRow<S extends TableSchema> = /* ... */ never;\n\n// Main pipeline entry-point\ndeclare function runPipeline<S extends TableSchema, Out>(\n  schema: S,\n  transformer: Transformer<S, Out>,\n  records: unknown[],\n  sink: Sink<Out>\n): PipelineReport;",
+    "goals": [
+      "Define a `FieldSchema` discriminated union and a `TableSchema` type that carries both field definitions and an optional required-field list.",
+      "Implement the `inferRow<S>` mapped + conditional type so required fields are non-optional, optional fields are optional, and `literal` fields carry their exact literal type.",
+      "Implement `validateRow` to safely narrow `unknown` → `Validated<inferRow<S>>` using runtime checks, returning a typed `Result` on both success and failure paths.",
+      "Implement `runPipeline` to process a batch of raw records through validation and transformation, write successes to the typed `Sink`, and return a fully populated `PipelineReport`."
+    ],
+    "hints": [
+      "For `inferRow`, split the fields into two mapped types — one for required keys and one for optional — then intersect them. Use `S[\"required\"][number]` to distribute required key names.",
+      "To infer the exact literal type from a `{ kind: \"literal\"; value: V }` field, write a helper conditional type `FieldToType<F extends FieldSchema>` that uses `infer V` on the `value` property.",
+      "The only safe place for a single `as` cast is the final `return ok(obj as Validated<inferRow<S>>)` inside `validateRow`, after every runtime check has already passed — keep all other code cast-free."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript Handbook — Mapped Types",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/mapped-types.html"
+      },
+      {
+        "title": "TypeScript Handbook — Conditional Types & infer",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/conditional-types.html"
+      },
+      {
+        "title": "TypeScript Handbook — Template Literal & Indexed Access Types",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/indexed-access-types.html"
+      },
+      {
+        "title": "TypeScript 4.9 — satisfies operator",
+        "url": "https://www.typescriptlang.org/docs/handbook/release-notes/typescript-4-9.html#the-satisfies-operator"
+      }
+    ]
   }
 ]
