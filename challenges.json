@@ -6945,5 +6945,41 @@
         "url": "https://www.typescriptlang.org/docs/handbook/release-notes/typescript-4-9.html#the-satisfies-operator"
       }
     ]
+  },
+  {
+    "date": "2026-09-04",
+    "name": "Typed HTTP Retry Client with Exponential Backoff & Error Classification",
+    "difficulty": "Medium",
+    "description": "You're building the resilient HTTP layer for a microservice platform. Transient network errors and rate-limit responses should be retried with exponential backoff, while client errors (4xx) must be surfaced immediately — all with fully typed request/response shapes and a structured Result type so callers never need to guess what went wrong.",
+    "snippet": "// Key types and main function signature\n\ntype HttpStatus = number & { readonly __brand: \"HttpStatus\" };\n\ntype HttpError =\n  | { kind: \"network\"; message: string }\n  | { kind: \"client\";  status: HttpStatus; body: string }\n  | { kind: \"server\";  status: HttpStatus; body: string };\n\ntype Result<T, E> =\n  | { ok: true;  value: T }\n  | { ok: false; error: E };\n\ntype HttpResult<T> = Result<T, HttpError>;\n\ninterface RetryPolicy {\n  maxAttempts: number;\n  baseDelayMs: number;\n  retryOn: ReadonlyArray<\"network\" | \"server\">;\n}\n\ntype Transport = <TBody>(config: RequestConfig<TBody>) => Promise<RawResponse>;\n\nasync function fetchWithRetry<TBody>(\n  config: RequestConfig<TBody>,\n  transport: Transport,\n  policy: RetryPolicy,\n): Promise<HttpResult<string>> { /* TODO */ }\n",
+    "goals": [
+      "Define the `HttpError` discriminated union and the generic `Result<T, E>` / `HttpResult<T>` types.",
+      "Implement `classifyResponse` to map raw HTTP status codes to typed `HttpResult<string>` values.",
+      "Implement `fetchWithRetry` with correct exponential backoff, retry-kind filtering, and attempt capping.",
+      "Implement `renderError` with an exhaustive switch that the compiler verifies via the `never` pattern."
+    ],
+    "hints": [
+      "A discriminated union's `kind` field lets TypeScript narrow automatically — no type assertions needed inside `classifyResponse` or `renderError`.",
+      "In `fetchWithRetry`, track `lastError: HttpError` across loop iterations so you can return it once `maxAttempts` is exhausted.",
+      "For the exhaustive check in `renderError`, add a `default:` branch that assigns `error` to a variable typed as `never` — TypeScript will error if any `kind` is unhandled."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript Handbook — Discriminated Unions",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html#discriminated-unions"
+      },
+      {
+        "title": "TypeScript Handbook — Generics",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/generics.html"
+      },
+      {
+        "title": "MDN — setTimeout",
+        "url": "https://developer.mozilla.org/en-US/docs/Web/API/setTimeout"
+      },
+      {
+        "title": "TypeScript Handbook — Utility Types",
+        "url": "https://www.typescriptlang.org/docs/handbook/utility-types.html"
+      }
+    ]
   }
 ]
