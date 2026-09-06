@@ -7017,5 +7017,41 @@
         "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/sort"
       }
     ]
+  },
+  {
+    "date": "2026-09-06",
+    "name": "Typed Event Sourcing Engine with Snapshot Compaction & Projection Rebuilding",
+    "difficulty": "Hard",
+    "description": "You're building the event-sourcing core for a collaborative document platform. Domain events arrive as a discriminated union, an append-only event log must be replayed into aggregate state via typed reducers, periodic snapshots compact history for fast rebuilds, and read-model projections subscribe to specific event subsets — all with the compiler enforcing every event shape, reducer signature, and projection contract.",
+    "snippet": "// Key types & main function signatures at a glance\n\ntype Role = \"viewer\" | \"editor\" | \"admin\";\ntype EventKind = DomainEvent[\"kind\"];          // union of all .kind strings\n\ntype EventByKind<K extends EventKind> =        // narrows to one member\n  Extract<DomainEvent, { kind: K }>;\n\ntype Reducer<S, E extends DomainEvent> =\n  (state: S | null, event: E) => S;\n\ntype Projection<TState, K extends EventKind> = {\n  eventKinds: readonly K[];\n  initialState: TState;\n  handle: (state: TState, event: EventByKind<K>) => TState;\n};\n\n// Replay a log (optionally from a snapshot) into aggregate state\nfunction replayFromSnapshot<S>(\n  log: EventLog,\n  reducer: Reducer<S, DomainEvent>,\n  snapshot?: Snapshot<S>\n): S { /* TODO */ }\n\n// Run a typed read-model projection over an event log\nfunction runProjection<TState, K extends EventKind>(\n  log: EventLog,\n  projection: Projection<TState, K>\n): TState { /* TODO */ }",
+    "goals": [
+      "Define the full `DomainEvent` discriminated union and all five derived helper types (`EventKind`, `EventByKind<K>`, `EventPayload<K>`, `Snapshot<S>`, `Reducer<S,E>`) using only conditional types, mapped types, and utility types — no `any` or `as`.",
+      "Implement `documentReducer` exhaustively handling all six event kinds, using a type-safe `never`-check to catch unhandled branches at compile time.",
+      "Implement `replayFromSnapshot` and `compactLog` so that snapshotting and partial replay produce state identical to a full replay from event zero.",
+      "Implement `runProjection` with a runtime type guard that narrows each `DomainEvent` to `EventByKind<K>` before passing it to `projection.handle`, then wire up `collaboratorProjection` as a concrete `Projection` instance."
+    ],
+    "hints": [
+      "For `EventByKind<K>`, the built-in `Extract<Union, Shape>` utility type is your friend — no need to write a custom conditional type from scratch.",
+      "In `runProjection`, cast-free narrowing is possible: check `(projection.eventKinds as readonly string[]).includes(event.kind)` inside a user-defined type guard function that returns `event is EventByKind<K>`.",
+      "Make `documentReducer`'s `switch` exhaustive by adding a `default` branch that assigns `event` to a `never`-typed variable — the compiler will error if any `kind` is unhandled."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript Handbook — Discriminated Unions",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html#discriminated-unions"
+      },
+      {
+        "title": "TypeScript Handbook — Conditional Types & infer",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/conditional-types.html"
+      },
+      {
+        "title": "TypeScript Handbook — Generics",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/generics.html"
+      },
+      {
+        "title": "TypeScript Utility Types (Extract, Omit, Pick …)",
+        "url": "https://www.typescriptlang.org/docs/handbook/utility-types.html"
+      }
+    ]
   }
 ]
