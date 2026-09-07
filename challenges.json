@@ -7053,5 +7053,41 @@
         "url": "https://www.typescriptlang.org/docs/handbook/utility-types.html"
       }
     ]
+  },
+  {
+    "date": "2026-09-07",
+    "name": "Typed Task Queue with Priority & Status Tracking",
+    "difficulty": "Easy",
+    "description": "You're building the background-job manager for a lightweight project management tool. Tasks arrive with different priorities and move through a fixed lifecycle; the UI needs a typed queue that enforces valid status transitions, aggregates task counts by status, and surfaces the next task to process — all with the compiler catching every invalid shape.",
+    "snippet": "export type Priority = \"low\" | \"medium\" | \"high\" | \"critical\";\nexport type TaskStatus = \"pending\" | \"in-progress\" | \"done\" | \"cancelled\";\n\nexport interface Task {\n  id:          string;\n  title:       string;\n  priority:    Priority;\n  status:      TaskStatus;\n  createdAt:   number;\n  startedAt?:  number;\n  finishedAt?: number;\n}\n\n// Returns the highest-priority \"pending\" task, or undefined if the queue is empty.\nexport function nextToProcess(tasks: ReadonlyArray<Task>): Task | undefined;\n\n// Counts tasks in every status — all four keys are always present.\nexport function summariseByStatus(tasks: ReadonlyArray<Task>): Record<TaskStatus, number>;",
+    "goals": [
+      "Define the `Task` interface with correct optional timestamp fields and union-typed `priority` / `status` properties.",
+      "Implement `transitionTask` to enforce valid status transitions using `VALID_TRANSITIONS` and return a new Task object without mutating the original.",
+      "Implement `nextToProcess` to pick the highest-priority pending task, breaking ties by earliest `createdAt`.",
+      "Implement `summariseByStatus` so every `TaskStatus` key is always present in the returned `Record`, even when the count is zero."
+    ],
+    "hints": [
+      "Use a `const` priority-rank lookup (`Record<Priority, number>`) inside `nextToProcess` to compare priorities numerically instead of chaining string comparisons.",
+      "Spread syntax (`{ ...task, status: next }`) is the cleanest way to return an updated Task without mutation — TypeScript will still enforce the shape.",
+      "Initialise the summary `Record` with all four statuses set to `0` before iterating, so you never need to check for missing keys."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript Handbook — Union Types",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/everyday-types.html#union-types"
+      },
+      {
+        "title": "TypeScript Handbook — The `satisfies` Operator",
+        "url": "https://www.typescriptlang.org/docs/handbook/release-notes/typescript-4-9.html#the-satisfies-operator"
+      },
+      {
+        "title": "TypeScript Handbook — Utility Types (Record, Readonly)",
+        "url": "https://www.typescriptlang.org/docs/handbook/utility-types.html"
+      },
+      {
+        "title": "MDN — `crypto.randomUUID()`",
+        "url": "https://developer.mozilla.org/en-US/docs/Web/API/Crypto/randomUUID"
+      }
+    ]
   }
 ]
