@@ -7089,5 +7089,41 @@
         "url": "https://developer.mozilla.org/en-US/docs/Web/API/Crypto/randomUUID"
       }
     ]
+  },
+  {
+    "date": "2026-09-08",
+    "name": "Typed Feature-Flag Evaluation Engine",
+    "difficulty": "Medium",
+    "description": "You're building the feature-flag evaluation core for a SaaS platform. Flags can be simple on/off toggles, percentage rollouts, or user-segment overrides; the evaluator must resolve the correct variant for a given user context and produce a typed audit record — all without a single `any` or unsafe cast.",
+    "snippet": "// Key types & main function signatures at a glance\n\ntype Segment = \"beta\" | \"internal\" | \"standard\" | \"enterprise\";\n\nexport type FlagKey = `flag_${string}`;\n\nexport type FlagRule =\n  | { kind: \"boolean\"; value: boolean }\n  | { kind: \"percentage\"; threshold: number }\n  | { kind: \"segment\"; segmentVariants: Record<Segment, V | null>; defaultVariant: V };\n  // (V must come from the enclosing Flag<V> — see full challenge for context)\n\nexport type Flag<V extends string> = {\n  key: FlagKey;\n  rules: FlagRule[];          // first match wins\n  defaultVariant: V;\n};\n\nexport type UserContext = {\n  userId: string;\n  segment: Segment;\n  attributes: Record<string, string | number | boolean>;\n};\n\nexport function evaluateFlag<V extends string>(\n  flag: Flag<V>,\n  user: UserContext\n): V { /* TODO */ }\n\nexport function evaluateWithAudit<V extends string>(\n  flag: Flag<V>,\n  user: UserContext\n): EvaluationRecord<V> { /* TODO */ }",
+    "goals": [
+      "Define a three-member discriminated union `FlagRule` and a generic `Flag<V extends string>` type with a template-literal branded key.",
+      "Implement `evaluateFlag` so it iterates rules in order, narrows each rule by its `kind` discriminant, and returns exactly `V` (not `string`).",
+      "Implement `evaluateWithAudit` to produce a fully typed `EvaluationRecord<V>` that captures which rule kind fired (or `\"default\"`).",
+      "Implement `batchEvaluate` to evaluate a list of flags and return a `Map` keyed by the flag's branded `FlagKey`."
+    ],
+    "hints": [
+      "The `segment` rule's `segmentVariants` field must use `Record<UserContext[\"segment\"], V | null>` — a mapped type over the segment union — so the compiler enforces all four segments are handled.",
+      "Use a `switch (rule.kind)` block inside `evaluateFlag`; TypeScript will narrow the rule type in each branch, giving you safe access to `rule.value`, `rule.threshold`, etc.",
+      "To preserve the literal type `V` through `evaluateWithAudit`, call `evaluateFlag` internally and annotate the return as `EvaluationRecord<V>` — don't widen to `string` at any intermediate step."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript – Discriminated Unions",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html#discriminated-unions"
+      },
+      {
+        "title": "TypeScript – Template Literal Types",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/template-literal-types.html"
+      },
+      {
+        "title": "TypeScript – Generic Constraints (extends)",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/generics.html#generic-constraints"
+      },
+      {
+        "title": "TypeScript – The satisfies Operator",
+        "url": "https://www.typescriptlang.org/docs/handbook/release-notes/typescript-4-9.html#the-satisfies-operator"
+      }
+    ]
   }
 ]
