@@ -7125,5 +7125,41 @@
         "url": "https://www.typescriptlang.org/docs/handbook/release-notes/typescript-4-9.html#the-satisfies-operator"
       }
     ]
+  },
+  {
+    "date": "2026-09-09",
+    "name": "Typed Graph Traversal Engine with Shortest-Path & Cycle Detection",
+    "difficulty": "Hard",
+    "description": "You're building the dependency-resolution core for a monorepo build system. Packages form a directed graph of dependencies; the engine must detect circular dependencies (which would deadlock a build), compute the shortest build path between two packages, and produce a topologically sorted build order — all with the compiler enforcing every graph shape, traversal result, and error variant.",
+    "snippet": "// Key types and main function signatures at a glance\n\nexport type PackageId = string & { readonly __brand: \"PackageId\" };\n\nexport type GraphError =\n  | { readonly kind: \"unknown_node\";   readonly ids: ReadonlyArray<PackageId> }\n  | { readonly kind: \"cycle_detected\"; readonly cycle: ReadonlyArray<PackageId> }\n  | { readonly kind: \"no_path\";        readonly from: PackageId; readonly to: PackageId };\n\nexport type Result<T, E> =\n  | { readonly ok: true;  readonly value: T }\n  | { readonly ok: false; readonly error: E };\n\nexport interface GraphQueryMap {\n  cycles:   CycleCheckResult;\n  topoSort: Result<TopologicalOrderResult, GraphError>;\n}\n\nexport function buildGraph(nodes: ReadonlyArray<PackageNode>, edges: ReadonlyArray<DependencyEdge>): DependencyGraph;\nexport function detectCycles(graph: DependencyGraph): CycleCheckResult;\nexport function shortestPath(graph: DependencyGraph, from: PackageId, to: PackageId): Result<ShortestPathResult, GraphError>;\nexport function topologicalSort(graph: DependencyGraph): Result<TopologicalOrderResult, GraphError>;\nexport function queryGraph<K extends keyof GraphQueryMap>(graph: DependencyGraph, operation: K): GraphQueryMap[K];\nexport function pkgId(raw: string): PackageId;\n",
+    "goals": [
+      "Implement `buildGraph`, `detectCycles`, `shortestPath`, and `topologicalSort` so all five test assertions pass.",
+      "Model every failure mode using the `GraphError` discriminated union and the generic `Result<T,E>` type — no thrown exceptions from public functions.",
+      "Implement `queryGraph` with a generic `K extends keyof GraphQueryMap` constraint so callers get the precise return type inferred from the operation literal, with zero casts.",
+      "Create a type-safe `pkgId` branded-ID factory that brands a plain string as `PackageId` without using `as` or any type assertion."
+    ],
+    "hints": [
+      "For `pkgId` without `as`: a single-line identity function whose return type is explicitly annotated as `PackageId` is the idiomatic branded-type factory — the annotation alone is not an assertion.",
+      "Dijkstra needs a min-priority queue; a simple array sorted by cost works for small graphs — focus on getting the types right first, then optimise.",
+      "In `queryGraph`, the compiler can't automatically verify that your `if/else` branches return `GraphQueryMap[K]` — a lookup object `{ cycles: detectCycles, topoSort: topologicalSort }` indexed by `operation` is one clean escape hatch that avoids casts."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript Handbook — Branded / Nominal Types",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/types-from-types.html"
+      },
+      {
+        "title": "TypeScript Handbook — Conditional & Mapped Types",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/mapped-types.html"
+      },
+      {
+        "title": "TypeScript Handbook — Discriminated Unions & Narrowing",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html#discriminated-unions"
+      },
+      {
+        "title": "MDN — Map object (used for adjacency/distance maps)",
+        "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Map"
+      }
+    ]
   }
 ]
