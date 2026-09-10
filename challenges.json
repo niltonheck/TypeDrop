@@ -7161,5 +7161,41 @@
         "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Map"
       }
     ]
+  },
+  {
+    "date": "2026-09-10",
+    "name": "Typed Expense Splitter with Settlement Calculation",
+    "difficulty": "Easy",
+    "description": "You're building the core logic for a group-trip expense-splitting app. Participants log expenses paid on behalf of the group, and the app must compute each person's net balance and produce the minimal list of cash transfers needed to settle all debts — with the compiler enforcing every shape along the way.",
+    "snippet": "// Key types & main function signature\n\ntype Cents = number & { readonly __brand: \"Cents\" };\n\ninterface Expense {\n  readonly id: string;\n  readonly description: string;\n  readonly paidBy: string;\n  readonly amount: Cents;\n  readonly splitAmong: readonly string[];\n}\n\ninterface Balance {\n  readonly participant: string;\n  readonly netCents: Cents;   // positive = owed money, negative = owes money\n}\n\ninterface Transfer {\n  readonly from: string;\n  readonly to: string;\n  readonly amountCents: Cents;\n}\n\ntype SplitResult =\n  | { readonly ok: true;  readonly balances: readonly Balance[]; readonly transfers: readonly Transfer[] }\n  | { readonly ok: false; readonly error: SplitError };\n\n// Your job: define SplitError, then implement these ↓\ndeclare function asCents(n: number): Cents;\ndeclare function computeSplit(participants: readonly string[], expenses: readonly Expense[]): SplitResult;\ndeclare function formatSummary(result: SplitResult): string;",
+    "goals": [
+      "Define `SplitError` as a discriminated union with `kind` variants: `\"NO_PARTICIPANTS\"`, `\"UNKNOWN_PAYER\"`, and `\"EMPTY_SPLIT\"`, each carrying a `message` string.",
+      "Implement `asCents` to brand a plain number as `Cents`, throwing `RangeError` for non-finite or non-integer inputs.",
+      "Implement `computeSplit` to validate inputs, compute per-participant net balances in whole cents (distributing remainder to the first participant), and greedily produce a minimal list of settlement transfers.",
+      "Implement `formatSummary` using type narrowing on `result.ok` to produce a human-readable string — either an error message or dollar-formatted transfer lines."
+    ],
+    "hints": [
+      "A branded type like `Cents = number & { readonly __brand: \"Cents\" }` cannot be created with a cast — use a dedicated factory function (`asCents`) that validates and returns the branded value.",
+      "For the greedy settlement loop, sort creditors and debtors by absolute value descending, then repeatedly pair the largest creditor with the largest debtor, emit a Transfer for `Math.min(credit, debt)`, and update both sides until all are zero.",
+      "In `formatSummary`, narrow with `if (result.ok)` — the compiler will then know the `true` branch has `balances` and `transfers`, and the `false` branch has `error`, with no type assertions needed."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript Handbook — Narrowing",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html"
+      },
+      {
+        "title": "TypeScript Handbook — Literal Types & Discriminated Unions",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html#discriminated-unions"
+      },
+      {
+        "title": "TypeScript Deep Dive — Branded Types",
+        "url": "https://basarat.gitbook.io/typescript/main-1/nominaltyping"
+      },
+      {
+        "title": "MDN — Math.floor",
+        "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Math/floor"
+      }
+    ]
   }
 ]
