@@ -7197,5 +7197,41 @@
         "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Math/floor"
       }
     ]
+  },
+  {
+    "date": "2026-09-11",
+    "name": "Typed Paginated API Client with Retry & Result Aggregation",
+    "difficulty": "Medium",
+    "description": "You're building the data-fetching layer for an analytics dashboard that pulls records from a paginated REST API. Pages must be fetched sequentially, transient errors should be retried with exponential back-off, and the final result must be a typed aggregate — all without a single `any` or unsafe cast.",
+    "snippet": "// Key types + main function signatures\n\nexport type Ok<T>  = { readonly tag: \"ok\";  readonly value: T };\nexport type Err<E> = { readonly tag: \"err\"; readonly error: E };\nexport type Result<T, E> = Ok<T> | Err<E>;\n\nexport type ApiError = { readonly code: number; readonly message: string };\nexport type Page<T> = { readonly items: T[]; readonly nextCursor: string | null };\n\n/** Typed async callback: cursor → Result-wrapped page */\nexport type FetchPage<T> = (cursor: string | null) => Promise<Result<Page<T>, ApiError>>;\n\n/** Retry wrapper: exponential back-off, returns first Ok or final Err */\nexport async function withRetry<T>(\n  fn: () => Promise<Result<T, ApiError>>,\n  maxRetries: number\n): Promise<Result<T, ApiError>> { /* TODO */ }\n\n/** Pagination driver: collects all items across pages via withRetry */\nexport async function fetchAllPages<T>(\n  fetchPage: FetchPage<T>\n): Promise<Result<T[], ApiError>> { /* TODO */ }\n\n/** Group collected items by the string value of a typed key */\nexport function aggregateRecords<T extends Record<string, unknown>>(\n  items: T[],\n  groupKey: keyof T\n): Map<string, T[]> { /* TODO */ }",
+    "goals": [
+      "Implement the `Result<T, E>` discriminated union and its `ok` / `err` convenience constructors.",
+      "Implement `withRetry` so it transparently wraps any async `Result`-returning function with exponential back-off and a configurable retry limit.",
+      "Implement `fetchAllPages` to drive a cursor-based pagination loop, wiring in `withRetry` on every page fetch and collecting all items into a flat array.",
+      "Implement `aggregateRecords` using the constrained generic `T extends Record<string, unknown>` and `keyof T` to group items into a `Map` by an arbitrary typed key."
+    ],
+    "hints": [
+      "The `withRetry` delay can be expressed as `100 * 2 ** attempt` ms — use a small `sleep` helper built with `new Promise(resolve => setTimeout(resolve, ms))`.",
+      "In `fetchAllPages`, keep a `cursor: string | null = null` variable and update it to `page.nextCursor` each iteration; exit the loop when it is `null` after the first page is processed.",
+      "Inside `aggregateRecords`, write `String(item[groupKey])` to safely coerce the indexed value to a string without reaching for `any`."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript – Discriminated Unions",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html#discriminated-unions"
+      },
+      {
+        "title": "TypeScript – Generics & Constraints",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/generics.html#generic-constraints"
+      },
+      {
+        "title": "MDN – Promise & async/await",
+        "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise"
+      },
+      {
+        "title": "TypeScript – keyof Type Operator",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/keyof-types.html"
+      }
+    ]
   }
 ]
