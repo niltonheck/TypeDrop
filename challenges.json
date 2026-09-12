@@ -7233,5 +7233,41 @@
         "url": "https://www.typescriptlang.org/docs/handbook/2/keyof-types.html"
       }
     ]
+  },
+  {
+    "date": "2026-09-12",
+    "name": "Typed Middleware Pipeline with Typed Context & Error Propagation",
+    "difficulty": "Hard",
+    "description": "You're building the request-handling core for an internal API gateway. Incoming requests flow through a chain of middleware — authentication, rate-limiting, logging, and transformation — each of which can enrich a shared typed context or short-circuit the pipeline with a structured error. The compiler must catch every invalid context mutation, missing required field, and unhandled error variant.",
+    "snippet": "// Core types at a glance\n\nexport type HttpMethod = \"GET\" | \"POST\" | \"PUT\" | \"DELETE\" | \"PATCH\";\nexport type Role       = \"admin\" | \"editor\" | \"viewer\";\n\nexport type PipelineError =\n  | { kind: \"AuthError\";       message: string; requiredRoles: Role[]      }\n  | { kind: \"RateLimitError\";  message: string; retryAfterMs: number       }\n  | { kind: \"ValidationError\"; message: string; fields: string[]           }\n  | { kind: \"UpstreamError\";   message: string; statusCode: number; upstreamService: string };\n\nexport type Result<T, E> = { ok: true; value: T } | { ok: false; error: E };\n\nexport type RawContext        = { requestId: string; path: string; method: HttpMethod };\nexport type AuthedContext     = RawContext     & { userId: string; roles: Role[]      };\nexport type RateLimitedContext = AuthedContext & { remainingQuota: number             };\nexport type ValidatedContext  = RateLimitedContext & { body: unknown                 };\n\n// Middleware: async fn that enriches context or short-circuits with an error\nexport type Middleware<In, Out extends In> =\n  (ctx: In) => Promise<Result<Out, PipelineError>>;\n\n// composePipeline chains middleware left-to-right, threading typed context\nexport function composePipeline<In1, Out1 extends In1, Out2 extends Out1>(\n  m1: Middleware<In1, Out1>,\n  m2: Middleware<Out1, Out2>\n): Middleware<In1, Out2>;\n",
+    "goals": [
+      "Define the `PipelineError` discriminated union, `Result<T,E>` generic, and the four context intersection types so that each middleware layer receives and returns a precisely typed context.",
+      "Implement `composePipeline` with at least two typed overloads (2-arity and 3-arity) so the compiler infers the correct input and output context types and enforces that each middleware's output extends its input.",
+      "Implement `matchError` using a mapped type over `PipelineError[\"kind\"]` so the compiler rejects calls with missing or extra handler keys.",
+      "Implement the three middleware factories (`createAuthMiddleware`, `createRateLimitMiddleware`, `createValidationMiddleware`) so each returns the correct `Middleware<In, Out>` type and produces the appropriate `PipelineError` variant on failure."
+    ],
+    "hints": [
+      "For `composePipeline`'s implementation body, you can use `Middleware<unknown, unknown>` as the internal representation — the overload signatures do the heavy lifting for callers.",
+      "For `matchError`, index into the `handlers` record with `error.kind` after narrowing — TypeScript will infer the correct handler argument type if your `ErrorHandlers` mapped type uses `Extract<E, { kind: K }>` correctly.",
+      "The `Out extends In` constraint on `Middleware` is what prevents middleware from accidentally removing fields from the context — lean on it when writing the factory functions to confirm your return types are correct."
+    ],
+    "docs": [
+      {
+        "title": "TS Handbook – Discriminated Unions",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html#discriminated-unions"
+      },
+      {
+        "title": "TS Handbook – Function Overloads",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/functions.html#function-overloads"
+      },
+      {
+        "title": "TS Handbook – Mapped Types",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/mapped-types.html"
+      },
+      {
+        "title": "TS Utility Types – Extract",
+        "url": "https://www.typescriptlang.org/docs/handbook/utility-types.html#extracttype-union"
+      }
+    ]
   }
 ]
