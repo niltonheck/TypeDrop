@@ -7269,5 +7269,41 @@
         "url": "https://www.typescriptlang.org/docs/handbook/utility-types.html#extracttype-union"
       }
     ]
+  },
+  {
+    "date": "2026-09-13",
+    "name": "Typed In-Memory Event Bus with Subscription Management",
+    "difficulty": "Medium",
+    "description": "You're building the real-time notification core for a collaborative document editor. Components across the app publish and subscribe to strongly-typed events (cursor moves, document edits, user presence changes); the event bus must guarantee that every subscriber receives exactly the payload shape its event defines — and the compiler must reject any mismatched publish or subscribe call.",
+    "snippet": "// Key types you'll work with:\n\nexport interface AppEventMap {\n  \"cursor:move\": { userId: string; x: number; y: number };\n  \"doc:edit\":    { userId: string; delta: string; timestamp: number };\n  \"user:join\":   { userId: string; displayName: string };\n  \"user:leave\":  { userId: string };\n  \"doc:save\":    { docId: string; savedBy: string; version: number };\n}\n\nexport type EventName = /* TODO: derived from AppEventMap */ never;\nexport type EventPayload<K extends EventName> = /* TODO */ never;\nexport type EventHandler<K extends EventName> = /* TODO */ never;\n\nexport type SubscriptionToken = string & { readonly __brand: \"SubscriptionToken\" };\n\n// Main factory you must implement:\nexport function createEventBus(): IEventBus { /* TODO */ }\n",
+    "goals": [
+      "Define `EventName`, `EventPayload<K>`, and `EventHandler<K>` entirely from `AppEventMap` using mapped-type indexing and `keyof` — no hard-coded strings.",
+      "Implement `on`, `off`, `emit`, and `listenerCount` on the returned bus so subscriptions are tracked, payloads are type-safe, and removal is accurate.",
+      "Implement `once` so the handler auto-unsubscribes after its first invocation and its token can also be cancelled early via `off`.",
+      "Keep the internal subscription registry fully typed — no `any`, no unsafe casts, no index-signature hacks."
+    ],
+    "hints": [
+      "The internal store can be a `Map` keyed by `EventName`; the value for each key can be an array of a small interface like `{ token: SubscriptionToken; handler: EventHandler<K>; once: boolean }` — but you'll need a mapped type or a union to keep `K` in sync with the key.",
+      "For the registry, consider storing entries as `{ token: SubscriptionToken; handler: (payload: AppEventMap[EventName]) => void; once: boolean }` keyed by token in a flat `Map<SubscriptionToken, …>` alongside a reverse index from event name to token set — this sidesteps the per-K generic storage problem.",
+      "To create a `SubscriptionToken` without using `as`, write a tiny private helper like `function makeToken(): SubscriptionToken { return crypto.randomUUID() as SubscriptionToken; }` — this is the one place a cast is acceptable since it's an internal factory."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript Handbook — Mapped Types",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/mapped-types.html"
+      },
+      {
+        "title": "TypeScript Handbook — Generics",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/generics.html"
+      },
+      {
+        "title": "TypeScript Handbook — keyof Type Operator",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/keyof-types.html"
+      },
+      {
+        "title": "MDN — crypto.randomUUID()",
+        "url": "https://developer.mozilla.org/en-US/docs/Web/API/Crypto/randomUUID"
+      }
+    ]
   }
 ]
