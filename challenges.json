@@ -7305,5 +7305,41 @@
         "url": "https://developer.mozilla.org/en-US/docs/Web/API/Crypto/randomUUID"
       }
     ]
+  },
+  {
+    "date": "2026-09-14",
+    "name": "Typed LRU Cache with TTL Eviction & Generational Stats",
+    "difficulty": "Hard",
+    "description": "You're building the in-process caching layer for a high-throughput API server. The cache must support generic key-value storage with a maximum capacity (LRU eviction), per-entry time-to-live (TTL) expiry, and a typed snapshot of runtime statistics — all enforced by the compiler with zero `any` or unsafe casts.",
+    "snippet": "// Key types you'll work with:\n\ntype CacheKey<K> = K & { readonly __brand: \"CacheKey\" };\n\ninterface CacheEntry<V> {\n  value: V;\n  expiresAt: number | undefined;\n  insertedAt: number;\n}\n\ninterface CacheStats {\n  readonly hits: number;\n  readonly misses: number;\n  readonly evictions: number;\n  readonly expirations: number;\n  readonly currentSize: number;\n}\n\ninterface CacheOptions<K, V> {\n  capacity: number;\n  defaultTtlMs?: number;\n  onEvict?: (key: K, value: V) => void;\n}\n\n// Main class signature:\nexport class LRUCache<K, V> {\n  constructor(options: CacheOptions<K, V>);\n  get(key: K): V | undefined;\n  set(key: K, value: V, ttlMs?: number): void;\n  delete(key: K): boolean;\n  clear(): void;\n  peek(key: K): V | undefined;\n  stats(): CacheStats;\n}\n\nexport function memoize<Args extends readonly unknown[], R>(\n  fn: (...args: Args) => R,\n  cache: LRUCache<string, R>,\n  keyFn: (...args: Args) => string\n): (...args: Args) => R;",
+    "goals": [
+      "Implement LRUCache<K, V> with O(1) get/set/delete using a Map-based doubly-linked list (or insertion-order Map trick) that correctly promotes entries on access.",
+      "Enforce TTL expiry in both get() and peek(), recording expirations in stats and distinguishing them from LRU evictions.",
+      "Fire the onEvict callback exclusively on capacity-overflow eviction, never on manual delete or TTL expiry.",
+      "Implement the generic memoize() function using variadic tuple Args so the compiler enforces argument and return-type consistency end-to-end."
+    ],
+    "hints": [
+      "JavaScript's built-in Map preserves insertion order — deleting and re-inserting a key moves it to the 'end', giving you MRU promotion without a custom linked list.",
+      "The branded CacheKey<K> only needs a cast in the single normalise() private method; every other internal path receives CacheKey<K> already, keeping the rest of the code cast-free.",
+      "For memoize, the constraint `Args extends readonly unknown[]` lets you spread args into both fn and keyFn without losing their tuple types — don't widen to unknown[]."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript — Generics",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/generics.html"
+      },
+      {
+        "title": "TypeScript — Mapped & Conditional Types",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/types-from-types.html"
+      },
+      {
+        "title": "MDN — Map (insertion-order iteration)",
+        "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Map"
+      },
+      {
+        "title": "TypeScript — Variadic Tuple Types",
+        "url": "https://www.typescriptlang.org/docs/handbook/release-notes/typescript-4-0.html#variadic-tuple-types"
+      }
+    ]
   }
 ]
