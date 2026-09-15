@@ -7341,5 +7341,41 @@
         "url": "https://www.typescriptlang.org/docs/handbook/release-notes/typescript-4-0.html#variadic-tuple-types"
       }
     ]
+  },
+  {
+    "date": "2026-09-15",
+    "name": "Typed Product Catalog Filter & Sorter",
+    "difficulty": "Easy",
+    "description": "You're building the core filtering and sorting logic for an e-commerce product catalog page. Shoppers can narrow results by category, price range, and in-stock status, then sort by price or rating — and the compiler must enforce every filter shape and sort key along the way.",
+    "snippet": "// Key types you must define and implement:\n\ntype Category = \"electronics\" | \"clothing\" | \"books\" | \"home\";\n\ninterface Product {\n  id: string;\n  name: string;\n  category: Category;\n  priceUsd: number;\n  rating: number;   // 1–5\n  inStock: boolean;\n}\n\ninterface FilterCriteria {\n  category?: Category;\n  minPriceUsd?: number;\n  maxPriceUsd?: number;\n  minRating?: number;\n  inStockOnly?: boolean;\n}\n\ntype SortKey   = \"priceUsd\" | \"rating\";\ntype SortOrder = \"asc\" | \"desc\";\n\n// Main composition function you must implement:\nfunction filterAndSort(\n  products: readonly Product[],\n  filter: FilterCriteria,\n  sort: { key: SortKey; order: SortOrder }\n): Product[] { /* TODO */ }\n",
+    "goals": [
+      "Define all five types/interfaces (Category, Product, FilterCriteria, SortKey/SortOrder/SortOptions) with no `any` and strict field shapes.",
+      "Implement `filterProducts` so it applies every provided criterion as an AND-filter without mutating the input.",
+      "Implement `sortProducts` using `SortKey` to index into Product for a generic, type-safe comparison.",
+      "Implement `groupByCategory` returning a `Record<Category, Product[]>` where all four category keys are always present."
+    ],
+    "hints": [
+      "Use `Record<Category, Product[]>` as the return type of `groupByCategory` — the compiler will tell you if any Category key is missing from your initial accumulator.",
+      "For `sortProducts`, index into the product with `product[options.key]` — TypeScript will infer the value as `number` because `SortKey` is constrained to numeric fields.",
+      "All FilterCriteria fields are optional, so use optional chaining (`??` / `!= null`) or short-circuit guards before applying each filter predicate."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript – Utility Types (Record)",
+        "url": "https://www.typescriptlang.org/docs/handbook/utility-types.html#recordkeys-type"
+      },
+      {
+        "title": "TypeScript – Indexed Access Types",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/indexed-access-types.html"
+      },
+      {
+        "title": "TypeScript – Union Types",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/everyday-types.html#union-types"
+      },
+      {
+        "title": "MDN – Array.prototype.sort()",
+        "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/sort"
+      }
+    ]
   }
 ]
