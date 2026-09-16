@@ -7377,5 +7377,41 @@
         "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/sort"
       }
     ]
+  },
+  {
+    "date": "2026-09-16",
+    "name": "Typed Job Queue with Priority Scheduling & Status Tracking",
+    "difficulty": "Medium",
+    "description": "You're building the background job processing core for a SaaS platform. Jobs of different types (email delivery, report generation, data export) are enqueued with a priority level, processed by typed handlers, and their lifecycle — pending → running → succeeded / failed — must be tracked in a strongly-typed status ledger that the compiler fully understands.",
+    "snippet": "/** All supported job kinds. */\ntype JobKind = \"email\" | \"report\" | \"export\";\n\n/** Payload shapes keyed by job kind. */\ntype JobPayloadMap = {\n  email:  { to: string; subject: string; body: string };\n  report: { reportId: string; format: \"pdf\" | \"csv\" | \"xlsx\" };\n  export: { datasetId: string; destination: string; compress: boolean };\n};\n\ntype Priority = 1 | 2 | 3;\n\n// Job<K> carries the exact payload for kind K — no union bleed-through\ntype Job<K extends JobKind> = /* TODO */;\n\n// Four-variant discriminated union tracking the full lifecycle\ntype JobStatus<K extends JobKind> = /* TODO */;\n\n// Mapped type: every JobKind maps to its correctly-typed async handler\ntype HandlerRegistry = /* TODO */;\n\nclass JobQueue {\n  constructor(handlers: HandlerRegistry) { /* ... */ }\n  enqueue<K extends JobKind>(kind: K, payload: JobPayloadMap[K], priority: Priority): string { /* ... */ }\n  async processNext(): Promise<string | null> { /* ... */ }\n  getStatus<K extends JobKind>(id: string): JobStatus<K> | undefined { /* ... */ }\n  async drain(): Promise<void> { /* ... */ }\n  summary(): Record<JobStatus<JobKind>[\"status\"], number> { /* ... */ }\n}",
+    "goals": [
+      "Define `Job<K>`, `JobStatus<K>`, `HandlerFn<K>`, and `HandlerRegistry` so the compiler enforces correct payload shapes and lifecycle transitions for every job kind.",
+      "Implement `enqueue` so the `payload` parameter is automatically narrowed to `JobPayloadMap[K]` at every call site with no manual annotation.",
+      "Implement `processNext` with priority-then-FIFO scheduling, calling the right handler and updating the ledger — all without any unsafe casts or type assertions.",
+      "Implement `drain` and `summary` so all jobs are processed sequentially and the final tally covers all four status variants, even those with a count of zero."
+    ],
+    "hints": [
+      "A mapped type `{ [K in JobKind]: HandlerFn<K> }` gives each key its own correctly-typed handler — much safer than an index signature.",
+      "Inside `processNext`, iterating over the specific job kinds (e.g. with an `if`/`else if` or a helper) lets TypeScript narrow `job.kind` so the payload flows into the handler without casting.",
+      "Use an indexed access type on the discriminated union — `JobStatus<JobKind>[\"status\"]` — to derive the four string literals for the `Record` in `summary()` automatically."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript Handbook — Mapped Types",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/mapped-types.html"
+      },
+      {
+        "title": "TypeScript Handbook — Discriminated Unions",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html#discriminated-unions"
+      },
+      {
+        "title": "TypeScript Handbook — Generic Constraints",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/generics.html#generic-constraints"
+      },
+      {
+        "title": "TypeScript Handbook — Indexed Access Types",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/indexed-access-types.html"
+      }
+    ]
   }
 ]
