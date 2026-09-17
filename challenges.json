@@ -7413,5 +7413,41 @@
         "url": "https://www.typescriptlang.org/docs/handbook/2/indexed-access-types.html"
       }
     ]
+  },
+  {
+    "date": "2026-09-17",
+    "name": "Typed Paginated API Client with Retry, Cancellation & Result Aggregation",
+    "difficulty": "Hard",
+    "description": "You're building the data-fetching core for an analytics dashboard that streams paginated reports from a REST API. Each page must be fetched with exponential-backoff retry, the entire operation must be cancellable via an AbortSignal, and every page's records must be aggregated into a single typed summary — with the compiler enforcing every fetch shape, error variant, and aggregation contract.",
+    "snippet": "// Key types & main function signatures at a glance:\n\ntype PageCursor = Brand<string, \"PageCursor\">;\n\ntype FetchError =\n  | { readonly kind: \"NetworkError\"; readonly message: string }\n  | { readonly kind: \"TimeoutError\"; readonly afterMs: number }\n  | { readonly kind: \"ParseError\"; readonly raw: string }\n  | { readonly kind: \"AbortedError\" }\n  | { readonly kind: \"MaxRetriesExceeded\"; readonly attempts: number; readonly lastError: FetchError };\n\ntype Result<T, E> =\n  | { readonly ok: true;  readonly value: T }\n  | { readonly ok: false; readonly error: E };\n\ntype PageFetcher = (cursor: PageCursor | null, signal: AbortSignal) => Promise<ReportPage>;\n\n// TODO A — single-page fetch with exponential-backoff retry\nasync function fetchPageWithRetry(\n  cursor: PageCursor | null,\n  fetcher: PageFetcher,\n  config: RetryConfig,\n  signal: AbortSignal\n): Promise<Result<ReportPage, FetchError>>;\n\n// TODO B — pure aggregation of all collected records\nfunction aggregateRecords(\n  records: readonly ReportRecord[],\n  pagesConsumed: number\n): ReportSummary;\n\n// TODO C — orchestrate full pagination and return aggregated summary\nasync function fetchAllPages(\n  fetcher: PageFetcher,\n  config: PaginatedClientConfig,\n  signal: AbortSignal\n): Promise<Result<ReportSummary, FetchError>>;\n",
+    "goals": [
+      "Implement `fetchPageWithRetry` with exponential-backoff retry, non-retryable error short-circuiting, and AbortSignal awareness — all fully typed.",
+      "Implement the pure `aggregateRecords` function that folds a flat record list into a per-region `ReportSummary` with correct averages.",
+      "Implement `fetchAllPages` to orchestrate sequential pagination, enforce the `maxPages` cap, thread the AbortSignal through every fetch, and short-circuit on any fetch failure.",
+      "Model all error variants as a discriminated union and ensure every branch is handled exhaustively — the compiler must reject any unhandled case."
+    ],
+    "hints": [
+      "For retry logic, catch the thrown FetchError from the PageFetcher and check its `kind` against `nonRetryableKinds` — a `ReadonlyArray.includes` call narrows cleanly here.",
+      "Use a single mutable `records` accumulator array and push each page's records in sequence inside `fetchAllPages`; pass the final array and page count to `aggregateRecords`.",
+      "To build `byRegion` in `aggregateRecords`, consider a `Map<ReportRecord['region'], ...>` for accumulation, then convert to a plain `Record` at the end — `Object.fromEntries` pairs well with `satisfies`."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript — Narrowing & Discriminated Unions",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html#discriminated-unions"
+      },
+      {
+        "title": "TypeScript — Utility Types (Record, Readonly, Extract)",
+        "url": "https://www.typescriptlang.org/docs/handbook/utility-types.html"
+      },
+      {
+        "title": "MDN — AbortController / AbortSignal",
+        "url": "https://developer.mozilla.org/en-US/docs/Web/API/AbortController"
+      },
+      {
+        "title": "MDN — Promise: sequential vs. parallel patterns",
+        "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Using_promises#composition"
+      }
+    ]
   }
 ]
