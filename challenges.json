@@ -7449,5 +7449,41 @@
         "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Using_promises#composition"
       }
     ]
+  },
+  {
+    "date": "2026-09-18",
+    "name": "Typed Middleware Pipeline with Context Propagation",
+    "difficulty": "Medium",
+    "description": "You're building the request-processing core for a lightweight HTTP framework. Incoming requests flow through a chain of strongly-typed middleware functions — authentication, logging, rate-limiting, body parsing — each of which may enrich a shared context object before passing control to the next handler. The compiler must enforce that every middleware only reads context properties that have already been added by a preceding middleware, and that the final handler receives the fully-enriched context.",
+    "snippet": "// Core types you must define:\n\nexport type Middleware<TIn, TOut> = (\n  ctx: TIn,\n  next: (enriched: TIn & TOut) => Promise<void>\n) => Promise<void>;\n\nexport type Pipeline<TCtx> = {\n  use<TOut>(mw: Middleware<TCtx, TOut>): Pipeline<TCtx & TOut>;\n  run(handler: (ctx: TCtx) => Promise<void>): Promise<void>;\n};\n\n// Entry point:\nexport function createPipeline<TCtx extends object>(\n  initialCtx: TCtx\n): Pipeline<TCtx>;\n\n// Example usage the compiler must accept:\ncreatePipeline({ rawBody: '{\"x\":1}' })\n  .use(withRequestId(\"api\"))        // ctx gains requestId\n  .use(withAuth(\"admin_token\"))     // ctx gains userId, role\n  .use(withTimestamp())             // ctx gains timestamp\n  .use(withParsedBody(JSON.parse))  // ctx gains body — rawBody already present ✅\n  .run(async (ctx) => {\n    console.log(ctx.requestId, ctx.userId, ctx.role, ctx.timestamp, ctx.body);\n  });",
+    "goals": [
+      "Define `Middleware<TIn, TOut>` and `Pipeline<TCtx>` so that each `.use()` call threads the accumulated context type `TCtx & TOut` to the next step.",
+      "Implement `createPipeline` as a fluent builder that executes middleware in order, passing the enriched context through a `next` callback chain.",
+      "Implement all four concrete middleware factories (`withRequestId`, `withAuth`, `withTimestamp`, `withParsedBody`), including the compile-time constraint that `withParsedBody` requires `rawBody: string` on the incoming context.",
+      "Implement the `AuthError` class with a `readonly code` of literal type `\"UNAUTHORIZED\"` and ensure it is thrown (not returned) by `withAuth` on an empty token."
+    ],
+    "hints": [
+      "The key to type-threading is making `.use<TOut>()` return `Pipeline<TCtx & TOut>` — TypeScript will intersect the types at each call site automatically.",
+      "Model the middleware chain internally as an array of functions and compose them right-to-left (or use a recursive `compose`) so each `next` call advances to the following middleware.",
+      "For `withParsedBody`, the constraint `TIn extends { rawBody: string }` lives on the *function's* type parameter, not on `Middleware` itself — this is what lets the compiler reject its use before `rawBody` is present."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript Handbook — Intersection Types",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/objects.html#intersection-types"
+      },
+      {
+        "title": "TypeScript Handbook — Generic Constraints",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/generics.html#using-type-parameters-in-generic-constraints"
+      },
+      {
+        "title": "TypeScript Handbook — Function Types",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/functions.html"
+      },
+      {
+        "title": "MDN — Promise chaining & async/await",
+        "url": "https://developer.mozilla.org/en-US/docs/Learn_web_development/Extensions/Async_JS/Promises"
+      }
+    ]
   }
 ]
