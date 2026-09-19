@@ -7485,5 +7485,41 @@
         "url": "https://developer.mozilla.org/en-US/docs/Learn_web_development/Extensions/Async_JS/Promises"
       }
     ]
+  },
+  {
+    "date": "2026-09-19",
+    "name": "Typed Expense Report Summarizer",
+    "difficulty": "Easy",
+    "description": "You're building the core logic for a corporate expense management tool. Finance teams upload raw expense entries and need a strongly-typed summary grouped by category, with per-category totals and an overall grand total — all shapes enforced by the compiler.",
+    "snippet": "export type ExpenseCategory =\n  | \"travel\" | \"meals\" | \"software\"\n  | \"hardware\" | \"office\" | \"other\";\n\nexport interface Expense {\n  id: string;\n  submittedBy: string;\n  category: ExpenseCategory;\n  amountUSD: number;\n  description: string;\n  date: string; // ISO 8601\n}\n\nexport interface CategorySummary {\n  category: ExpenseCategory;\n  totalUSD: number;\n  count: number;\n  largestExpense: Expense;\n}\n\nexport interface ExpenseReport {\n  byCategory: Record<ExpenseCategory, CategorySummary>;\n  grandTotalUSD: number;\n  totalCount: number;\n  earliestDate: string | null;\n  latestDate: string | null;\n}\n\n// Your main entry point:\nexport function buildExpenseReport(expenses: Expense[]): ExpenseReport {\n  throw new Error(\"Not implemented\");\n}",
+    "goals": [
+      "Define `PartialCategoryMap<V>` as a mapped type over `ExpenseCategory` with optional values, and `NumericExpenseFields` using key remapping with a conditional type.",
+      "Implement `extractCategories` to return unique `ExpenseCategory` values in first-seen order without widening the type.",
+      "Implement `groupByCategory` and `summarizeCategory` to correctly group expenses and compute per-category totals, counts, and the largest expense.",
+      "Implement `buildExpenseReport` to compose the above helpers into a full `ExpenseReport`, including grand total, entry count, and ISO date range."
+    ],
+    "hints": [
+      "For `NumericExpenseFields`, use a mapped type with `as` key remapping: `[K in keyof Expense as Expense[K] extends number ? K : never]`.",
+      "For `extractCategories`, a `Set<ExpenseCategory>` guarantees uniqueness while preserving insertion order — spread it into an array to return.",
+      "For `buildExpenseReport`, build a `PartialCategoryMap<CategorySummary>` first, then cast it to `Record<ExpenseCategory, CategorySummary>` only at the final assignment — this is the one safe structural cast the design allows."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript Mapped Types",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/mapped-types.html"
+      },
+      {
+        "title": "TypeScript Conditional Types",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/conditional-types.html"
+      },
+      {
+        "title": "TypeScript Utility Types (Record, Pick, Omit…)",
+        "url": "https://www.typescriptlang.org/docs/handbook/utility-types.html"
+      },
+      {
+        "title": "Key Remapping via `as` in Mapped Types",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/mapped-types.html#key-remapping-via-as"
+      }
+    ]
   }
 ]
