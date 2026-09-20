@@ -7521,5 +7521,41 @@
         "url": "https://www.typescriptlang.org/docs/handbook/2/mapped-types.html#key-remapping-via-as"
       }
     ]
+  },
+  {
+    "date": "2026-09-20",
+    "name": "Typed Event Emitter with Wildcard Subscriptions",
+    "difficulty": "Medium",
+    "description": "You're building the real-time notification core for a collaborative document editor. Components across the app subscribe to strongly-typed events — cursor moves, document edits, presence updates — and the compiler must guarantee that every listener receives exactly the payload shape its event carries, with no unsafe casting.",
+    "snippet": "// Key types and main class signature\nexport interface DocEventMap {\n  \"cursor:move\":   { userId: string; x: number; y: number };\n  \"doc:edit\":      { userId: string; delta: string; timestamp: number };\n  \"presence:join\": { userId: string; displayName: string };\n  \"presence:leave\":{ userId: string };\n  \"doc:save\":      { docId: string; revision: number };\n}\n\n// Branded cleanup function — distinguishable from plain () => void\nexport type Unsubscribe = (() => void) & { readonly __brand: \"Unsubscribe\" };\n\n// Wildcard envelope — distributes over every key in TMap\nexport type WildcardListener<TMap extends EventMap> = /* your type here */;\n\nexport class TypedEmitter<TMap extends EventMap> {\n  on<K extends keyof TMap>(event: K, listener: Listener<TMap[K]>): Unsubscribe;\n  once<K extends keyof TMap>(event: K, listener: Listener<TMap[K]>): Unsubscribe;\n  emit<K extends keyof TMap>(event: K, payload: TMap[K]): void;\n  onAny(listener: WildcardListener<TMap>): Unsubscribe;\n  listenerCount<K extends keyof TMap>(event: K): number;\n}",
+    "goals": [
+      "Define a branded `Unsubscribe` type (a callable intersected with a unique brand property) so it is structurally distinct from plain `() => void`.",
+      "Express `WildcardListener<TMap>` as a distributive or mapped type that produces a union of narrowly-typed envelope handlers — one per event key — with no `unknown` payload.",
+      "Implement `TypedEmitter<TMap>` so that `on`, `once`, `emit`, `onAny`, and `listenerCount` all typecheck under `strict: true` without any `any` or type assertions in the public API.",
+      "Ensure `once` auto-unsubscribes after a single emission and that all `Unsubscribe` functions returned by every method correctly remove their associated listener."
+    ],
+    "hints": [
+      "For the wildcard listener union, try a mapped type whose values are function types, then index into it with `keyof TMap` to distribute: `{ [K in keyof TMap]: (envelope: { event: K; payload: TMap[K] }) => void }[keyof TMap]`.",
+      "To brand `Unsubscribe`, intersect the callable signature with a readonly phantom property: `(() => void) & { readonly __brand: 'Unsubscribe' }` — then cast only inside the class implementation when constructing the return value.",
+      "Store listeners in a `Map<keyof TMap, Set<Listener<TMap[keyof TMap]>>>` — using a `Set` makes O(1) removal trivial and naturally prevents duplicate registrations."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript Handbook — Mapped Types",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/mapped-types.html"
+      },
+      {
+        "title": "TypeScript Handbook — Conditional & Distributive Types",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/conditional-types.html"
+      },
+      {
+        "title": "TypeScript Handbook — Generics",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/generics.html"
+      },
+      {
+        "title": "MDN — Map and Set",
+        "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Map"
+      }
+    ]
   }
 ]
