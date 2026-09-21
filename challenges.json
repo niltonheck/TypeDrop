@@ -7557,5 +7557,41 @@
         "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Map"
       }
     ]
+  },
+  {
+    "date": "2026-09-21",
+    "name": "Typed Contact Book Search & Filter",
+    "difficulty": "Easy",
+    "description": "You're building the search and filter core for a personal contact management app. Users can look up contacts by name or tag, and the results must be narrowed into strongly-typed shapes the compiler fully understands.",
+    "snippet": "/** Every contact must belong to exactly one of these groups. */\ntype ContactGroup = \"family\" | \"work\" | \"friend\" | \"acquaintance\";\n\ninterface Contact {\n  id: ContactId;\n  fullName: string;\n  group: ContactGroup;\n  email: string | null;\n  phones: PhoneEntry[];\n  tags: string[];\n}\n\n/** Branded string — distinct from plain `string` at compile time. */\ntype ContactId = string & { readonly __brand: \"ContactId\" };\n\ntype SearchQuery = {\n  // TODO: all optional — nameContains, group, tag, hasEmail\n};\n\n// --- Functions you must implement ---\n\nfunction searchContacts(contacts: Contact[], query: SearchQuery): Contact[];\n\nfunction getContactById(contacts: Contact[], id: ContactId): Contact | null;\n\nfunction groupContacts(contacts: Contact[]): Record<ContactGroup, Contact[]>;\n\nfunction pickContactFields<K extends keyof Contact>(\n  contacts: Contact[],\n  keys: readonly K[]\n): Pick<Contact, K>[];\n",
+    "goals": [
+      "Define a `SearchQuery` type with four optional filter fields, using only the allowed keys.",
+      "Implement `searchContacts` that applies every provided filter and returns matching contacts without mutating the input.",
+      "Implement `getContactById` returning `Contact | null` using the branded `ContactId` type.",
+      "Implement `groupContacts` returning a `Record<ContactGroup, Contact[]>` with every group key present, and implement the generic `pickContactFields` so its return type is inferred precisely as `Pick<Contact, K>[]`."
+    ],
+    "hints": [
+      "For `SearchQuery`, model it as an interface or plain object type with all fields marked `?` — no union needed.",
+      "For the branded `ContactId`, the only safe cast lives in `toContactId`; everywhere else the compiler enforces the brand automatically.",
+      "For `pickContactFields`, use `Object.fromEntries` + `keys.map` and let the generic `K extends keyof Contact` drive the `Pick<Contact, K>[]` return type — no explicit cast required inside the function body."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript Handbook — Utility Types (Pick, Record)",
+        "url": "https://www.typescriptlang.org/docs/handbook/utility-types.html"
+      },
+      {
+        "title": "TypeScript Handbook — Generics",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/generics.html"
+      },
+      {
+        "title": "TypeScript Handbook — Narrowing",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html"
+      },
+      {
+        "title": "TypeScript Deep Dive — Branded Types",
+        "url": "https://basarat.gitbook.io/typescript/main-1/nominaltyping"
+      }
+    ]
   }
 ]
