@@ -7593,5 +7593,41 @@
         "url": "https://basarat.gitbook.io/typescript/main-1/nominaltyping"
       }
     ]
+  },
+  {
+    "date": "2026-09-22",
+    "name": "Typed Job Queue with Priority Scheduling & Result Collection",
+    "difficulty": "Medium",
+    "description": "You're building the task-scheduling core for a background job processor. Jobs arrive with different priorities and payload shapes, a concurrency-limited runner executes them, and every result — success or failure — is collected into a strongly-typed summary the compiler fully understands.",
+    "snippet": "// Key types & main function signature\n\nexport type Job =\n  | { kind: \"email\";     id: string; priority: number; to: string; subject: string; body: string }\n  | { kind: \"report\";    id: string; priority: number; reportId: string; format: \"pdf\" | \"csv\" | \"xlsx\" }\n  | { kind: \"thumbnail\"; id: string; priority: number; imageUrl: string; widths: number[] };\n\nexport type JobByKind<K extends Job[\"kind\"]> = Extract<Job, { kind: K }>;\n\nexport type JobResult<J extends Job> =\n  | { status: \"success\"; job: J; output: string; durationMs: number }\n  | { status: \"failure\"; job: J; error: string; retryable: boolean };\n\nexport type HandlerRegistry = { [K in Job[\"kind\"]]: (job: JobByKind<K>) => Promise<JobResult<JobByKind<K>>> };\n\nexport async function runQueue(\n  jobs: Job[],\n  registry: HandlerRegistry,\n  concurrency: number,\n): Promise<QueueSummary> { /* TODO */ }\n\nexport function getSuccesses<K extends Job[\"kind\"]>(\n  results: JobResult<Job>[],\n  kind: K,\n): JobSuccess<JobByKind<K>>[] { /* TODO */ }",
+    "goals": [
+      "Define a three-variant discriminated union `Job` and the generic `JobSuccess`, `JobFailure`, and `JobResult` types with correct constraints.",
+      "Build a `HandlerRegistry` mapped type that maps each job `kind` to a handler typed for exactly that variant — no broader union.",
+      "Implement `runQueue` to sort by priority, enforce a concurrency limit, capture every result (success or failure), and return a fully-typed `QueueSummary`.",
+      "Implement `getSuccesses` so callers automatically receive the narrowed `JobSuccess<JobByKind<K>>[]` type without any explicit annotation at the call site."
+    ],
+    "hints": [
+      "For `HandlerRegistry`, a mapped type `{ [K in Job[\"kind\"]]: JobHandler<JobByKind<K>> }` gives each key its own narrowly-typed handler — no union bleed-through.",
+      "To enforce concurrency, keep a count of active slots and use a queue of pending promises; resolve the next job as each slot frees up.",
+      "In `getSuccesses`, filter first by `result.job.kind === kind`, then by `result.status === \"success\"` — two type guards in sequence let TypeScript narrow all the way to `JobSuccess<JobByKind<K>>`."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript Handbook — Discriminated Unions",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html#discriminated-unions"
+      },
+      {
+        "title": "TypeScript Handbook — Mapped Types",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/mapped-types.html"
+      },
+      {
+        "title": "TypeScript Handbook — Generics with Constraints",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/generics.html#generic-constraints"
+      },
+      {
+        "title": "MDN — Promise.allSettled",
+        "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise/allSettled"
+      }
+    ]
   }
 ]
