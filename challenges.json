@@ -7629,5 +7629,41 @@
         "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise/allSettled"
       }
     ]
+  },
+  {
+    "date": "2026-09-23",
+    "name": "Typed Recipe Ingredient Scaler",
+    "difficulty": "Easy",
+    "description": "You're building the core logic for a recipe management app. Home cooks can scale any recipe up or down by a multiplier, and the app must return a fully-typed scaled recipe where every ingredient's quantity has been adjusted and units are preserved exactly as the compiler understands them.",
+    "snippet": "// Key types you must define and the two function signatures:\n\ntype Unit = \"tsp\" | \"tbsp\" | \"cup\" | \"oz\" | \"lb\"\n          | \"g\"   | \"kg\"   | \"ml\"  | \"l\"\n          | \"whole\" | \"pinch\";\n\ninterface Ingredient { name: string; quantity: number; unit: Unit }\ninterface Recipe     { title: string; servings: number; ingredients: readonly Ingredient[] }\n\n// Derived with utility types (no hand-written interfaces!):\ntype ScaledIngredient = /* Omit/Pick/& combo */ never;\ntype ScaledRecipe     = /* Omit/& combo      */ never;\n\nfunction scaleRecipe(recipe: Recipe, multiplier: number): ScaledRecipe { ... }\n\nfunction findIngredientsByUnit<U extends Unit>(\n  recipe: Recipe,\n  unit: U\n): readonly (Ingredient & { unit: U })[] { ... }\n",
+    "goals": [
+      "Define the `Unit` union type and `Ingredient` / `Recipe` interfaces.",
+      "Derive `ScaledIngredient` and `ScaledRecipe` exclusively with utility types (Omit, Pick, intersection) — no hand-written interfaces.",
+      "Implement `scaleRecipe` so quantities are rounded to 2 decimal places and servings to the nearest integer.",
+      "Implement the generic `findIngredientsByUnit<U extends Unit>` returning `readonly (Ingredient & { unit: U })[]`."
+    ],
+    "hints": [
+      "For `ScaledIngredient`, try `Omit<Ingredient, 'quantity'> & { quantity: number }` — then ask yourself whether that's meaningfully different from just `Ingredient`, and whether a `Pick`-based approach communicates intent more clearly.",
+      "For `ScaledRecipe`, `Omit<Recipe, 'servings' | 'ingredients'> & { servings: number; ingredients: readonly ScaledIngredient[] }` is the right shape — no new keywords needed.",
+      "Inside `findIngredientsByUnit`, a simple `.filter()` with a type predicate `(i): i is Ingredient & { unit: U } => i.unit === unit` will satisfy the compiler without any casting."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript Utility Types (Omit, Pick, etc.)",
+        "url": "https://www.typescriptlang.org/docs/handbook/utility-types.html"
+      },
+      {
+        "title": "TypeScript Generics",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/generics.html"
+      },
+      {
+        "title": "TypeScript Narrowing & Type Predicates",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html#using-type-predicates"
+      },
+      {
+        "title": "TypeScript `satisfies` operator",
+        "url": "https://www.typescriptlang.org/docs/handbook/release-notes/typescript-4-9.html#the-satisfies-operator"
+      }
+    ]
   }
 ]
