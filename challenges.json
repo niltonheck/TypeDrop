@@ -7665,5 +7665,41 @@
         "url": "https://www.typescriptlang.org/docs/handbook/release-notes/typescript-4-9.html#the-satisfies-operator"
       }
     ]
+  },
+  {
+    "date": "2026-09-24",
+    "name": "Typed Paginated API Client with Retry & Cancellation",
+    "difficulty": "Hard",
+    "description": "You're building the data-fetching core for an analytics dashboard that pulls large datasets from a paginated REST API. The client must handle page-by-page iteration, per-request retry logic with exponential back-off, and cooperative cancellation — all with airtight generic typing so callers never lose the shape of the resource they're fetching.",
+    "snippet": "\n// Core types at a glance\n\ntype ValidUrl  = string & { readonly __brand: \"ValidUrl\" };\ntype PageNumber = number & { readonly __brand: \"PageNumber\" };\n\ntype Ok<T>     = { readonly ok: true;  readonly value: T };\ntype Err<E>    = { readonly ok: false; readonly error: E };\ntype Result<T, E> = Ok<T> | Err<E>;\n\ninterface PageEnvelope<T> {\n  readonly items:      readonly T[];\n  readonly page:       PageNumber;\n  readonly totalPages: number;\n  readonly nextPage:   PageNumber | undefined;\n}\n\ntype ApiError =\n  | { kind: \"network\";   message: string }\n  | { kind: \"http\";      status: number; message: string }\n  | { kind: \"parse\";     message: string }\n  | { kind: \"cancelled\"; message: string }\n  | { kind: \"exhausted\"; attempts: number; lastError: ApiError };\n\n// Main entry point\ndeclare function createPaginatedClient<T>(\n  config: ClientConfig<T>\n): PaginatedClient<T>;\n",
+    "goals": [
+      "Define branded types `ValidUrl` and `PageNumber` with runtime constructors that enforce their invariants.",
+      "Implement `withRetry` with exponential back-off that honours an `AbortSignal` between attempts and returns the correct `ApiError` discriminant on cancellation or exhaustion.",
+      "Implement `fetchPage` and `fetchAllPages` as generic functions that propagate `Result<T, ApiError>` without swallowing error variants or using type assertions.",
+      "Wire everything together in `createPaginatedClient` so the returned `PaginatedClient<T>` is fully typed and callers cannot conflate different resource shapes."
+    ],
+    "hints": [
+      "For branded types, the trick is an intersection: `string & { readonly __brand: 'ValidUrl' }` — your runtime constructor validates then uses a type predicate or a single return-type annotation to produce the branded type.",
+      "In `withRetry`, implement the back-off delay as a small `sleep` helper that races a `setTimeout` promise against the AbortSignal's `'abort'` event so cancellation is truly cooperative.",
+      "`createPaginatedClient` should close over `config` and delegate each `fetchPage` call inside `fetchAllPages` through `withRetry` — keep the generics flowing by letting TypeScript infer `T` from `config`'s `parseItems` return type."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript — Branded / Nominal Types",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/template-literal-types.html"
+      },
+      {
+        "title": "AbortSignal — MDN Web Docs",
+        "url": "https://developer.mozilla.org/en-US/docs/Web/API/AbortSignal"
+      },
+      {
+        "title": "TypeScript — Generic Functions",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/generics.html"
+      },
+      {
+        "title": "Promise.race — MDN Web Docs",
+        "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise/race"
+      }
+    ]
   }
 ]
