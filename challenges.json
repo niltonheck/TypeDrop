@@ -7701,5 +7701,41 @@
         "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise/race"
       }
     ]
+  },
+  {
+    "date": "2026-09-25",
+    "name": "Typed CSV Pipeline with Schema Validation & Aggregation",
+    "difficulty": "Medium",
+    "description": "You're building the data-ingestion core for a financial reporting tool. Raw CSV text arrives from uploaded files, each column is validated against a declared schema, and the parsed rows are aggregated into a strongly-typed summary report — all without a single `any` or unsafe cast.",
+    "snippet": "\n// Key types at a glance:\ntype ColumnKind = \"string\" | \"number\" | \"boolean\" | \"date\";\n\ntype KindToPrimitive<K extends ColumnKind> =\n  K extends \"string\"  ? string  :\n  K extends \"number\"  ? number  :\n  K extends \"boolean\" ? boolean :\n  K extends \"date\"    ? Date    : never;\n\ninterface ColumnDef<K extends ColumnKind = ColumnKind> {\n  readonly name: string;\n  readonly kind: K;\n  readonly optional?: boolean;\n}\n\n// SchemaRow maps a tuple of ColumnDefs → one intersected object type\ntype SchemaRow<S extends readonly ColumnDef[]> = UnionToIntersection<...>;\n\n// Main entry point:\nfunction parseCsv<S extends readonly ColumnDef[]>(\n  rawCsv: string,\n  schema: S\n): CsvParseOutput<S>;\n\nfunction aggregateRows<\n  S extends readonly ColumnDef[],\n  Spec extends AggregationSpec<S>\n>(rows: SchemaRow<S>[], spec: Spec): GroupSums<S, Spec>;\n",
+    "goals": [
+      "Complete the `SchemaRow<S>` mapped type so it produces a correct intersection of per-column object types using `UnionToIntersection`.",
+      "Implement `parseCsv` to split raw CSV text, validate headers, parse each cell to its declared kind, handle optional nulls, and collect errors without `any`.",
+      "Implement `aggregateRows` to group rows by a string-valued key and sum specified numeric columns, returning a fully-typed `GroupSums` object.",
+      "Implement `runPipeline` to compose parsing and aggregation into a single typed call, returning an empty report when no rows are valid."
+    ],
+    "hints": [
+      "For `SchemaRow<S>`, first map the tuple to a union of single-key objects, then wrap that union in `UnionToIntersection<...>` to collapse it into one flat object.",
+      "In `parseCsv`, a `switch` on `col.kind` is the cleanest way to narrow to the right branch — the compiler will know the return type of each arm without any casting.",
+      "For `NumericKeys<S>` and the `groupBy` constraint in `AggregationSpec`, use a mapped type that maps each key to itself or `never`, then index with `[keyof SchemaRow<S>]` to filter."
+    ],
+    "docs": [
+      {
+        "title": "TS Handbook — Conditional Types & infer",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/conditional-types.html"
+      },
+      {
+        "title": "TS Handbook — Mapped Types",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/mapped-types.html"
+      },
+      {
+        "title": "TS Handbook — Generic Constraints",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/generics.html#generic-constraints"
+      },
+      {
+        "title": "TS 5.0 — satisfies Operator",
+        "url": "https://www.typescriptlang.org/docs/handbook/release-notes/typescript-4-9.html#the-satisfies-operator"
+      }
+    ]
   }
 ]
