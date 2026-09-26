@@ -7737,5 +7737,41 @@
         "url": "https://www.typescriptlang.org/docs/handbook/release-notes/typescript-4-9.html#the-satisfies-operator"
       }
     ]
+  },
+  {
+    "date": "2026-09-26",
+    "name": "Typed Expense Splitter",
+    "difficulty": "Easy",
+    "description": "You're building the core logic for a group expense-splitting app (think Splitwise). Friends log shared expenses, and the app must calculate how much each person owes or is owed — producing a strongly-typed settlement summary the compiler fully understands.",
+    "snippet": "\n// Key domain types\ntype Participant = string;\n\ntype SplitRule =\n  | { kind: \"equal\" }\n  | { kind: \"shares\"; participants: Record<Participant, number> }\n  | { kind: \"exact\";  participants: Record<Participant, number> };\n\ninterface Expense {\n  id: string;\n  description: string;\n  paidBy: Participant;\n  amountCents: number;   // integer cents, > 0\n  splitRule: SplitRule;\n}\n\ntype Balances = Record<Participant, number>; // + owed, - owes\n\ninterface Settlement { from: Participant; to: Participant; amountCents: number; }\ninterface SplitSummary { balances: Balances; settlements: Settlement[]; settled: boolean; }\n\n// Functions you must implement:\nfunction computeBalances(expenses: Expense[], participants: Participant[]): Balances { … }\nfunction minimiseSettlements(balances: Balances): Settlement[] { … }\nfunction splitExpenses(expenses: Expense[], participants: Participant[]): SplitSummary { … }\nfunction formatSettlement(s: Settlement): `${string} owes ${string} $${string}` { … }\n",
+    "goals": [
+      "Implement `computeBalances` using discriminated-union narrowing on `SplitRule.kind` to compute each participant's net balance in cents.",
+      "Implement `minimiseSettlements` with a greedy creditor/debtor matching algorithm that produces the minimum number of transfers.",
+      "Implement `splitExpenses` to compose the two functions above and return an explicitly-typed `SplitSummary`.",
+      "Implement `formatSettlement` with a template literal return type that formats cent amounts into a `$dollars.cents` string."
+    ],
+    "hints": [
+      "When narrowing `SplitRule`, a `switch (rule.kind)` block gives TypeScript full discriminated-union narrowing — no type assertions needed.",
+      "For the template literal return type, derive dollars with `Math.floor(amountCents / 100)` and cents with `(amountCents % 100).toString().padStart(2, '0')`.",
+      "In `minimiseSettlements`, sort creditors and debtors by absolute balance descending before the greedy loop so the largest transfers are matched first."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript Handbook — Discriminated Unions",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html#discriminated-unions"
+      },
+      {
+        "title": "TypeScript Handbook — Template Literal Types",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/template-literal-types.html"
+      },
+      {
+        "title": "TypeScript Handbook — Utility Types (Record, Pick, Omit…)",
+        "url": "https://www.typescriptlang.org/docs/handbook/utility-types.html"
+      },
+      {
+        "title": "MDN — Array.prototype.sort()",
+        "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/sort"
+      }
+    ]
   }
 ]
