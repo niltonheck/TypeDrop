@@ -7773,5 +7773,41 @@
         "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/sort"
       }
     ]
+  },
+  {
+    "date": "2026-09-27",
+    "name": "Typed Event Emitter with Middleware Pipeline",
+    "difficulty": "Medium",
+    "description": "You're building the core event bus for a real-time collaboration tool. Components emit strongly-typed events, middleware can transform or gate events before they reach subscribers, and every handler is guaranteed by the compiler to receive the exact payload shape for its event.",
+    "snippet": "// Key types & main class signature\n\ninterface AppEventMap {\n  \"user:joined\":     { userId: string; roomId: string; timestamp: number };\n  \"user:left\":       { userId: string; roomId: string; reason: \"timeout\" | \"disconnect\" | \"kicked\" };\n  \"message:sent\":    { messageId: string; authorId: string; body: string; roomId: string };\n  \"message:deleted\": { messageId: string; deletedBy: string };\n  \"room:created\":    { roomId: string; ownerId: string; maxCapacity: number };\n}\n\ntype EventName = keyof AppEventMap;\ntype Payload<E extends EventName> = AppEventMap[E];\ntype EmitStatus = \"delivered\" | \"cancelled\" | \"no-listeners\";\n\ntype AnyMiddleware = <E extends EventName>(\n  event: E, payload: Payload<E>\n) => Payload<E> | null | undefined | Promise<Payload<E> | null | undefined>;\n\nclass TypedEventEmitter {\n  on<E extends EventName>(event: E, handler: (p: Payload<E>) => void): () => void { ... }\n  once<E extends EventName>(event: E, handler: (p: Payload<E>) => void): () => void { ... }\n  use(middleware: AnyMiddleware): this { ... }\n  async emit<E extends EventName>(event: E, payload: Payload<E>): Promise<EmitRecord<E>> { ... }\n  listenerCount<E extends EventName>(event: E): number { ... }\n}\n",
+    "goals": [
+      "Implement `on()` so handlers are stored per-event and the returned unsubscribe function removes only that handler.",
+      "Implement `once()` in terms of `on()` so the handler fires at most once then auto-removes itself.",
+      "Implement `use()` to register universal middleware in order and return `this` for chaining.",
+      "Implement `emit()` to run middleware in sequence (allowing payload transformation or cancellation) then invoke all registered handlers, returning a fully-populated `EmitRecord<E>`."
+    ],
+    "hints": [
+      "The `handlers` map stores `Handler<EventName>` but you're registering `Handler<E>` — think about how to safely cast at the storage boundary without using `as` or `any` on public-facing types.",
+      "For `once()`, capture the unsubscribe function returned by `on()` inside a wrapper handler and call it before (or after) invoking the original handler.",
+      "In `emit()`, use a `for...of` loop over `this.middlewares` with `await` so async middleware are handled correctly; track the count with a local variable that increments only when the middleware returns a non-null result."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript Handbook – Generics",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/generics.html"
+      },
+      {
+        "title": "TypeScript Handbook – Mapped Types",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/mapped-types.html"
+      },
+      {
+        "title": "TypeScript Handbook – Indexed Access Types",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/indexed-access-types.html"
+      },
+      {
+        "title": "MDN – Promise & async/await",
+        "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/async_function"
+      }
+    ]
   }
 ]
