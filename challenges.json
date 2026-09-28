@@ -7809,5 +7809,41 @@
         "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/async_function"
       }
     ]
+  },
+  {
+    "date": "2026-09-28",
+    "name": "Typed LRU Cache with TTL & Typed Eviction Policy",
+    "difficulty": "Hard",
+    "description": "You're building the in-memory caching layer for a high-traffic API gateway. Each cache can hold at most N entries; when full it evicts the Least-Recently-Used entry. Entries also carry an optional time-to-live (TTL), and the cache must report *why* a value was evicted through a strongly-typed eviction event system — all without a single `any` or unsafe cast.",
+    "snippet": "// Key types you must define and implement:\n\ntype EvictionReason<K> =\n  | { reason: \"capacity\"; evictedKey: K }\n  | { reason: \"ttl\";      expiredAt: number }\n  | { reason: \"manual\" };\n\ntype CacheEntry<K, V> = {\n  key: K; value: V; expiresAt: number | null;\n  prev: CacheEntry<K, V> | null;\n  next: CacheEntry<K, V> | null;\n};\n\ntype LRUCacheOptions<K, V> = {\n  capacity: number;\n  defaultTTL?: number;\n  onEvict?: (key: K, value: V, reason: EvictionReason<K>) => void;\n};\n\ntype CacheResult<V> = { found: true; value: V } | { found: false };\n\n// Main class signature:\nclass LRUCache<K, V> {\n  constructor(options: LRUCacheOptions<K, V>);\n  set(key: K, value: V, options?: SetOptions): void;\n  get(key: K): V | undefined;\n  lookup(key: K): CacheResult<V>;\n  delete(key: K): boolean;\n  has(key: K): boolean;\n  stats(): CacheStats;\n  clear(): void;\n}",
+    "goals": [
+      "Define all five type stubs (EvictionReason, CacheEntry, LRUCacheOptions, SetOptions, CacheStats, CacheResult) with correct generic parameters and discriminated-union tags.",
+      "Implement the doubly-linked list mechanics (_detach, _insertAfterHead, _evict) so the LRU invariant is maintained on every set() and get().",
+      "Handle TTL expiry lazily in get(), lookup(), and has() — firing the correct EvictionReason<K> each time.",
+      "Make stats() return accurate hit/miss/eviction counts and ensure clear() resets all state without firing eviction callbacks."
+    ],
+    "hints": [
+      "Model CacheEntry<K,V> as a plain object type with prev/next referencing itself — TypeScript handles self-referential object types directly (no interface trick needed).",
+      "Sentinel nodes (head & tail) never hold real data; the only allowed cast in the whole file is in the constructor where you initialise them with dummy key/value via `as unknown as K`.",
+      "For lookup(), return the CacheResult union directly from the same internal logic as get() — extract a shared private helper so you don't duplicate TTL/eviction code."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript — Discriminated Unions",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html#discriminated-unions"
+      },
+      {
+        "title": "TypeScript — Generic Classes",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/generics.html#generic-classes"
+      },
+      {
+        "title": "MDN — Map",
+        "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Map"
+      },
+      {
+        "title": "TypeScript — Recursive Type Aliases",
+        "url": "https://www.typescriptlang.org/docs/handbook/release-notes/typescript-3-7.html#more-recursive-type-aliases"
+      }
+    ]
   }
 ]
