@@ -7845,5 +7845,41 @@
         "url": "https://www.typescriptlang.org/docs/handbook/release-notes/typescript-3-7.html#more-recursive-type-aliases"
       }
     ]
+  },
+  {
+    "date": "2026-09-29",
+    "name": "Typed State Machine Engine",
+    "difficulty": "Medium",
+    "description": "You're building the workflow engine for an e-commerce order management system. Each order moves through a strict lifecycle — from placement to fulfillment — and the compiler must enforce that only valid transitions are allowed, that transition guards have access to the right context shape, and that side-effect actions are fully typed per transition.",
+    "snippet": "// Key types & main class — enough to understand the challenge\n\ntype OrderState = \"pending\" | \"payment_processing\" | \"paid\"\n                | \"preparing\" | \"shipped\" | \"delivered\"\n                | \"cancelled\" | \"refunded\";\n\ntype OrderEvent = \"SUBMIT_PAYMENT\" | \"PAYMENT_SUCCESS\" | \"PAYMENT_FAILED\"\n                | \"START_PREPARING\" | \"SHIP\" | \"DELIVER\" | \"CANCEL\" | \"REFUND\";\n\ninterface Transition<S extends OrderState, E extends OrderEvent, C extends OrderContext> {\n  from: S;\n  event: E;\n  to: OrderState;\n  guard?: (context: C) => boolean;   // ← you define this\n  action?: (from: S, to: OrderState, context: C) => void; // ← and this\n}\n\n// MachineSnapshot<S> and TransitionResult are also yours to define (TODOs 3 & 4)\n\nclass StateMachine {\n  snapshot(): MachineSnapshot<OrderState> { /* TODO */ }\n  send(event: OrderEvent): TransitionResult  { /* TODO */ }\n  patchContext(patch: Partial<OrderContext>): void { /* TODO */ }\n}\n\nfunction createOrderMachine(initialContext: OrderContext): StateMachine { /* TODO */ }\n",
+    "goals": [
+      "Define the `guard` and `action` properties on the `Transition` interface with correct generic signatures.",
+      "Define `MachineSnapshot<S>` (with a `can()` method) and the `TransitionResult` discriminated union.",
+      "Implement `StateMachine` — constructor, `snapshot()`, `send()`, and `patchContext()` — enforcing guard checks and running actions.",
+      "Implement `createOrderMachine` with all ten pre-configured transitions, guards, and actions wired up correctly."
+    ],
+    "hints": [
+      "For `MachineSnapshot`, the `can()` method must both match the transition's `from` state AND evaluate its `guard` — a missing guard means the event is allowed.",
+      "The `TransitionResult` discriminated union works best with a literal `ok` field — TypeScript will narrow it for you in if/else branches.",
+      "In `createOrderMachine`, the `action` for PAYMENT_SUCCESS/PAYMENT_FAILED should mutate the context object in place (since `patchContext` is also available on the machine, you may call it from the action via a closure)."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript Handbook — Generic Constraints",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/generics.html#generic-constraints"
+      },
+      {
+        "title": "TypeScript Handbook — Discriminated Unions",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html#discriminated-unions"
+      },
+      {
+        "title": "TypeScript Handbook — Utility Types (Partial, Readonly, etc.)",
+        "url": "https://www.typescriptlang.org/docs/handbook/utility-types.html"
+      },
+      {
+        "title": "TypeScript Handbook — Interfaces (optional properties & method signatures)",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/objects.html"
+      }
+    ]
   }
 ]
