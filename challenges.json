@@ -7881,5 +7881,41 @@
         "url": "https://www.typescriptlang.org/docs/handbook/2/objects.html"
       }
     ]
+  },
+  {
+    "date": "2026-09-30",
+    "name": "Typed Concurrent API Client with Retry, Cancellation & Result Aggregation",
+    "difficulty": "Hard",
+    "description": "You're building the data-fetching layer for a distributed dashboard that fans out requests to multiple third-party microservices simultaneously. Each endpoint has its own response shape, requests must be cancellable, failed requests are retried with exponential back-off, and the final aggregated report is a discriminated-union result per endpoint — all enforced by the compiler with zero `any`.",
+    "snippet": "// Core types you must define and implement:\n\ntype Result<T, E> =\n  | { status: \"ok\";  value: T }\n  | { status: \"err\"; error: E };\n\ntype FetchError =\n  | { kind: \"network\"; message: string }\n  | { kind: \"timeout\"; timeoutMs: number }\n  | { kind: \"parse\";   raw: string; cause: string };\n\ninterface Endpoint<T> {\n  url: string;\n  parse: (raw: unknown) => Result<T, Extract<FetchError, { kind: \"parse\" }>>;\n  timeoutMs?: number;\n  maxRetries?: number;\n}\n\ntype EndpointMap = Record<string, Endpoint<unknown>>;\n\n// Given Endpoint<T>, extract T:\ntype EndpointResponse<E> = /* TODO: use infer */ never;\n\n// Maps each key of M to Result<its-response-type, FetchError>:\ntype AggregatedResults<M extends EndpointMap> = /* TODO: mapped type */ never;\n\n// Main functions to implement:\nasync function fetchWithRetry<T>(\n  endpoint: Endpoint<T>,\n  rawJson: unknown,\n  retryConfig: RetryConfig,\n  signal: AbortSignal\n): Promise<Result<T, FetchError>> { /* ... */ }\n\nasync function fetchAll<M extends EndpointMap>(\n  endpoints: M,\n  rawResponses: { [K in keyof M]: unknown },\n  retryConfig: RetryConfig,\n  timeoutMs?: number\n): Promise<AggregatedResults<M>> { /* ... */ }",
+    "goals": [
+      "Define `Result<T,E>` and `FetchError` as discriminated unions, then derive `EndpointResponse` with `infer` and `AggregatedResults` with a mapped type.",
+      "Implement `fetchWithRetry` with abort-signal checking, parse-error short-circuiting, and exponential back-off retries gated by a `shouldRetry` predicate.",
+      "Implement `fetchAll` that fans out all endpoints concurrently via `Promise.allSettled`, wires a single global `AbortController` timeout, and returns a fully-typed `AggregatedResults<M>`.",
+      "Implement the three result helpers — `isOk` (type guard), `unwrapOr` (with `F extends T`), and `mapResult` — without any unsafe casts."
+    ],
+    "hints": [
+      "For `EndpointResponse`, write `E extends Endpoint<infer T> ? T : never` — the compiler will unpack the generic parameter for you.",
+      "In `fetchAll`, `Promise.allSettled` returns `PromiseSettledResult<Result<T, FetchError>>[]`; a `.rejected` settlement (which shouldn't normally happen) can be mapped to a `{ kind: 'network', message: ... }` err.",
+      "To build `AggregatedResults<M>` at runtime inside `fetchAll`, accumulate into a `Partial` record and cast with `as AggregatedResults<M>` only at the final return — that's the one place a cast is acceptable because you've verified all keys."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript — Conditional Types & infer",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/conditional-types.html"
+      },
+      {
+        "title": "TypeScript — Mapped Types",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/mapped-types.html"
+      },
+      {
+        "title": "MDN — Promise.allSettled()",
+        "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise/allSettled"
+      },
+      {
+        "title": "MDN — AbortController",
+        "url": "https://developer.mozilla.org/en-US/docs/Web/API/AbortController"
+      }
+    ]
   }
 ]
