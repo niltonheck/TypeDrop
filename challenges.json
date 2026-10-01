@@ -7917,5 +7917,41 @@
         "url": "https://developer.mozilla.org/en-US/docs/Web/API/AbortController"
       }
     ]
+  },
+  {
+    "date": "2026-10-01",
+    "name": "Typed Recipe Ingredient Scaler",
+    "difficulty": "Easy",
+    "description": "You're building the core logic for a recipe app that lets users scale ingredient quantities up or down. Given a recipe with strongly-typed ingredients and units, the app must produce a scaled version with correctly adjusted amounts and a human-readable shopping list — all verified by the compiler.",
+    "snippet": "\n// Key types you'll work with:\n\ntype Unit = \"tsp\" | \"tbsp\" | \"cup\" | \"oz\" | \"lb\"\n           | \"g\" | \"kg\" | \"ml\" | \"l\" | \"whole\";\n\ninterface Ingredient {\n  readonly name: string;\n  readonly amount: number;\n  readonly unit: Unit;\n}\n\n// TODO: derive this from Ingredient using a utility type\ntype ScaledIngredient = never;\n\ninterface Recipe {\n  readonly title: string;\n  readonly servings: number;\n  readonly ingredients: readonly Ingredient[];\n}\n\n// Main function signatures:\nfunction scaleRecipe(recipe: Recipe, targetServings: number): ScaleResult { ... }\nfunction toShoppingList(ingredients: readonly ScaledIngredient[]): ShoppingListEntry[] { ... }\nfunction mergeShoppingLists(listA: ShoppingListEntry[], listB: ShoppingListEntry[]): ShoppingListEntry[] { ... }\n",
+    "goals": [
+      "Define `ScaledIngredient` as a utility/mapped type derived from `Ingredient` (no hand-written duplicates).",
+      "Implement `scaleRecipe` to multiply ingredient amounts by the correct factor, round to 2 decimal places, and throw a `RangeError` for invalid servings.",
+      "Implement `toShoppingList` using type narrowing (not casts) to produce the correct discriminated-union `ShoppingListEntry` variant for each ingredient.",
+      "Implement `mergeShoppingLists` using a `Map` to combine entries with the same name AND kind in O(n) time."
+    ],
+    "hints": [
+      "For `ScaledIngredient`, look at how `Readonly<T>` or a simple mapped type can re-use `Ingredient`'s fields without rewriting them.",
+      "In `toShoppingList`, a plain `if (ingredient.unit === 'whole')` check is enough for TypeScript to narrow the type — no `as` needed.",
+      "For `mergeShoppingLists`, use a composite key like `${entry.name}::${entry.kind}` as your `Map` key to distinguish same-name different-kind entries."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript Utility Types (Readonly, Pick, Omit…)",
+        "url": "https://www.typescriptlang.org/docs/handbook/utility-types.html"
+      },
+      {
+        "title": "TypeScript Narrowing",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html"
+      },
+      {
+        "title": "Discriminated Unions",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html#discriminated-unions"
+      },
+      {
+        "title": "MDN: Map – keyed collection",
+        "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Map"
+      }
+    ]
   }
 ]
