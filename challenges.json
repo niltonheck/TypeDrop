@@ -7953,5 +7953,41 @@
         "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Map"
       }
     ]
+  },
+  {
+    "date": "2026-10-02",
+    "name": "Typed Query Builder with Schema Inference",
+    "difficulty": "Hard",
+    "description": "You're building the ORM query layer for a multi-tenant analytics platform. Queries are constructed fluently against a strongly-typed schema, the compiler must enforce that only real column names are selected/filtered, aggregation aliases are tracked in the return type, and the final `execute()` call resolves to a shape derived entirely from the chosen columns and aggregations — zero `any`, zero unsafe casts.",
+    "snippet": "// Core schema & builder types at a glance\n\ntype ColumnTypeMap = { string: string; number: number; boolean: boolean; date: Date };\ntype ColumnTag     = keyof ColumnTypeMap;\ntype ColumnDef<Tag extends ColumnTag = ColumnTag> = { type: Tag; nullable: boolean };\ntype TableSchema   = Record<string, ColumnDef>;\n\n// Key utility types you must implement:\ntype ColumnType<Schema extends TableSchema, Col extends keyof Schema> = TODO;\ntype SelectedRow<Schema extends TableSchema, Cols extends keyof Schema> = TODO;\ntype AggregationDef = TODO;\ntype AggRow<Aggs extends readonly AggregationDef[]>                   = TODO;\ntype QueryRow<Schema extends TableSchema,\n              Cols extends keyof Schema,\n              Aggs extends readonly AggregationDef[]>                  = TODO;\n\n// Fluent builder — types evolve as you chain:\ndeclare class QueryBuilder<Schema extends TableSchema,\n                           Cols extends keyof Schema = never,\n                           Aggs extends readonly AggregationDef[] = []> {\n  select<NewCols extends keyof Schema>(...cols: NewCols[])\n    : QueryBuilder<Schema, NewCols, Aggs>;\n  aggregate<NewAggs extends readonly AggregationDef[]>(aggs: NewAggs)\n    : QueryBuilder<Schema, Cols, NewAggs>;\n  execute(): Promise<QueryRow<Schema, Cols, Aggs>[]>;\n}\n",
+    "goals": [
+      "Implement five type utilities (ColumnType, SelectedRow, AggregationDef, AggRow, QueryRow) so that execute()'s return type is fully inferred from the builder's type parameters.",
+      "Implement the QueryBuilder class so each fluent method returns a new builder instance with updated Cols or Aggs type parameters, preserving immutability.",
+      "Implement applyFilter with exhaustive narrowing over all nine FilterOperator variants, including isNull / isNotNull against null values.",
+      "Implement execute() to correctly apply WHERE clauses (AND semantics), compute numeric aggregations (sum/count/avg/min/max) over filtered rows, project selected columns, and honour orderBy and limit."
+    ],
+    "hints": [
+      "For AggRow, you need to convert a tuple of objects with an `alias` string into an object type — look at how indexed access types and mapped types can iterate over tuple indices to extract each `alias` as a key.",
+      "QueryRow should be an intersection (or merged mapped type) of SelectedRow and AggRow; when Cols is `never`, SelectedRow produces an empty object `{}` — lean into that.",
+      "Each QueryBuilder method should spread the existing internal state into the constructor of the new instance, overriding only the field that changed — this is the immutable-builder pattern in TypeScript."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript Handbook — Mapped Types",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/mapped-types.html"
+      },
+      {
+        "title": "TypeScript Handbook — Conditional Types & infer",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/conditional-types.html"
+      },
+      {
+        "title": "TypeScript Handbook — Generic Classes",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/generics.html#generic-classes"
+      },
+      {
+        "title": "TypeScript 5.0 — const Type Parameters",
+        "url": "https://www.typescriptlang.org/docs/handbook/release-notes/typescript-5-0.html#const-type-parameters"
+      }
+    ]
   }
 ]
