@@ -7989,5 +7989,41 @@
         "url": "https://www.typescriptlang.org/docs/handbook/release-notes/typescript-5-0.html#const-type-parameters"
       }
     ]
+  },
+  {
+    "date": "2026-10-03",
+    "name": "Typed Notification Router",
+    "difficulty": "Easy",
+    "description": "You're building the notification dispatch layer for a team productivity app. The system receives raw notification events from various channels (email, push, SMS), routes each one to the correct typed handler, and produces a structured delivery summary — all enforced by the compiler with no unsafe casts.",
+    "snippet": "// Key types & main function signatures\n\ntype Channel = \"email\" | \"push\" | \"sms\";\n\ntype EmailEvent = { channel: \"email\"; to: string; subject: string; body: string };\ntype PushEvent  = { channel: \"push\";  deviceToken: string; title: string; payload: Record<string, string> };\ntype SmsEvent   = { channel: \"sms\";   phoneNumber: string; message: string };\n\ntype NotificationEvent = EmailEvent | PushEvent | SmsEvent;\n\n// Maps each Channel key → its specific event type\ntype ChannelEventMap = { /* TODO */ };\n\n// Each handler receives the *exact* event type for its channel\ntype HandlerMap = { /* TODO */ };\n\n// Registers handlers and returns a type-safe router\nfunction createRouter(handlers: HandlerMap): {\n  route(event: NotificationEvent): DeliveryResult;\n};\n\n// Single-pass reduce over results → structured summary\nfunction summarise(results: DeliveryResult[]): DeliverySummary;\n",
+    "goals": [
+      "Define a discriminated union `NotificationEvent` with three channel-specific variants (EmailEvent, PushEvent, SmsEvent).",
+      "Build `ChannelEventMap` and `HandlerMap` mapped types so each channel key is paired with a handler that receives only that channel's event shape.",
+      "Implement `createRouter` so it narrows on `event.channel` and delegates to the correct typed handler, returning a `DeliveryResult`.",
+      "Implement `summarise` using a single `Array.prototype.reduce` call to produce totals, per-status counts, and per-channel groupings."
+    ],
+    "hints": [
+      "A mapped type over `Channel` with a conditional type on the value side (e.g. `K extends 'email' ? EmailEvent : ...`) is exactly what `ChannelEventMap` needs.",
+      "Inside `createRouter`, a `switch (event.channel)` block gives TypeScript enough information to narrow `event` to the exact variant — no casts needed.",
+      "For `summarise`, initialise the accumulator with all three `DeliveryStatus` keys set to 0 so `counts` is always a complete `Record<DeliveryStatus, number>`."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript Handbook – Discriminated Unions",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html#discriminated-unions"
+      },
+      {
+        "title": "TypeScript Handbook – Mapped Types",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/mapped-types.html"
+      },
+      {
+        "title": "TypeScript Handbook – Conditional Types",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/conditional-types.html"
+      },
+      {
+        "title": "MDN – Array.prototype.reduce()",
+        "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/reduce"
+      }
+    ]
   }
 ]
