@@ -8025,5 +8025,41 @@
         "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/reduce"
       }
     ]
+  },
+  {
+    "date": "2026-10-04",
+    "name": "Typed Plugin Middleware Pipeline",
+    "difficulty": "Hard",
+    "description": "You're building the extensibility layer for a developer-facing HTTP gateway. Third-party plugins are registered into a typed middleware pipeline where each plugin declares the context shape it reads, the context shape it writes, and whether it can fail — the compiler must enforce that plugins are composed in a valid order (i.e. a plugin's required reads are always satisfied by prior writes), that error-producing plugins are handled, and that the final resolved context type is derived structurally from the full chain.",
+    "snippet": "/** A plain record of string keys to unknown values — the base context shape. */\ntype BaseCtx = Record<string, unknown>;\n\n/** A branded error produced by a plugin. */\ntype PluginError<Brand extends string> = {\n  readonly brand: Brand;\n  readonly message: string;\n  readonly cause?: unknown;\n};\n\n/** Describes one plugin in the pipeline. */\ntype PluginDef<\n  Reads extends BaseCtx,\n  Writes extends BaseCtx,\n  EBrand extends string | never\n> = {\n  readonly name: string;\n  readonly run: (ctx: Reads) => Promise<Writes>;\n};\n\n// --- Your key helpers to implement ---\ntype MergeCtx<Acc extends BaseCtx, Writes extends BaseCtx> = never; // TODO\ntype SatisfiedBy<Required extends BaseCtx, Acc extends BaseCtx> = never; // TODO\ntype PipelineFinalCtx<Plugins extends readonly PluginDef<BaseCtx,BaseCtx,string|never>[], InitCtx extends BaseCtx = Record<never,never>> = never; // TODO\n\ndeclare function definePlugin<R extends BaseCtx, W extends BaseCtx, E extends string | never = never>(\n  def: PluginDef<R, W, E>\n): PluginDef<R, W, E>;\n\ndeclare function buildPipeline<const I extends BaseCtx, const P extends readonly PluginDef<BaseCtx,BaseCtx,string|never>[]>(\n  plugins: P\n): Pipeline<P, I>;\n",
+    "goals": [
+      "Implement `MergeCtx`, `SatisfiedBy`, `PipelineFinalCtx`, and `PipelineErrors` as purely structural compile-time types with no `any`.",
+      "Implement `definePlugin` as a zero-runtime-overhead generic inference anchor.",
+      "Implement `buildPipeline` so plugins execute sequentially, context is accumulated, timings are recorded, and plugin errors are re-thrown as branded `PluginError` objects.",
+      "Implement `composePlugins` to fuse two plugins into one whose name is a template literal, whose Writes are merged, and whose error brand is a union."
+    ],
+    "hints": [
+      "For `MergeCtx`, think `Omit<Acc, keyof Writes> & Writes` — then wrap it with `{ [K in keyof ...]: ... }` to flatten the intersection into a single object type.",
+      "For `PipelineFinalCtx`, write a recursive conditional type that peels the tuple one element at a time with `infer Head extends PluginDef<...>` and `infer Tail extends readonly PluginDef<...>[]`, folding `MergeCtx` on each step.",
+      "For `PipelineErrors`, use a distributive conditional type: `Plugins[number] extends PluginDef<any, any, infer E>` — then filter out `never` from the resulting union before wrapping in `PluginError<E>`."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript Handbook — Conditional Types",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/conditional-types.html"
+      },
+      {
+        "title": "TypeScript Handbook — Mapped Types",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/mapped-types.html"
+      },
+      {
+        "title": "TypeScript Handbook — Template Literal Types",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/template-literal-types.html"
+      },
+      {
+        "title": "TypeScript 5.0 — const Type Parameters",
+        "url": "https://www.typescriptlang.org/docs/handbook/release-notes/typescript-5-0.html#const-type-parameters"
+      }
+    ]
   }
 ]
