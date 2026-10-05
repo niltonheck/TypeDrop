@@ -8061,5 +8061,41 @@
         "url": "https://www.typescriptlang.org/docs/handbook/release-notes/typescript-5-0.html#const-type-parameters"
       }
     ]
+  },
+  {
+    "date": "2026-10-05",
+    "name": "Typed Event Store with Aggregation & Snapshot",
+    "difficulty": "Medium",
+    "description": "You're building the core of an event-sourced order management system. Raw domain events are appended to an immutable log, a typed reducer folds them into the current aggregate state, and periodic snapshots are captured — all with the compiler enforcing correct event shapes, state transitions, and snapshot validity.",
+    "snippet": "// Core domain types & main function signatures\n\ntype OrderEvent =\n  | { kind: \"order_placed\";    customerId: string; totalCents: number }\n  | { kind: \"item_added\";      itemId: string; qty: number; priceCents: number }\n  | { kind: \"item_removed\";    itemId: string; qty: number }\n  | { kind: \"order_cancelled\"; reason: string };\n\ninterface OrderState {\n  status:     \"open\" | \"cancelled\";\n  customerId: string;\n  items:      Map<string, { qty: number; priceCents: number }>;\n  totalCents: number;\n}\n\ntype Reducer<S, E> = (state: S, event: E) => S;\n\n// Branded snapshot — plain OrderState cannot be substituted\ntype Snapshot<S> = S & { readonly __snapshot: true; snapshotAt: number; createdMs: number };\n\n// ── Functions you must implement ─────────────────────────────────\ndeclare function applyEvent(state: OrderState, event: OrderEvent): OrderState;\ndeclare function createSnapshot(state: OrderState, eventIndex: number): Snapshot<OrderState>;\ndeclare function replayFrom(\n  snapshot: Snapshot<OrderState> | null,\n  events: OrderEvent[],\n  reducer: Reducer<OrderState, OrderEvent>\n): OrderState;",
+    "goals": [
+      "Define a strict discriminated union `OrderEvent` with four variants — each carrying only its own meaningful fields.",
+      "Implement `applyEvent` as a pure, exhaustively type-safe reducer that correctly upserts/removes items and recalculates `totalCents`.",
+      "Create the branded `Snapshot<S>` type and implement `createSnapshot` / `replayFrom` so state can be reconstructed from a checkpoint plus a trailing event slice.",
+      "Implement `getLineItems` to derive a sorted, annotated line-item array from the `Map`-backed items collection."
+    ],
+    "hints": [
+      "A `switch (event.kind)` with one `case` per variant — and NO `default` — forces the compiler to verify exhaustiveness via the `never` type on the implicit final branch.",
+      "For the branded `Snapshot<S>`, intersect `S` with `{ readonly __snapshot: true; snapshotAt: number; createdMs: number }` — the brand field makes it structurally unique so plain states can't slip through.",
+      "When implementing `item_added` upsert, clone the `Map` (e.g. `new Map(state.items)`) before mutating so `applyEvent` remains a pure function."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript – Discriminated Unions",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html#discriminated-unions"
+      },
+      {
+        "title": "TypeScript – Exhaustiveness Checking with never",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html#exhaustiveness-checking"
+      },
+      {
+        "title": "TypeScript – Generics",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/generics.html"
+      },
+      {
+        "title": "MDN – Map (JavaScript reference)",
+        "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Map"
+      }
+    ]
   }
 ]
