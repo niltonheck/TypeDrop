@@ -8097,5 +8097,41 @@
         "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Map"
       }
     ]
+  },
+  {
+    "date": "2026-10-06",
+    "name": "Typed Task Priority Queue",
+    "difficulty": "Easy",
+    "description": "You're building the task scheduling layer for a lightweight project management tool. Incoming tasks arrive with different priority levels and metadata; your job is to implement a strongly-typed priority queue that enqueues tasks, dequeues the highest-priority one, and produces a typed summary report — all enforced by the compiler.",
+    "snippet": "// Key types & main signatures at a glance:\n\nexport type Priority = \"low\" | \"medium\" | \"high\";\n\nexport interface Task {\n  id:        string;\n  title:     string;\n  priority:  Priority;\n  tags:      readonly string[];\n  createdAt: Date;\n}\n\nexport interface PriorityQueue<T> {\n  items: T[];\n  size:  number;\n}\n\nexport type SummaryResult =\n  | { status: \"ok\";    counts: Record<Priority, number>; topTask: Task }\n  | { status: \"empty\"; counts: Record<Priority, number> };\n\nexport function enqueue<T extends Task>(queue: PriorityQueue<T>, task: T): PriorityQueue<T>;\nexport function dequeue<T extends Task>(queue: PriorityQueue<T>): T | undefined;\nexport function summarize<T extends Task>(queue: PriorityQueue<T>): SummaryResult;",
+    "goals": [
+      "Define `Priority`, `Task`, `PriorityQueue<T>`, and `SummaryResult` with correct TypeScript types — including the `satisfies` constraint on `PRIORITY_ORDER`.",
+      "Implement `enqueue` and `dequeue` so tasks are retrieved in highest-priority, earliest-creation order.",
+      "Implement `summarize` to return the correct discriminated-union variant with per-priority counts and a non-destructive peek at the top task.",
+      "Ensure everything compiles under `strict: true` with no `any`, no `as`, and no unsafe casts."
+    ],
+    "hints": [
+      "Use `satisfies Record<Priority, number>` (not a type annotation) on `PRIORITY_ORDER` so TypeScript verifies all three keys exist while still inferring the literal value types.",
+      "The `SummaryResult` discriminated union shares `counts` across both variants — define each variant inline inside the union rather than via a base interface to keep narrowing simple.",
+      "In `dequeue` and `summarize`, sort or reduce over `queue.items` using `PRIORITY_ORDER[task.priority]` as the comparison key; fall back to `createdAt.getTime()` for tie-breaking."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript – Union and Literal Types",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/everyday-types.html#union-types"
+      },
+      {
+        "title": "TypeScript – Generics",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/generics.html"
+      },
+      {
+        "title": "TypeScript – `satisfies` operator",
+        "url": "https://www.typescriptlang.org/docs/handbook/release-notes/typescript-4-9.html#the-satisfies-operator"
+      },
+      {
+        "title": "TypeScript – Discriminated Unions & Narrowing",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html#discriminated-unions"
+      }
+    ]
   }
 ]
