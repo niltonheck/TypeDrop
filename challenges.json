@@ -8133,5 +8133,41 @@
         "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html#discriminated-unions"
       }
     ]
+  },
+  {
+    "date": "2026-10-07",
+    "name": "Typed Paginated API Client with Result Chaining",
+    "difficulty": "Medium",
+    "description": "You're building the data-fetching layer for an analytics dashboard that consumes a paginated REST API. The client must handle multi-page traversal, surface typed errors without throwing, and aggregate all pages into a single typed collection — all enforced at compile time with no unsafe casts.",
+    "snippet": "// Key types and main function signatures\n\nexport type Ok<T>  = { success: true;  value: T };\nexport type Err<E> = { success: false; error: E };\nexport type Result<T, E> = Ok<T> | Err<E>;\n\nexport interface Page<T> {\n  items:      T[];\n  nextCursor: string | null;\n  totalCount: number;\n}\n\nexport type PageAdapter<T> = (raw: unknown) => Page<T>;\n\n// Traverse all pages, collecting items; short-circuit on first error\nexport async function fetchAllPages<T>(\n  endpoint: string,\n  adapter: PageAdapter<T>,\n): Promise<Result<T[], ApiError>> { /* TODO */ }\n\n// Functor map over the ok branch\nexport function mapResult<T, U, E>(\n  result: Result<T, E>,\n  fn: (value: T) => U,\n): Result<U, E> { /* TODO */ }\n\n// Monadic bind — chain a Result-returning function\nexport function flatMapResult<T, U, E>(\n  result: Result<T, E>,\n  fn: (value: T) => Result<U, E>,\n): Result<U, E> { /* TODO */ }",
+    "goals": [
+      "Define the `Result<T, E>` discriminated union and its `ok` / `err` convenience constructors with correct generic types.",
+      "Implement `mapResult` and `flatMapResult` using type narrowing on the `success` discriminant — no type assertions allowed.",
+      "Implement `fetchPage` to wrap `simulateFetch`, catching network rejections and adapter parse failures into typed `ApiError` results.",
+      "Implement `fetchAllPages` to cursor-walk all pages sequentially, short-circuiting on the first `Err` and collecting all items on success."
+    ],
+    "hints": [
+      "Narrow `Result<T, E>` by checking `result.success === true` — TypeScript will then know the variant and give you `.value` or `.error` without casting.",
+      "For `fetchPage`, use two nested try/catch blocks (or one with careful branching): one for the network call and one for the adapter — each maps to a different `ApiErrorCode`.",
+      "In `fetchAllPages`, initialize `cursor` as `string | null = null` and loop while the last page's `nextCursor` is not null — the loop body must be sequential (`await` inside the loop), not parallel."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript Handbook — Discriminated Unions",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html#discriminated-unions"
+      },
+      {
+        "title": "TypeScript Handbook — Generics",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/generics.html"
+      },
+      {
+        "title": "MDN — async function / await",
+        "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/async_function"
+      },
+      {
+        "title": "TypeScript Handbook — Narrowing",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html"
+      }
+    ]
   }
 ]
