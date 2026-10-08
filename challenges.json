@@ -8169,5 +8169,41 @@
         "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html"
       }
     ]
+  },
+  {
+    "date": "2026-10-08",
+    "name": "Typed Schema-Validated Query Builder",
+    "difficulty": "Hard",
+    "description": "You're building the data-access layer for a multi-tenant analytics platform. Consumers declare a typed query against a known table schema — selecting columns, filtering rows, sorting, and paginating — and the compiler must enforce that every referenced column exists on the target table, that filter value types match the column's declared type, and that the final result rows contain exactly the selected columns with their correct types.",
+    "snippet": "\n// Core schema → row inference\ntype ColumnTypeMap = { string: string; number: number; boolean: boolean; date: Date };\ntype ColumnKind    = keyof ColumnTypeMap;\ntype TableSchema   = Record<string, ColumnKind>;\n\ntype InferRow<S extends TableSchema> = { [K in keyof S]: ColumnTypeMap[S[K]] };\n\n// Per-column operator constraints\ntype OpsForKind<K extends ColumnKind> =\n  K extends \"number\"  ? \"eq\" | \"neq\" | \"gt\" | \"lt\" | \"gte\" | \"lte\" :\n  K extends \"string\"  ? \"eq\" | \"neq\" | \"contains\" | \"startsWith\"   :\n  K extends \"boolean\" ? \"eq\" | \"neq\"                                :\n  K extends \"date\"    ? \"eq\" | \"neq\" | \"gt\" | \"lt\" | \"gte\" | \"lte\" :\n  never;\n\n// Co-constrained filter clause: op and value are tied to the column's type\ntype FilterClause<S extends TableSchema, Col extends keyof S> = {\n  column: Col;\n  op:     OpsForKind<S[Col]>;\n  value:  ColumnTypeMap[S[Col]];\n};\n\n// Union over all columns — lets where-arrays mix columns safely\ntype AnyFilterClause<S extends TableSchema> = { [Col in keyof S]: FilterClause<S, Col> }[keyof S];\n\n// Result rows contain ONLY selected columns, correctly typed\ntype QueryResult<S extends TableSchema, Cols extends ReadonlyArray<keyof S>> = {\n  rows: Array<Pick<InferRow<S>, Cols[number]>>;\n  totalCount: number;\n  executedAt: Date;\n};\n\n// Entry point — Cols inferred from select, no manual type args needed\ndeclare function createTableHandle<S extends TableSchema>(\n  schema: S,\n  data: ReadonlyArray<InferRow<S>>\n): TableHandle<S>;\n",
+    "goals": [
+      "Define `InferRow<S>` as a mapped type that converts a TableSchema into a typed row object using `ColumnTypeMap`.",
+      "Define `AnyFilterClause<S>` as a distributive mapped type that produces a per-column discriminated union where `op` and `value` are co-constrained to each column's declared kind.",
+      "Type `QueryDescriptor` and `QueryResult` so that selected columns flow through as a const tuple `Cols`, and result rows are typed as `Pick<InferRow<S>, Cols[number]>` — with `Cols` inferred automatically from the `select` field.",
+      "Implement `createTableHandle` so that `query` correctly filters (AND logic), sorts (multi-column, stable), paginates (`offset`/`limit`), and projects only selected columns — all without `any` or type assertions."
+    ],
+    "hints": [
+      "For `AnyFilterClause<S>`, build a mapped type `{ [Col in keyof S]: FilterClause<S, Col> }` then index it with `[keyof S]` to distribute into a union — each member of the union carries its own `column`, `op`, and `value` types.",
+      "To get `Cols` inferred from the `select` field without a manual type argument, declare `query<Cols extends ReadonlyArray<keyof S>>(descriptor: QueryDescriptor<S, Cols>)` — TypeScript will unify `Cols` against the literal tuple passed to `select` when the caller uses `as const`.",
+      "In `evaluateFilter`, use a `switch` on `filter.op` to narrow the operator; then use `instanceof Date` checks before numeric comparisons to satisfy the type checker for date ops — no casts needed if you guard correctly."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript Handbook: Mapped Types",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/mapped-types.html"
+      },
+      {
+        "title": "TypeScript Handbook: Conditional Types",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/conditional-types.html"
+      },
+      {
+        "title": "TypeScript Handbook: Indexed Access Types",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/indexed-access-types.html"
+      },
+      {
+        "title": "TypeScript Handbook: Utility Types (Pick, Record, Extract)",
+        "url": "https://www.typescriptlang.org/docs/handbook/utility-types.html"
+      }
+    ]
   }
 ]
