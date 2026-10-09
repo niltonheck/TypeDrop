@@ -8205,5 +8205,41 @@
         "url": "https://www.typescriptlang.org/docs/handbook/utility-types.html"
       }
     ]
+  },
+  {
+    "date": "2026-10-09",
+    "name": "Typed Retry-with-Fallback Async Executor",
+    "difficulty": "Medium",
+    "description": "You're building the resilience layer for a microservice that calls unreliable third-party APIs. Each operation declares its own retry policy, a typed fallback strategy, and a structured error taxonomy — the compiler must enforce that fallback return types are compatible with the primary operation, that error kinds are exhaustively handled, and that the final resolved value is correctly narrowed.",
+    "snippet": "// Key types and main function signature\n\ntype OpError =\n  | { kind: \"network\"; statusCode: number; message: string }\n  | { kind: \"timeout\"; elapsedMs: number; message: string }\n  | { kind: \"validation\"; fields: string[]; message: string };\n\ntype Result<T, E> =\n  | { ok: true; value: T }\n  | { ok: false; error: E };\n\ntype FallbackStrategy<T> =\n  | { type: \"static\"; value: T }\n  | { type: \"compute\"; fn: () => Promise<T> }\n  | { type: \"rethrow\" };\n\ninterface Operation<T> {\n  exec: () => Promise<Result<T, OpError>>;\n  policy: RetryPolicy;\n  fallback: FallbackStrategy<T>;\n}\n\nasync function runWithRetry<T>(\n  op: Operation<T>\n): Promise<Result<T, OpError>> { ... }\n",
+    "goals": [
+      "Define the `OpError` discriminated union, `Result<T,E>` generic type, `RetryPolicy`, and `FallbackStrategy<T>` discriminated union with correct TypeScript shapes.",
+      "Implement `runWithRetry<T>` that retries only on listed error kinds, waits between attempts, and dispatches the correct fallback strategy when retries are exhausted.",
+      "Implement `classifyError` with exhaustive narrowing over all `OpError` variants using a never-guard.",
+      "Implement `summariseResults` that returns a `Record<OpError['kind'], number>` with all three keys always present, even when zero."
+    ],
+    "hints": [
+      "For exhaustive matching in `classifyError`, assign the default case to a `const _: never` variable — the compiler will error if any variant is unhandled.",
+      "The `FallbackStrategy<T>` type parameter must flow into `Operation<T>` so that a `static` fallback's `value` type matches `T` — no casting needed if the union is defined generically.",
+      "`Record<OpError['kind'], number>` forces you to initialise all three keys (`network`, `timeout`, `validation`) before returning from `summariseResults`."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript Handbook – Discriminated Unions",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html#discriminated-unions"
+      },
+      {
+        "title": "TypeScript Handbook – Conditional & Exhaustive Checks (never)",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html#exhaustiveness-checking"
+      },
+      {
+        "title": "TypeScript Handbook – Generics",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/generics.html"
+      },
+      {
+        "title": "TypeScript Utility Types – Record<K, V>",
+        "url": "https://www.typescriptlang.org/docs/handbook/utility-types.html#recordkeys-type"
+      }
+    ]
   }
 ]
