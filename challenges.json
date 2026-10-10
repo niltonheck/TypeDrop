@@ -8241,5 +8241,41 @@
         "url": "https://www.typescriptlang.org/docs/handbook/utility-types.html#recordkeys-type"
       }
     ]
+  },
+  {
+    "date": "2026-10-10",
+    "name": "Typed Middleware Pipeline with Context Narrowing",
+    "difficulty": "Hard",
+    "description": "You're building the request-processing core of an API gateway. Incoming requests flow through a chain of middleware — authentication, authorization, validation, and enrichment — each step narrowing or extending a shared context object. The compiler must enforce that each middleware receives exactly the context its predecessor produced, that enrichments accumulate correctly, and that the final handler only runs when the fully-enriched context is provably present.",
+    "snippet": "// Core middleware type and pipeline result\ntype Middleware<In, Out, E> = (ctx: In) => Promise<MiddlewareResult<Out, E>>;\n\ntype MiddlewareResult<Out, E> =\n  | { kind: \"next\"; ctx: Out }\n  | { kind: \"halt\"; error: E };\n\ntype PipelineResult<Ctx, E> =\n  | { outcome: \"success\"; ctx: Ctx }\n  | { outcome: \"halted\"; error: E };\n\n// Pipeline factory — your job is to fill in the generics!\nfunction createPipeline<Steps extends ...>(\n  steps: MiddlewareTuple<Steps>\n): {\n  run: (initialCtx: InitialCtx<Steps>) => Promise<PipelineResult<FinalCtx<Steps>, PipelineError>>\n}\n",
+    "goals": [
+      "Define the `Middleware<In, Out, E>` type alias and the recursive `MiddlewareTuple<Steps>` conditional type that validates adjacent input/output context compatibility across the tuple.",
+      "Implement `FinalCtx<Steps>` and `InitialCtx<Steps>` helper types that extract the output context of the last middleware and the input context of the first middleware, respectively.",
+      "Implement `createPipeline` with correct generics so that the compiler infers the full pipeline's input and output types — rejecting incompatible middleware orderings at compile time.",
+      "Implement the three concrete middleware (`parseTokenMiddleware`, `verifyTokenMiddleware`, `loadUserMiddleware`) and wire them into `authPipeline`, verifying all five test harness assertions pass."
+    ],
+    "hints": [
+      "For `MiddlewareTuple`, recurse over the tuple with a helper that checks `Middleware<PrevOut, NextIn, E>` compatibility — use `infer` to extract `In` and `Out` from each element and a conditional to ensure `PrevOut extends NextIn`.",
+      "To extract the last element's output type for `FinalCtx`, use a recursive conditional: `Steps extends [...infer _, infer Last] ? Last extends Middleware<infer _In, infer Out, infer _E> ? Out : never : never`.",
+      "`createPipeline`'s runtime implementation can treat the steps array as `Middleware<unknown, unknown, PipelineError>[]` internally — the type-level constraints live entirely in the generic signature, so the body only needs to thread `ctx` through sequentially."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript Handbook — Conditional Types",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/conditional-types.html"
+      },
+      {
+        "title": "TypeScript Handbook — Variadic Tuple Types",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/objects.html#tuple-types"
+      },
+      {
+        "title": "TypeScript Handbook — Inferring Within Conditional Types",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/conditional-types.html#inferring-within-conditional-types"
+      },
+      {
+        "title": "TypeScript Deep Dive — Discriminated Unions",
+        "url": "https://basarat.gitbook.io/typescript/type-system/discriminated-unions"
+      }
+    ]
   }
 ]
