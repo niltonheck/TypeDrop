@@ -1,117 +1,47 @@
-<p align="center">
-  <img src="misc/typedrop-logo.png" alt="TypeDrop" width="400">
-</p>
-<p align="center">A new TypeScript challenge every day. AI-generated, open source, zero setup.</p>
+# Typed Middleware Pipeline with Context Narrowing
 
-## What is this?
+**Difficulty:** Hard
 
-TypeDrop delivers a fresh TypeScript challenge daily — focused on the **type system**, not algorithms. Each challenge drops at 6:00 UTC with:
+## Scenario
 
-- A real-world scenario (API clients, data pipelines, state machines...)
-- Type stubs and function signatures to implement
-- A test harness to validate your solution
-- Goals, hints, and links to relevant docs
+You're building the request-processing core of an API gateway. Incoming requests flow through a chain of middleware — authentication, authorization, validation, and enrichment — each step narrowing or extending a shared context object. The compiler must enforce that each middleware receives exactly the context its predecessor produced, that enrichments accumulate correctly, and that the final handler only runs when the fully-enriched context is provably present.
 
-Open it in StackBlitz or CodeSandbox, or clone locally. No login, no setup.
+## How to solve
 
-## How it works
+1. Open `challenge.ts`
+2. Implement the types and functions marked with `TODO`
+3. Verify your solution using one of the methods below
 
-```
-┌────────────────┐     ┌────────────────┐     ┌────────────────┐
-│  Daily cron    │────▶│  Claude API    │────▶│  Git push      │
-│  (GH Actions)  │     │  (tool_use)    │     │  branch + site │
-└────────────────┘     └────────────────┘     └────────────────┘
-```
+### In CodeSandbox (recommended)
 
-1. A GitHub Actions cron job runs daily at 6:00 UTC
-2. It calls the Anthropic API (Claude Sonnet 4.6) with a structured tool schema to generate the challenge
-3. Challenge files are pushed to a `challenge/YYYY-MM-DD` branch
-4. The site (`index.html`) is updated with today's challenge and deployed to GitHub Pages
-5. Users click "Open in CodeSandbox" which loads the branch directly in an online IDE
+1. Click the **Open Devtool** icon in the top-right corner (or press `Ctrl + \``)
+2. In the Devtools panel, click **Type Check + Run Tests** to validate your solution
+3. For `console.log` output and assertion results, open your **browser DevTools** (`F12` > Console tab)
 
-## Challenge format
+### Locally
 
-Each challenge branch contains:
-
-| File | Purpose |
-|------|---------|
-| `challenge.ts` | Type stubs, function signatures, TODO markers |
-| `challenge.test.ts` | Mock data + `console.assert` checks |
-| `README.md` | Scenario, requirements, evaluation checklist |
-| `tsconfig.json` | Strict mode config |
-| `package.json` | TypeScript + tsx for running tests |
-
-Verify your solution:
 ```bash
 npm install
 npm test    # runs tsc --noEmit && tsx challenge.test.ts
 ```
 
-## Topics covered
+## Evaluation Checklist
 
-Challenges combine 3-5 of these areas, with the focus always on **typing over algorithms**:
 
-- **Type system**: generics, conditional types, mapped types, `infer`, `satisfies`, branded types, template literals
-- **Concurrency**: Promise.all/allSettled/race, concurrency limits, AbortController
-- **Parsing & Validation**: runtime narrowing, Result types, schema validation patterns
-- **Data structures**: trees, LRU caches, queues — with proper generic typing
-- **Patterns**: builder, strategy, middleware chains, state machines, event emitters
-- **Error handling**: Result/Either monads, typed error hierarchies, exhaustive matching
+| Skill Exercised | Where in the Code |
+|---|---|
+| Generic conditional types with `infer` | `MiddlewareTuple<Steps>`, `FinalCtx<Steps>`, `InitialCtx<Steps>` |
+| Recursive tuple type validation | `MiddlewareTuple<Steps>` enforcing adjacent In/Out compatibility |
+| Discriminated unions | `MiddlewareResult`, `PipelineResult`, `PipelineError` hierarchy |
+| Mapped / utility types | `TokenCtx`, `AuthCtx`, `UserCtx` built via intersection (`&`) |
+| Generic function with constrained tuple parameter | `createPipeline<Steps extends ...>(steps: MiddlewareTuple<Steps>)` |
+| Type inference from last tuple element | `FinalCtx<Steps>` extracting the output of the last middleware |
+| Type inference from first tuple element | `InitialCtx<Steps>` extracting the input of the first middleware |
+| Exhaustive error narrowing | Test harness narrowing `PipelineError` by `.code` |
+| No `any` / no type assertions | Enforced throughout stubs and test harness |
+| `satisfies` or `const` generics (optional stretch) | Can be used to annotate `authPipeline` for extra compile-time safety |
 
-## Tech stack
 
-- **Site**: Static HTML/CSS, GitHub Pages
-- **Fonts**: [0xProto](https://github.com/0xType/0xProto) (body), [Permanent Marker](https://fonts.google.com/specimen/Permanent+Marker) (title)
-- **Syntax highlighting**: [Prism.js](https://prismjs.com/)
-- **Sandbox**: [StackBlitz](https://stackblitz.com/) / [CodeSandbox](https://codesandbox.io/) (via URL scheme)
-- **AI generation**: [Anthropic Claude API](https://docs.anthropic.com/) with structured tool_use
-- **CI/CD**: GitHub Actions
+## Bonus
 
-## Running locally
-
-```bash
-# Clone the repo
-git clone https://github.com/niltonheck/TypeDrop.git
-cd TypeDrop
-
-# Install dependencies
-npm install
-
-# Set your API key
-echo "ANTHROPIC_API_KEY=sk-ant-..." > .env
-
-# Generate a challenge
-npm run generate
-
-# Inject it into the site
-npm run inject
-
-# Open index.html in your browser
-```
-
-Requires Node.js >= 20.6.0.
-
-## Project structure
-
-```
-├── index.html                          # Main site
-├── archive.html                        # Past challenges
-├── style.css                           # Dark theme
-├── challenges.json                     # Challenge metadata
-├── misc/                               # Favicon, assets
-├── scripts/
-│   ├── generate.ts                     # AI challenge generation
-│   └── inject.ts                       # Stamps challenge into HTML
-├── .github/workflows/
-│   └── generate-challenge.yml          # Daily cron + deploy
-├── LICENSE                             # MIT
-└── package.json
-```
-
-## License
-
-MIT — see [LICENSE](LICENSE).
-
----
-
-Built with love and [Claude](https://claude.ai) by [@niltonheck](https://github.com/niltonheck)
+As a stretch goal, use `satisfies` to annotate `authPipeline` so the compiler verifies its `.run` signature matches `(ctx: BaseCtx) => Promise<PipelineResult<UserCtx, PipelineError>>` without widening the inferred type.
