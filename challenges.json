@@ -8277,5 +8277,41 @@
         "url": "https://basarat.gitbook.io/typescript/type-system/discriminated-unions"
       }
     ]
+  },
+  {
+    "date": "2026-10-11",
+    "name": "Typed Event Emitter with Discriminated Listeners",
+    "difficulty": "Easy",
+    "description": "You're building the notification layer for a real-time dashboard. UI components subscribe to named events, and the compiler must guarantee that every listener receives exactly the payload shape its event name implies — no runtime surprises, no casting.",
+    "snippet": "// Key types + main class signature at a glance\n\nexport interface EventMap {\n  [event: string]: unknown;\n}\n\nexport type Listener<TPayload> = (payload: TPayload) => void;\n\nexport interface DashboardEventMap extends EventMap {\n  userLoggedIn:   { userId: string; timestamp: number };\n  metricUpdated:  { metricName: string; value: number; unit: string };\n  alertTriggered: { alertId: string; severity: \"low\" | \"medium\" | \"high\"; message: string };\n  sessionExpired: { sessionId: string };\n}\n\nexport class TypedEmitter<TMap extends EventMap> {\n  on<K extends keyof TMap>(event: K, listener: Listener<TMap[K]>): void { /*...*/ }\n  off<K extends keyof TMap>(event: K, listener: Listener<TMap[K]>): void { /*...*/ }\n  emit<K extends keyof TMap>(event: K, payload: TMap[K]): void { /*...*/ }\n  once<K extends keyof TMap>(event: K, listener: Listener<TMap[K]>): void { /*...*/ }\n  listenerCount<K extends keyof TMap>(event: K): number { /*...*/ }\n}\n\nexport function createEmitter<TMap extends EventMap>(): TypedEmitter<TMap> { /*...*/ }\n",
+    "goals": [
+      "Define `EventMap` as an index signature interface and extend it with the concrete `DashboardEventMap` entries.",
+      "Implement `TypedEmitter<TMap>` so that `on`, `off`, `emit`, `once`, and `listenerCount` are all generic over `keyof TMap`, binding each event name to its exact payload type.",
+      "Make `once` auto-deregister its wrapper listener after the first invocation, keeping `listenerCount` accurate.",
+      "Implement the `createEmitter` factory as a generic function that constructs and returns a `TypedEmitter<TMap>` without any type assertions."
+    ],
+    "hints": [
+      "Store listeners in a `Map<keyof TMap, Set<Listener<TMap[keyof TMap]>>>` — but think carefully about how to cast keys safely inside the class without using `any`.",
+      "For `once`, create an internal wrapper function that calls `off` on itself before invoking the original listener — store the wrapper, not the original, in the listeners map.",
+      "The `keyof TMap` constraint on every method is what ties the event name to its payload: `K extends keyof TMap` means `payload: TMap[K]` is always the right type at each call site."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript Handbook — Generics",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/generics.html"
+      },
+      {
+        "title": "TypeScript Handbook — Indexed Access Types",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/indexed-access-types.html"
+      },
+      {
+        "title": "TypeScript Handbook — keyof Type Operator",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/keyof-types.html"
+      },
+      {
+        "title": "MDN — Map and Set",
+        "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Map"
+      }
+    ]
   }
 ]

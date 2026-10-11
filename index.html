@@ -41,18 +41,18 @@
     <!-- CHALLENGE_START -->
     <section class="challenge-card">
       <div class="challenge-header">
-        <span class="challenge-date">2026-10-10</span>
-        <span class="badge hard">Hard</span>
+        <span class="challenge-date">2026-10-11</span>
+        <span class="badge easy">Easy</span>
       </div>
-      <h2>Typed Middleware Pipeline with Context Narrowing</h2>
-      <p>You're building the request-processing core of an API gateway. Incoming requests flow through a chain of middleware — authentication, authorization, validation, and enrichment — each step narrowing or extending a shared context object. The compiler must enforce that each middleware receives exactly the context its predecessor produced, that enrichments accumulate correctly, and that the final handler only runs when the fully-enriched context is provably present.</p>
+      <h2>Typed Event Emitter with Discriminated Listeners</h2>
+      <p>You're building the notification layer for a real-time dashboard. UI components subscribe to named events, and the compiler must guarantee that every listener receives exactly the payload shape its event name implies — no runtime surprises, no casting.</p>
       <div class="challenge-goals">
         <h3>Goals</h3>
         <ul>
-          <li>Define the `Middleware&lt;In, Out, E&gt;` type alias and the recursive `MiddlewareTuple&lt;Steps&gt;` conditional type that validates adjacent input/output context compatibility across the tuple.</li>
-          <li>Implement `FinalCtx&lt;Steps&gt;` and `InitialCtx&lt;Steps&gt;` helper types that extract the output context of the last middleware and the input context of the first middleware, respectively.</li>
-          <li>Implement `createPipeline` with correct generics so that the compiler infers the full pipeline's input and output types — rejecting incompatible middleware orderings at compile time.</li>
-          <li>Implement the three concrete middleware (`parseTokenMiddleware`, `verifyTokenMiddleware`, `loadUserMiddleware`) and wire them into `authPipeline`, verifying all five test harness assertions pass.</li>
+          <li>Define `EventMap` as an index signature interface and extend it with the concrete `DashboardEventMap` entries.</li>
+          <li>Implement `TypedEmitter&lt;TMap&gt;` so that `on`, `off`, `emit`, `once`, and `listenerCount` are all generic over `keyof TMap`, binding each event name to its exact payload type.</li>
+          <li>Make `once` auto-deregister its wrapper listener after the first invocation, keeping `listenerCount` accurate.</li>
+          <li>Implement the `createEmitter` factory as a generic function that constructs and returns a `TypedEmitter&lt;TMap&gt;` without any type assertions.</li>
         </ul>
       </div>
       <div class="code-block">
@@ -62,23 +62,30 @@
           <span class="dot green"></span>
           <span class="code-block-title">challenge.ts</span>
         </div>
-        <pre><code class="language-typescript">// Core middleware type and pipeline result
-type Middleware&lt;In, Out, E&gt; = (ctx: In) =&gt; Promise&lt;MiddlewareResult&lt;Out, E&gt;&gt;;
+        <pre><code class="language-typescript">// Key types + main class signature at a glance
 
-type MiddlewareResult&lt;Out, E&gt; =
-  | { kind: &quot;next&quot;; ctx: Out }
-  | { kind: &quot;halt&quot;; error: E };
-
-type PipelineResult&lt;Ctx, E&gt; =
-  | { outcome: &quot;success&quot;; ctx: Ctx }
-  | { outcome: &quot;halted&quot;; error: E };
-
-// Pipeline factory — your job is to fill in the generics!
-function createPipeline&lt;Steps extends ...&gt;(
-  steps: MiddlewareTuple&lt;Steps&gt;
-): {
-  run: (initialCtx: InitialCtx&lt;Steps&gt;) =&gt; Promise&lt;PipelineResult&lt;FinalCtx&lt;Steps&gt;, PipelineError&gt;&gt;
+export interface EventMap {
+  [event: string]: unknown;
 }
+
+export type Listener&lt;TPayload&gt; = (payload: TPayload) =&gt; void;
+
+export interface DashboardEventMap extends EventMap {
+  userLoggedIn:   { userId: string; timestamp: number };
+  metricUpdated:  { metricName: string; value: number; unit: string };
+  alertTriggered: { alertId: string; severity: &quot;low&quot; | &quot;medium&quot; | &quot;high&quot;; message: string };
+  sessionExpired: { sessionId: string };
+}
+
+export class TypedEmitter&lt;TMap extends EventMap&gt; {
+  on&lt;K extends keyof TMap&gt;(event: K, listener: Listener&lt;TMap[K]&gt;): void { /*...*/ }
+  off&lt;K extends keyof TMap&gt;(event: K, listener: Listener&lt;TMap[K]&gt;): void { /*...*/ }
+  emit&lt;K extends keyof TMap&gt;(event: K, payload: TMap[K]): void { /*...*/ }
+  once&lt;K extends keyof TMap&gt;(event: K, listener: Listener&lt;TMap[K]&gt;): void { /*...*/ }
+  listenerCount&lt;K extends keyof TMap&gt;(event: K): number { /*...*/ }
+}
+
+export function createEmitter&lt;TMap extends EventMap&gt;(): TypedEmitter&lt;TMap&gt; { /*...*/ }
 </code></pre>
       </div>
       <details class="challenge-hints-details">
@@ -86,33 +93,33 @@ function createPipeline&lt;Steps extends ...&gt;(
       <div class="challenge-hints">
         <h3>Hints</h3>
         <ul>
-          <li>For `MiddlewareTuple`, recurse over the tuple with a helper that checks `Middleware&lt;PrevOut, NextIn, E&gt;` compatibility — use `infer` to extract `In` and `Out` from each element and a conditional to ensure `PrevOut extends NextIn`.</li>
-          <li>To extract the last element's output type for `FinalCtx`, use a recursive conditional: `Steps extends [...infer _, infer Last] ? Last extends Middleware&lt;infer _In, infer Out, infer _E&gt; ? Out : never : never`.</li>
-          <li>`createPipeline`'s runtime implementation can treat the steps array as `Middleware&lt;unknown, unknown, PipelineError&gt;[]` internally — the type-level constraints live entirely in the generic signature, so the body only needs to thread `ctx` through sequentially.</li>
+          <li>Store listeners in a `Map&lt;keyof TMap, Set&lt;Listener&lt;TMap[keyof TMap]&gt;&gt;&gt;` — but think carefully about how to cast keys safely inside the class without using `any`.</li>
+          <li>For `once`, create an internal wrapper function that calls `off` on itself before invoking the original listener — store the wrapper, not the original, in the listeners map.</li>
+          <li>The `keyof TMap` constraint on every method is what ties the event name to its payload: `K extends keyof TMap` means `payload: TMap[K]` is always the right type at each call site.</li>
         </ul>
       </div>
       </details>
       <div class="challenge-docs">
         <h3>Useful resources</h3>
         <ul>
-          <li><a href="https://www.typescriptlang.org/docs/handbook/2/conditional-types.html" target="_blank" rel="noopener noreferrer">TypeScript Handbook — Conditional Types</a></li>
-          <li><a href="https://www.typescriptlang.org/docs/handbook/2/objects.html#tuple-types" target="_blank" rel="noopener noreferrer">TypeScript Handbook — Variadic Tuple Types</a></li>
-          <li><a href="https://www.typescriptlang.org/docs/handbook/2/conditional-types.html#inferring-within-conditional-types" target="_blank" rel="noopener noreferrer">TypeScript Handbook — Inferring Within Conditional Types</a></li>
-          <li><a href="https://basarat.gitbook.io/typescript/type-system/discriminated-unions" target="_blank" rel="noopener noreferrer">TypeScript Deep Dive — Discriminated Unions</a></li>
+          <li><a href="https://www.typescriptlang.org/docs/handbook/2/generics.html" target="_blank" rel="noopener noreferrer">TypeScript Handbook — Generics</a></li>
+          <li><a href="https://www.typescriptlang.org/docs/handbook/2/indexed-access-types.html" target="_blank" rel="noopener noreferrer">TypeScript Handbook — Indexed Access Types</a></li>
+          <li><a href="https://www.typescriptlang.org/docs/handbook/2/keyof-types.html" target="_blank" rel="noopener noreferrer">TypeScript Handbook — keyof Type Operator</a></li>
+          <li><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Map" target="_blank" rel="noopener noreferrer">MDN — Map and Set</a></li>
         </ul>
       </div>
       <div class="cta-row">
-        <a class="cta-button cta-primary" href="https://stackblitz.com/github/niltonheck/typedrop/tree/challenge/2026-10-10" target="_blank" rel="noopener noreferrer">
+        <a class="cta-button cta-primary" href="https://stackblitz.com/github/niltonheck/typedrop/tree/challenge/2026-10-11" target="_blank" rel="noopener noreferrer">
           <img class="sb-icon" src="https://cdn.simpleicons.org/stackblitz/e0e0e0" alt=""> StackBlitz
         </a>
-        <a class="cta-button" href="https://codesandbox.io/p/devbox/github/niltonheck/typedrop/tree/challenge/2026-10-10" target="_blank" rel="noopener noreferrer">
+        <a class="cta-button" href="https://codesandbox.io/p/devbox/github/niltonheck/typedrop/tree/challenge/2026-10-11" target="_blank" rel="noopener noreferrer">
           <img class="csb-icon" src="https://cdn.simpleicons.org/codesandbox/e0e0e0" alt=""> CodeSandbox
         </a>
       </div>
       <div class="clone-section">
         <h3>Or clone locally</h3>
         <div class="clone-box">
-          <code id="clone-cmd">git clone -b challenge/2026-10-10 https://github.com/niltonheck/typedrop.git</code>
+          <code id="clone-cmd">git clone -b challenge/2026-10-11 https://github.com/niltonheck/typedrop.git</code>
           <button class="clone-copy-btn" onclick="navigator.clipboard.writeText(document.getElementById('clone-cmd').textContent).then(()=>{this.textContent='Copied!';this.classList.add('copied');setTimeout(()=>{this.textContent='Copy';this.classList.remove('copied')},2000)})">Copy</button>
         </div>
       </div>
