@@ -8313,5 +8313,41 @@
         "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Map"
       }
     ]
+  },
+  {
+    "date": "2026-10-12",
+    "name": "Typed LRU Cache with TTL and Generational Eviction",
+    "difficulty": "Hard",
+    "description": "You're building the in-process caching layer for a high-throughput data pipeline. Each cache instance is parameterised over a strict key–value schema, enforces per-entry TTL expiry, and reports hits, misses, and evictions through a strongly-typed audit log — all verified by the compiler with zero unsafe casts.",
+    "snippet": "interface AppSchema {\n  userId: string;\n  sessionToken: string;\n  requestCount: number;\n}\n\ntype CacheKey<S extends CacheSchema, K extends keyof S> =\n  K & { readonly [__brand]: S };\n\n// Discriminated union — each variant's `value` is tied to its exact key type:\ntype CacheEvent<S extends CacheSchema> = /* TODO: mapped discriminated union */\n  never;\n\n// Factory + Cache interface\ndeclare function createCache<S extends CacheSchema>(\n  options: CacheOptions<S>\n): Cache<S>;\n\ninterface Cache<S extends CacheSchema> {\n  get<K extends keyof S>(key: CacheKey<S, K>): S[K] | undefined;\n  set<K extends keyof S>(key: CacheKey<S, K>, value: S[K], ttlMs?: number): void;\n  delete<K extends keyof S>(key: CacheKey<S, K>): boolean;\n  purgeExpired(): number;\n  snapshot(): ReadonlyMap<keyof S, S[keyof S]>;\n  stats(): CacheStats;\n}",
+    "goals": [
+      "Define CacheEvent<S> as a mapped discriminated union so each 'hit' variant carries exactly S[K] for its specific key K — not a union of all value types.",
+      "Implement the LRU ordering with MRU promotion on get and LRU eviction when capacity is exceeded, emitting the correct typed CacheEvent for every state change.",
+      "Implement per-entry TTL tracking with lazy eviction inside get (emit 'evict' then 'miss') and eager bulk eviction in purgeExpired.",
+      "Ensure makeKey brands its return type so that raw strings and invalid key names are rejected by the compiler with no unsafe casts anywhere."
+    ],
+    "hints": [
+      "For CacheEvent<S>, try: `type CacheEvent<S> = { [K in keyof S]: { kind: 'hit'; key: K; value: S[K] } | { kind: 'miss'; key: K } | { kind: 'evict'; key: K; reason: EvictReason } }[keyof S]` — a distributive mapped type.",
+      "A doubly-linked list (or insertion-ordered Map) is the classic O(1) LRU structure; TypeScript's built-in Map iterates in insertion order, which you can exploit.",
+      "Store each entry as `{ value: S[keyof S]; expiresAt: number | undefined }` — compare `Date.now()` against `expiresAt` on every read to implement lazy TTL eviction."
+    ],
+    "docs": [
+      {
+        "title": "TS Handbook — Mapped Types",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/mapped-types.html"
+      },
+      {
+        "title": "TS Handbook — Conditional Types & infer",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/conditional-types.html"
+      },
+      {
+        "title": "TS Handbook — Generics",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/generics.html"
+      },
+      {
+        "title": "MDN — Map (insertion-order iteration)",
+        "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Map"
+      }
+    ]
   }
 ]

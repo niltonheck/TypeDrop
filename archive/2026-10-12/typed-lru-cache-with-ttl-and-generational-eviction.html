@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TypeDrop — Typed LRU Cache with TTL and Generational Eviction</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Permanent+Marker&display=swap">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/fontsource/fonts/0x-proto@latest/latin-400-normal.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/fontsource/fonts/0x-proto@latest/latin-700-normal.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1/themes/prism-tomorrow.min.css">
+  <link rel="icon" href="../../misc/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="../../style.css">
+</head>
+<body>
+  <main>
+    <header>
+      <h1><a href="../../index.html" style="color: inherit; text-decoration: none;">TypeDrop</a></h1>
+      <p class="tagline">2026-10-12 Challenge</p>
+    </header>
+
+    <section class="challenge-card">
+      <div class="challenge-header">
+        <span class="challenge-date">2026-10-12</span>
+        <span class="badge hard">Hard</span>
+      </div>
+      <h2>Typed LRU Cache with TTL and Generational Eviction</h2>
+      <p>You're building the in-process caching layer for a high-throughput data pipeline. Each cache instance is parameterised over a strict key–value schema, enforces per-entry TTL expiry, and reports hits, misses, and evictions through a strongly-typed audit log — all verified by the compiler with zero unsafe casts.</p>
+      <div class="challenge-goals">
+        <h3>Goals</h3>
+        <ul>
+          <li>Define CacheEvent&lt;S&gt; as a mapped discriminated union so each 'hit' variant carries exactly S[K] for its specific key K — not a union of all value types.</li>
+          <li>Implement the LRU ordering with MRU promotion on get and LRU eviction when capacity is exceeded, emitting the correct typed CacheEvent for every state change.</li>
+          <li>Implement per-entry TTL tracking with lazy eviction inside get (emit 'evict' then 'miss') and eager bulk eviction in purgeExpired.</li>
+          <li>Ensure makeKey brands its return type so that raw strings and invalid key names are rejected by the compiler with no unsafe casts anywhere.</li>
+        </ul>
+      </div>
+      <div class="code-block">
+        <div class="code-block-header">
+          <span class="dot red"></span>
+          <span class="dot yellow"></span>
+          <span class="dot green"></span>
+          <span class="code-block-title">challenge.ts</span>
+        </div>
+        <pre><code class="language-typescript">interface AppSchema {
+  userId: string;
+  sessionToken: string;
+  requestCount: number;
+}
+
+type CacheKey&lt;S extends CacheSchema, K extends keyof S&gt; =
+  K &amp; { readonly [__brand]: S };
+
+// Discriminated union — each variant's `value` is tied to its exact key type:
+type CacheEvent&lt;S extends CacheSchema&gt; = /* TODO: mapped discriminated union */
+  never;
+
+// Factory + Cache interface
+declare function createCache&lt;S extends CacheSchema&gt;(
+  options: CacheOptions&lt;S&gt;
+): Cache&lt;S&gt;;
+
+interface Cache&lt;S extends CacheSchema&gt; {
+  get&lt;K extends keyof S&gt;(key: CacheKey&lt;S, K&gt;): S[K] | undefined;
+  set&lt;K extends keyof S&gt;(key: CacheKey&lt;S, K&gt;, value: S[K], ttlMs?: number): void;
+  delete&lt;K extends keyof S&gt;(key: CacheKey&lt;S, K&gt;): boolean;
+  purgeExpired(): number;
+  snapshot(): ReadonlyMap&lt;keyof S, S[keyof S]&gt;;
+  stats(): CacheStats;
+}</code></pre>
+      </div>
+      <details class="challenge-hints-details">
+        <summary>Hints (click to reveal)</summary>
+      <div class="challenge-hints">
+        <h3>Hints</h3>
+        <ul>
+          <li>For CacheEvent&lt;S&gt;, try: `type CacheEvent&lt;S&gt; = { [K in keyof S]: { kind: 'hit'; key: K; value: S[K] } | { kind: 'miss'; key: K } | { kind: 'evict'; key: K; reason: EvictReason } }[keyof S]` — a distributive mapped type.</li>
+          <li>A doubly-linked list (or insertion-ordered Map) is the classic O(1) LRU structure; TypeScript's built-in Map iterates in insertion order, which you can exploit.</li>
+          <li>Store each entry as `{ value: S[keyof S]; expiresAt: number | undefined }` — compare `Date.now()` against `expiresAt` on every read to implement lazy TTL eviction.</li>
+        </ul>
+      </div>
+      </details>
+      <div class="challenge-docs">
+        <h3>Useful resources</h3>
+        <ul>
+          <li><a href="https://www.typescriptlang.org/docs/handbook/2/mapped-types.html" target="_blank" rel="noopener noreferrer">TS Handbook — Mapped Types</a></li>
+          <li><a href="https://www.typescriptlang.org/docs/handbook/2/conditional-types.html" target="_blank" rel="noopener noreferrer">TS Handbook — Conditional Types &amp; infer</a></li>
+          <li><a href="https://www.typescriptlang.org/docs/handbook/2/generics.html" target="_blank" rel="noopener noreferrer">TS Handbook — Generics</a></li>
+          <li><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Map" target="_blank" rel="noopener noreferrer">MDN — Map (insertion-order iteration)</a></li>
+        </ul>
+      </div>
+      <div class="cta-row">
+        <a class="cta-button cta-primary" href="https://stackblitz.com/github/niltonheck/typedrop/tree/challenge/2026-10-12" target="_blank" rel="noopener noreferrer">
+          <img class="sb-icon" src="https://cdn.simpleicons.org/stackblitz/e0e0e0" alt=""> StackBlitz
+        </a>
+        <a class="cta-button" href="https://codesandbox.io/p/devbox/github/niltonheck/typedrop/tree/challenge/2026-10-12" target="_blank" rel="noopener noreferrer">
+          <img class="csb-icon" src="https://cdn.simpleicons.org/codesandbox/e0e0e0" alt=""> CodeSandbox
+        </a>
+      </div>
+      <div class="clone-section">
+        <h3>Or clone locally</h3>
+        <div class="clone-box">
+          <code id="clone-cmd">git clone -b challenge/2026-10-12 https://github.com/niltonheck/typedrop.git</code>
+          <button class="clone-copy-btn" onclick="navigator.clipboard.writeText(document.getElementById('clone-cmd').textContent).then(()=>{this.textContent='Copied!';this.classList.add('copied');setTimeout(()=>{this.textContent='Copy';this.classList.remove('copied')},2000)})">Copy</button>
+        </div>
+      </div>
+    </section>
+
+    <footer>
+      <p>
+        <a href="../../index.html">&larr; Today's challenge</a>
+        &middot;
+        <a href="../../archive.html">Archive</a>
+      </p>
+    </footer>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1/prism.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1/components/prism-typescript.min.js"></script>
+  <script data-goatcounter="https://niltonheck.goatcounter.com/count"
+        async src="//gc.zgo.at/count.js"></script>
+</body>
+</html>
