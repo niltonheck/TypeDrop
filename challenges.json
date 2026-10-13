@@ -8349,5 +8349,41 @@
         "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Map"
       }
     ]
+  },
+  {
+    "date": "2026-10-13",
+    "name": "Typed Safe JSON Parser with Result Type",
+    "difficulty": "Easy",
+    "description": "You're building the API response layer for a mobile app backend. Raw JSON arrives over the wire and must be safely parsed and narrowed into one of several known response shapes — the compiler must enforce that callers always handle both the success and failure paths, and that the typed payload is only accessible after a successful parse.",
+    "snippet": "// Core types you must define and implement:\n\ntype Result<T, E> =\n  | { ok: true;  value: T }\n  | { ok: false; error: E };\n\ntype ParseError =\n  | { reason: \"invalid-json\"; raw: string }\n  | { reason: \"unknown-shape\"; parsed: unknown };\n\ntype ApiPayload = UserPayload | OrderPayload | ErrorPayload;\n\n// Main functions to implement:\nfunction isApiPayload(value: unknown): value is ApiPayload { ... }\n\nfunction parseApiResponse(raw: string): Result<ApiPayload, ParseError> { ... }\n\nfunction describePayload(payload: ApiPayload): string { ... }\n",
+    "goals": [
+      "Define a generic `Result<T, E>` discriminated union and a `ParseError` discriminated union with two variants each.",
+      "Implement a type guard `isApiPayload` that narrows `unknown` to `ApiPayload` by checking all required fields per `kind`.",
+      "Implement `parseApiResponse` that returns a typed `Result` — never throwing, always returning ok or error.",
+      "Implement `describePayload` with an exhaustive switch over `ApiPayload` kinds, using a `never` assertion in the default branch."
+    ],
+    "hints": [
+      "For `isApiPayload`, check `typeof value === 'object' && value !== null` first, then use `'kind' in value` before narrowing further — no casting needed.",
+      "In the `default` branch of `describePayload`, assign the payload to a variable typed as `never` to get a compile-time exhaustiveness check: `const _exhaustive: never = payload`.",
+      "In `parseApiResponse`, wrap `JSON.parse` in a try/catch — the caught value is `unknown`, so you don't need to inspect it, just return the `invalid-json` error variant."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript Handbook: Narrowing",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html"
+      },
+      {
+        "title": "TypeScript Handbook: Discriminated Unions",
+        "url": "https://www.typescriptlang.org/docs/handbook/typescript-in-5-minutes-func.html#discriminated-unions"
+      },
+      {
+        "title": "TypeScript Handbook: Using Type Predicates",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html#using-type-predicates"
+      },
+      {
+        "title": "TypeScript Handbook: Generics",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/generics.html"
+      }
+    ]
   }
 ]
