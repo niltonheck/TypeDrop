@@ -8385,5 +8385,41 @@
         "url": "https://www.typescriptlang.org/docs/handbook/2/generics.html"
       }
     ]
+  },
+  {
+    "date": "2026-10-14",
+    "name": "Typed Paginated API Client with Aggregation",
+    "difficulty": "Medium",
+    "description": "You're building the data-access layer for an analytics dashboard that pulls records from a paginated REST API. The client must handle cursor-based pagination transparently, aggregate results in a single pass, and surface typed summaries — the compiler must enforce that every page shape, cursor token, and aggregation result matches the schema declared up front.",
+    "snippet": "// Key types and main function signatures\n\ntype Brand<B, T> = T & { readonly __brand: B };\ntype SaleId = Brand<\"SaleId\", string>;\n\ntype SaleRecord = {\n  id: SaleId;\n  region: \"NA\" | \"EU\" | \"APAC\";\n  amount: number;\n  currency: \"USD\" | \"EUR\" | \"JPY\";\n};\n\ntype Page<T> = { items: T[]; nextCursor?: string; totalCount: number };\ntype FetchPage<T> = (cursor: string | undefined) => Promise<Page<T>>;\n\ninterface Aggregator<T, S> {\n  init(): S;\n  reduce(acc: S, item: T): S;\n  finalize(acc: S): S;\n}\n\n// --- functions you must implement ---\nasync function fetchAllPages<T>(fetchPage: FetchPage<T>): Promise<T[]> { ... }\n\nasync function paginatedAggregate<T, S>(\n  fetchPage: FetchPage<T>,\n  aggregator: Aggregator<T, S>\n): Promise<S> { ... }\n\nfunction buildSaleSummaryAggregator(): Aggregator<SaleRecord, SaleSummary> { ... }",
+    "goals": [
+      "Declare a phantom `Brand<B,T>` helper and use it to create the opaque `SaleId` type.",
+      "Implement `fetchAllPages<T>` to follow a cursor chain across an arbitrary number of pages without using `any`.",
+      "Implement `paginatedAggregate<T, S>` that folds each page's items through an `Aggregator` in a single streaming pass — no full buffering.",
+      "Implement `buildSaleSummaryAggregator` returning a fully-typed `Aggregator<SaleRecord, SaleSummary>` that computes total amount, per-region counts, and the largest sale."
+    ],
+    "hints": [
+      "For `Brand<B,T>`, intersect `T` with `{ readonly __brand: B }` — the phantom property is never set at runtime but blocks accidental structural compatibility.",
+      "In `fetchAllPages` and `paginatedAggregate`, keep a `cursor: string | undefined` variable initialised to `undefined` and loop until the returned page has no `nextCursor`.",
+      "Use `SaleRecord[\"region\"]` as the key type for `countByRegion` so the `Record` stays in sync with the union automatically — no manual duplication needed."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript Handbook — Generics",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/generics.html"
+      },
+      {
+        "title": "TypeScript Handbook — Utility Types (Record, Pick, …)",
+        "url": "https://www.typescriptlang.org/docs/handbook/utility-types.html"
+      },
+      {
+        "title": "TypeScript Deep Dive — Branded Types",
+        "url": "https://basarat.gitbook.io/typescript/main-1/nominaltyping"
+      },
+      {
+        "title": "MDN — Promise (async iteration patterns)",
+        "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise"
+      }
+    ]
   }
 ]
