@@ -8421,5 +8421,41 @@
         "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise"
       }
     ]
+  },
+  {
+    "date": "2026-10-15",
+    "name": "Typed Product Catalog Filter & Grouper",
+    "difficulty": "Easy",
+    "description": "You're building the browse-page logic for an e-commerce storefront. Raw product records arrive from a database query and must be filtered by a typed criteria object, then grouped into a strongly-typed map — the compiler must enforce that every filter key matches a real product field and that the grouped output preserves the correct value types throughout.",
+    "snippet": "type Category = \"electronics\" | \"clothing\" | \"books\" | \"home\";\n\ntype Product = {\n  id: string;\n  name: string;\n  category: Category;\n  priceUsd: number;\n  inStock: boolean;\n  rating: number;\n};\n\n// Keys of Product whose value type extends string (id | name | category)\ntype StringKeys = { [K in keyof Product]: Product[K] extends string ? K : never }[keyof Product];\n\n// Every field is optional; values must match the Product field type exactly\ntype FilterCriteria = { [K in keyof Product]?: Product[K] };\n\n// Groups a filtered product list by any string-valued key\nfunction filterAndGroup<K extends StringKeys>(\n  products: ReadonlyArray<Product>,\n  criteria: FilterCriteria,\n  groupKey: K\n): Record<string, Product[]> { /* TODO */ throw new Error(\"Not implemented\"); }\n",
+    "goals": [
+      "Define `StringKeys` as a conditional mapped type that extracts only the string-valued keys of `Product`.",
+      "Implement `filterProducts` so it returns products matching ALL supplied `FilterCriteria` fields using logical AND.",
+      "Implement `groupBy` constrained to `StringKeys` so it buckets products by any string-valued product field.",
+      "Compose both utilities in `filterAndGroup` with a fully inferred return type — no manual annotation."
+    ],
+    "hints": [
+      "For `StringKeys`, use a mapped type with a conditional on `Product[K] extends string ? K : never`, then index with `[keyof Product]` to get the union.",
+      "In `filterProducts`, `(Object.entries(criteria) as Array<[keyof Product, unknown]>)` can help you iterate criteria pairs — but think about whether you actually need a cast, or if `Object.keys` with a narrowing approach avoids it.",
+      "In `groupBy`, index into a product with `product[key]` — TypeScript already knows the result is a `string` because `K extends StringKeys`."
+    ],
+    "docs": [
+      {
+        "title": "TS Handbook: Mapped Types",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/mapped-types.html"
+      },
+      {
+        "title": "TS Handbook: Conditional Types",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/conditional-types.html"
+      },
+      {
+        "title": "TS Handbook: Indexed Access Types",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/indexed-access-types.html"
+      },
+      {
+        "title": "TS Handbook: Utility Types (Record, Pick, etc.)",
+        "url": "https://www.typescriptlang.org/docs/handbook/utility-types.html"
+      }
+    ]
   }
 ]
