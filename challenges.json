@@ -8457,5 +8457,41 @@
         "url": "https://www.typescriptlang.org/docs/handbook/utility-types.html"
       }
     ]
+  },
+  {
+    "date": "2026-10-16",
+    "name": "Typed Middleware Pipeline with Typed Context & Error Boundaries",
+    "difficulty": "Hard",
+    "description": "You're building the request-processing core for a Node.js-style API gateway. Each incoming request flows through a chain of middleware functions that progressively enrich a typed context object — the compiler must guarantee that later middleware can only read properties that earlier middleware has already written, and that every error path is exhaustively handled through a typed Result boundary.",
+    "snippet": "// Key types at a glance:\n\ntype Result<T, E extends AppError> =\n  | { readonly ok: true;  readonly value: T }\n  | { readonly ok: false; readonly error: E };\n\ntype AppError =\n  | { kind: \"AuthError\";       message: string }\n  | { kind: \"ValidationError\"; field: string; message: string }\n  | { kind: \"NotFoundError\";   resource: string }\n  | { kind: \"RateLimitError\";  retryAfterMs: number }\n  | { kind: \"InternalError\";   cause: unknown };\n\ntype MiddlewareFn<Ctx extends BaseContext, Adds extends Record<string, unknown>, Err extends AppError> =\n  (ctx: Ctx) => Promise<Result<Ctx & Adds, Err>>;\n\n// Pipeline builder — context type widens with each .pipe() call:\ndeclare class Pipeline<Ctx extends BaseContext> {\n  pipe<Adds extends Record<string, unknown>, Err extends AppError>(\n    fn: MiddlewareFn<Ctx, Adds, Err>\n  ): Pipeline<Ctx & Adds>;\n\n  run(base: BaseContext): Promise<Result<Ctx, AppError>>;\n}\n\ndeclare function createPipeline(): Pipeline<BaseContext>;",
+    "goals": [
+      "Implement the `Pipeline<Ctx>` class so that `.pipe()` returns a new pipeline whose context type is `Ctx & Adds`, enforced entirely at compile time with no unsafe casts.",
+      "Implement `run()` to execute middleware in order, threading the enriched context through each step and short-circuiting on the first `fail` result.",
+      "Implement `handleError` as an exhaustive switch over every `AppError` kind so the compiler rejects any unhandled variant.",
+      "Implement the generic helpers `ok`, `fail`, `mapResult`, and `collectResults` with fully inferred types and zero use of `any` or type assertions."
+    ],
+    "hints": [
+      "The immutable pipeline chain is the key challenge: store middleware as a typed array internally, but expose `pipe` as returning `Pipeline<Ctx & Adds>` — think about how to cast internally while keeping the public API honest.",
+      "For exhaustive error handling, add a `default:` branch that assigns `error` to a variable typed as `never` and returns it — the compiler will catch missing cases.",
+      "For `collectResults`, a simple `for...of` loop that returns early on the first `fail` is enough — you do not need `Promise.all` here since the inputs are already-resolved Results."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript Handbook — Conditional Types & infer",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/conditional-types.html"
+      },
+      {
+        "title": "TypeScript Handbook — Narrowing & Discriminated Unions",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html#discriminated-unions"
+      },
+      {
+        "title": "TypeScript Handbook — Generics",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/generics.html"
+      },
+      {
+        "title": "TypeScript Handbook — Intersection Types",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/objects.html#intersection-types"
+      }
+    ]
   }
 ]
