@@ -8493,5 +8493,41 @@
         "url": "https://www.typescriptlang.org/docs/handbook/2/objects.html#intersection-types"
       }
     ]
+  },
+  {
+    "date": "2026-10-17",
+    "name": "Typed Retry Scheduler with Exponential Backoff",
+    "difficulty": "Medium",
+    "description": "You're building the resilience layer for a microservice that calls unreliable third-party APIs. Each operation is declared with a typed retry policy, and the scheduler must execute it with exponential backoff, surface structured typed outcomes for every attempt, and ultimately resolve to a discriminated Result — the compiler must enforce that policy fields, attempt records, and final outcomes are fully consistent with the declared schema.",
+    "snippet": "// Key types & main function signature\n\nexport type Milliseconds = number & { readonly __brand: \"ms\" };\n\nexport type RetryPolicy = {\n  maxAttempts:   number;\n  baseDelay:     Milliseconds;\n  maxDelay:      Milliseconds;\n  backoffFactor: number;\n  shouldRetry:   (error: unknown) => boolean;\n};\n\nexport type AttemptRecord<T> =\n  | { status: \"success\"; attemptNumber: number; value: T;       durationMs: Milliseconds }\n  | { status: \"failure\"; attemptNumber: number; error: unknown; durationMs: Milliseconds };\n\nexport type SchedulerResult<T> =\n  | { outcome: \"succeeded\"; value: T;            attempts: AttemptRecord<T>[] }\n  | { outcome: \"failed\";    lastError: unknown;  attempts: AttemptRecord<T>[] };\n\nexport async function withRetry<T>(\n  operation: () => Promise<T>,\n  policy: RetryPolicy,\n  sleep?: (delayMs: Milliseconds) => Promise<void>\n): Promise<SchedulerResult<T>>;\n",
+    "goals": [
+      "Define the `Milliseconds` branded type and all discriminated union types (`AttemptRecord<T>`, `SchedulerResult<T>`) with correct discriminant fields.",
+      "Implement `calcDelay` to compute exponential backoff and clamp the result to `policy.maxDelay`, returning a `Milliseconds` value.",
+      "Implement `withRetry<T>` to run the operation up to `maxAttempts` times, record every attempt, honour `shouldRetry`, inject the optional `sleep` dependency, and resolve to a correctly typed `SchedulerResult<T>`.",
+      "Implement the `ExtractSuccess<R>` conditional type that infers and returns `T` when `R` is a succeeded `SchedulerResult<T>`, and `never` otherwise."
+    ],
+    "hints": [
+      "For `ExtractSuccess`, nest two conditional type checks: first check that `R extends SchedulerResult<infer T>`, then check that the `outcome` discriminant is `\"succeeded\"` before resolving to `T`.",
+      "To keep `Milliseconds` brand-safe without `as`, the `ms()` helper is the single coercion point — use a type assertion only inside that one helper.",
+      "For the `sleep` default, construct a real `setTimeout`-based fallback inline inside `withRetry` using a default parameter or an `??` assignment — that way callers in tests can inject `noSleep` to make tests instant."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript Handbook — Conditional Types",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/conditional-types.html"
+      },
+      {
+        "title": "TypeScript Handbook — Discriminated Unions",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html#discriminated-unions"
+      },
+      {
+        "title": "TypeScript Handbook — Generics",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/generics.html"
+      },
+      {
+        "title": "MDN — Promise and async/await",
+        "url": "https://developer.mozilla.org/en-US/docs/Learn_web_development/Extensions/Async_JS/Promises"
+      }
+    ]
   }
 ]

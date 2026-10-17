@@ -41,18 +41,18 @@
     <!-- CHALLENGE_START -->
     <section class="challenge-card">
       <div class="challenge-header">
-        <span class="challenge-date">2026-10-16</span>
-        <span class="badge hard">Hard</span>
+        <span class="challenge-date">2026-10-17</span>
+        <span class="badge medium">Medium</span>
       </div>
-      <h2>Typed Middleware Pipeline with Typed Context &amp; Error Boundaries</h2>
-      <p>You're building the request-processing core for a Node.js-style API gateway. Each incoming request flows through a chain of middleware functions that progressively enrich a typed context object — the compiler must guarantee that later middleware can only read properties that earlier middleware has already written, and that every error path is exhaustively handled through a typed Result boundary.</p>
+      <h2>Typed Retry Scheduler with Exponential Backoff</h2>
+      <p>You're building the resilience layer for a microservice that calls unreliable third-party APIs. Each operation is declared with a typed retry policy, and the scheduler must execute it with exponential backoff, surface structured typed outcomes for every attempt, and ultimately resolve to a discriminated Result — the compiler must enforce that policy fields, attempt records, and final outcomes are fully consistent with the declared schema.</p>
       <div class="challenge-goals">
         <h3>Goals</h3>
         <ul>
-          <li>Implement the `Pipeline&lt;Ctx&gt;` class so that `.pipe()` returns a new pipeline whose context type is `Ctx &amp; Adds`, enforced entirely at compile time with no unsafe casts.</li>
-          <li>Implement `run()` to execute middleware in order, threading the enriched context through each step and short-circuiting on the first `fail` result.</li>
-          <li>Implement `handleError` as an exhaustive switch over every `AppError` kind so the compiler rejects any unhandled variant.</li>
-          <li>Implement the generic helpers `ok`, `fail`, `mapResult`, and `collectResults` with fully inferred types and zero use of `any` or type assertions.</li>
+          <li>Define the `Milliseconds` branded type and all discriminated union types (`AttemptRecord&lt;T&gt;`, `SchedulerResult&lt;T&gt;`) with correct discriminant fields.</li>
+          <li>Implement `calcDelay` to compute exponential backoff and clamp the result to `policy.maxDelay`, returning a `Milliseconds` value.</li>
+          <li>Implement `withRetry&lt;T&gt;` to run the operation up to `maxAttempts` times, record every attempt, honour `shouldRetry`, inject the optional `sleep` dependency, and resolve to a correctly typed `SchedulerResult&lt;T&gt;`.</li>
+          <li>Implement the `ExtractSuccess&lt;R&gt;` conditional type that infers and returns `T` when `R` is a succeeded `SchedulerResult&lt;T&gt;`, and `never` otherwise.</li>
         </ul>
       </div>
       <div class="code-block">
@@ -62,65 +62,65 @@
           <span class="dot green"></span>
           <span class="code-block-title">challenge.ts</span>
         </div>
-        <pre><code class="language-typescript">// Key types at a glance:
+        <pre><code class="language-typescript">// Key types &amp; main function signature
 
-type Result&lt;T, E extends AppError&gt; =
-  | { readonly ok: true;  readonly value: T }
-  | { readonly ok: false; readonly error: E };
+export type Milliseconds = number &amp; { readonly __brand: &quot;ms&quot; };
 
-type AppError =
-  | { kind: &quot;AuthError&quot;;       message: string }
-  | { kind: &quot;ValidationError&quot;; field: string; message: string }
-  | { kind: &quot;NotFoundError&quot;;   resource: string }
-  | { kind: &quot;RateLimitError&quot;;  retryAfterMs: number }
-  | { kind: &quot;InternalError&quot;;   cause: unknown };
+export type RetryPolicy = {
+  maxAttempts:   number;
+  baseDelay:     Milliseconds;
+  maxDelay:      Milliseconds;
+  backoffFactor: number;
+  shouldRetry:   (error: unknown) =&gt; boolean;
+};
 
-type MiddlewareFn&lt;Ctx extends BaseContext, Adds extends Record&lt;string, unknown&gt;, Err extends AppError&gt; =
-  (ctx: Ctx) =&gt; Promise&lt;Result&lt;Ctx &amp; Adds, Err&gt;&gt;;
+export type AttemptRecord&lt;T&gt; =
+  | { status: &quot;success&quot;; attemptNumber: number; value: T;       durationMs: Milliseconds }
+  | { status: &quot;failure&quot;; attemptNumber: number; error: unknown; durationMs: Milliseconds };
 
-// Pipeline builder — context type widens with each .pipe() call:
-declare class Pipeline&lt;Ctx extends BaseContext&gt; {
-  pipe&lt;Adds extends Record&lt;string, unknown&gt;, Err extends AppError&gt;(
-    fn: MiddlewareFn&lt;Ctx, Adds, Err&gt;
-  ): Pipeline&lt;Ctx &amp; Adds&gt;;
+export type SchedulerResult&lt;T&gt; =
+  | { outcome: &quot;succeeded&quot;; value: T;            attempts: AttemptRecord&lt;T&gt;[] }
+  | { outcome: &quot;failed&quot;;    lastError: unknown;  attempts: AttemptRecord&lt;T&gt;[] };
 
-  run(base: BaseContext): Promise&lt;Result&lt;Ctx, AppError&gt;&gt;;
-}
-
-declare function createPipeline(): Pipeline&lt;BaseContext&gt;;</code></pre>
+export async function withRetry&lt;T&gt;(
+  operation: () =&gt; Promise&lt;T&gt;,
+  policy: RetryPolicy,
+  sleep?: (delayMs: Milliseconds) =&gt; Promise&lt;void&gt;
+): Promise&lt;SchedulerResult&lt;T&gt;&gt;;
+</code></pre>
       </div>
       <details class="challenge-hints-details">
         <summary>Hints (click to reveal)</summary>
       <div class="challenge-hints">
         <h3>Hints</h3>
         <ul>
-          <li>The immutable pipeline chain is the key challenge: store middleware as a typed array internally, but expose `pipe` as returning `Pipeline&lt;Ctx &amp; Adds&gt;` — think about how to cast internally while keeping the public API honest.</li>
-          <li>For exhaustive error handling, add a `default:` branch that assigns `error` to a variable typed as `never` and returns it — the compiler will catch missing cases.</li>
-          <li>For `collectResults`, a simple `for...of` loop that returns early on the first `fail` is enough — you do not need `Promise.all` here since the inputs are already-resolved Results.</li>
+          <li>For `ExtractSuccess`, nest two conditional type checks: first check that `R extends SchedulerResult&lt;infer T&gt;`, then check that the `outcome` discriminant is `&quot;succeeded&quot;` before resolving to `T`.</li>
+          <li>To keep `Milliseconds` brand-safe without `as`, the `ms()` helper is the single coercion point — use a type assertion only inside that one helper.</li>
+          <li>For the `sleep` default, construct a real `setTimeout`-based fallback inline inside `withRetry` using a default parameter or an `??` assignment — that way callers in tests can inject `noSleep` to make tests instant.</li>
         </ul>
       </div>
       </details>
       <div class="challenge-docs">
         <h3>Useful resources</h3>
         <ul>
-          <li><a href="https://www.typescriptlang.org/docs/handbook/2/conditional-types.html" target="_blank" rel="noopener noreferrer">TypeScript Handbook — Conditional Types &amp; infer</a></li>
-          <li><a href="https://www.typescriptlang.org/docs/handbook/2/narrowing.html#discriminated-unions" target="_blank" rel="noopener noreferrer">TypeScript Handbook — Narrowing &amp; Discriminated Unions</a></li>
+          <li><a href="https://www.typescriptlang.org/docs/handbook/2/conditional-types.html" target="_blank" rel="noopener noreferrer">TypeScript Handbook — Conditional Types</a></li>
+          <li><a href="https://www.typescriptlang.org/docs/handbook/2/narrowing.html#discriminated-unions" target="_blank" rel="noopener noreferrer">TypeScript Handbook — Discriminated Unions</a></li>
           <li><a href="https://www.typescriptlang.org/docs/handbook/2/generics.html" target="_blank" rel="noopener noreferrer">TypeScript Handbook — Generics</a></li>
-          <li><a href="https://www.typescriptlang.org/docs/handbook/2/objects.html#intersection-types" target="_blank" rel="noopener noreferrer">TypeScript Handbook — Intersection Types</a></li>
+          <li><a href="https://developer.mozilla.org/en-US/docs/Learn_web_development/Extensions/Async_JS/Promises" target="_blank" rel="noopener noreferrer">MDN — Promise and async/await</a></li>
         </ul>
       </div>
       <div class="cta-row">
-        <a class="cta-button cta-primary" href="https://stackblitz.com/github/niltonheck/typedrop/tree/challenge/2026-10-16" target="_blank" rel="noopener noreferrer">
+        <a class="cta-button cta-primary" href="https://stackblitz.com/github/niltonheck/typedrop/tree/challenge/2026-10-17" target="_blank" rel="noopener noreferrer">
           <img class="sb-icon" src="https://cdn.simpleicons.org/stackblitz/e0e0e0" alt=""> StackBlitz
         </a>
-        <a class="cta-button" href="https://codesandbox.io/p/devbox/github/niltonheck/typedrop/tree/challenge/2026-10-16" target="_blank" rel="noopener noreferrer">
+        <a class="cta-button" href="https://codesandbox.io/p/devbox/github/niltonheck/typedrop/tree/challenge/2026-10-17" target="_blank" rel="noopener noreferrer">
           <img class="csb-icon" src="https://cdn.simpleicons.org/codesandbox/e0e0e0" alt=""> CodeSandbox
         </a>
       </div>
       <div class="clone-section">
         <h3>Or clone locally</h3>
         <div class="clone-box">
-          <code id="clone-cmd">git clone -b challenge/2026-10-16 https://github.com/niltonheck/typedrop.git</code>
+          <code id="clone-cmd">git clone -b challenge/2026-10-17 https://github.com/niltonheck/typedrop.git</code>
           <button class="clone-copy-btn" onclick="navigator.clipboard.writeText(document.getElementById('clone-cmd').textContent).then(()=>{this.textContent='Copied!';this.classList.add('copied');setTimeout(()=>{this.textContent='Copy';this.classList.remove('copied')},2000)})">Copy</button>
         </div>
       </div>
