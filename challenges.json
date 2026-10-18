@@ -8529,5 +8529,41 @@
         "url": "https://developer.mozilla.org/en-US/docs/Learn_web_development/Extensions/Async_JS/Promises"
       }
     ]
+  },
+  {
+    "date": "2026-10-18",
+    "name": "Typed Event Emitter State Machine",
+    "difficulty": "Hard",
+    "description": "You're building the session-lifecycle engine for a real-time collaboration tool. User sessions move through a strict set of states (Idle → Connecting → Active → Suspended → Closed), and every legal transition must fire a strongly-typed event — the compiler must guarantee that only valid transitions are dispatched, that each event's payload matches its transition, and that listeners receive exactly the right payload type for the event they subscribed to.",
+    "snippet": "// Key types and main class signature\n\nexport interface SessionEventMap {\n  \"session:connecting\": { sessionId: string; url: string };\n  \"session:active\":     { sessionId: string; userId: string; joinedAt: Date };\n  \"session:suspended\":  { sessionId: string; reason: string; suspendedAt: Date };\n  \"session:resumed\":    { sessionId: string; resumedAt: Date };\n  \"session:closed\":     { sessionId: string; code: number; message: string };\n}\n\nexport type Transition<\n  From extends SessionState,\n  To   extends SessionState,\n  Event extends keyof SessionEventMap\n> = { from: From; to: To; event: Event };\n\nexport type Listener<E extends keyof SessionEventMap> =\n  (payload: SessionEventMap[E]) => void;\n\nexport class SessionMachine {\n  on<E extends keyof SessionEventMap>(\n    event: E,\n    listener: Listener<E>\n  ): () => void { /* ... */ }\n\n  dispatch<E extends keyof SessionEventMap>(\n    event: E,\n    payload: SessionEventMap[E]\n  ): boolean { /* ... */ }\n\n  getState(): SessionState { /* ... */ }\n}\n",
+    "goals": [
+      "Define `SessionEventMap`, `Transition`, `LegalTransitions`, `DispatchFor`, and `Listener` so that all type relationships are enforced at compile time with no `any` or type assertions.",
+      "Implement `SessionMachine` so that `dispatch()` validates the current state against legal transitions at runtime, updates state on success, notifies all subscribed listeners with the correctly-typed payload, and returns `false` without changing state on illegal transitions.",
+      "Implement `on()` so it registers a listener for a specific event and returns a working unsubscribe function that prevents future invocations of that listener.",
+      "Implement the standalone `once` helper so it subscribes a listener that automatically unsubscribes itself after its first invocation, with full generic typing."
+    ],
+    "hints": [
+      "Use `Extract<LegalTransition, { event: E }>` inside `DispatchFor<E>` to filter the union of all legal transitions down to only those relevant for a given event — this gives you both the valid `from` states and the `to` state for free.",
+      "Store listeners in a `Map<keyof SessionEventMap, Set<Listener<keyof SessionEventMap>>>` — but be careful: when calling listeners, you'll need to narrow the key to `E` inside `dispatch` so TypeScript can connect the payload type to the listener signature.",
+      "For `once`, capture the unsubscribe function returned by `on` inside a wrapper listener, call it immediately after invoking the original listener — no external state needed."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript Handbook — Conditional Types",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/conditional-types.html"
+      },
+      {
+        "title": "TypeScript Handbook — Mapped Types",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/mapped-types.html"
+      },
+      {
+        "title": "TypeScript Handbook — Generics",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/generics.html"
+      },
+      {
+        "title": "TypeScript Utility Types — Extract",
+        "url": "https://www.typescriptlang.org/docs/handbook/utility-types.html#extracttype-union"
+      }
+    ]
   }
 ]
