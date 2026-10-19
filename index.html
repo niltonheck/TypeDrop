@@ -41,18 +41,18 @@
     <!-- CHALLENGE_START -->
     <section class="challenge-card">
       <div class="challenge-header">
-        <span class="challenge-date">2026-10-18</span>
-        <span class="badge hard">Hard</span>
+        <span class="challenge-date">2026-10-19</span>
+        <span class="badge easy">Easy</span>
       </div>
-      <h2>Typed Event Emitter State Machine</h2>
-      <p>You're building the session-lifecycle engine for a real-time collaboration tool. User sessions move through a strict set of states (Idle → Connecting → Active → Suspended → Closed), and every legal transition must fire a strongly-typed event — the compiler must guarantee that only valid transitions are dispatched, that each event's payload matches its transition, and that listeners receive exactly the right payload type for the event they subscribed to.</p>
+      <h2>Typed Shopping Cart Reducer</h2>
+      <p>You're building the cart logic for a lightweight e-commerce checkout flow. Cart actions arrive as a discriminated union, and a pure reducer must apply each action to produce a new typed cart state — the compiler must enforce that every action variant carries exactly the right payload and that the derived totals always stay in sync.</p>
       <div class="challenge-goals">
         <h3>Goals</h3>
         <ul>
-          <li>Define `SessionEventMap`, `Transition`, `LegalTransitions`, `DispatchFor`, and `Listener` so that all type relationships are enforced at compile time with no `any` or type assertions.</li>
-          <li>Implement `SessionMachine` so that `dispatch()` validates the current state against legal transitions at runtime, updates state on success, notifies all subscribed listeners with the correctly-typed payload, and returns `false` without changing state on illegal transitions.</li>
-          <li>Implement `on()` so it registers a listener for a specific event and returns a working unsubscribe function that prevents future invocations of that listener.</li>
-          <li>Implement the standalone `once` helper so it subscribes a listener that automatically unsubscribes itself after its first invocation, with full generic typing.</li>
+          <li>Define CartItem, CartState, and a four-variant CartAction discriminated union with correctly typed payloads.</li>
+          <li>Implement cartReducer as a pure function that handles all four action types and keeps totals in sync.</li>
+          <li>Use Omit&lt;CartItem, 'quantity'&gt; for the ADD_ITEM payload and Pick&lt;CartState, ...&gt; for the computeTotals return type.</li>
+          <li>Add an exhaustive default branch using a never variable so the compiler catches any unhandled action variant.</li>
         </ul>
       </div>
       <div class="code-block">
@@ -62,37 +62,28 @@
           <span class="dot green"></span>
           <span class="code-block-title">challenge.ts</span>
         </div>
-        <pre><code class="language-typescript">// Key types and main class signature
+        <pre><code class="language-typescript">
+// Core types you must define:
+export type CartItem = {
+  id: string;
+  name: string;
+  priceInCents: number;
+  quantity: number;
+};
 
-export interface SessionEventMap {
-  &quot;session:connecting&quot;: { sessionId: string; url: string };
-  &quot;session:active&quot;:     { sessionId: string; userId: string; joinedAt: Date };
-  &quot;session:suspended&quot;:  { sessionId: string; reason: string; suspendedAt: Date };
-  &quot;session:resumed&quot;:    { sessionId: string; resumedAt: Date };
-  &quot;session:closed&quot;:     { sessionId: string; code: number; message: string };
-}
+export type CartState = {
+  items: CartItem[];
+  totalItems: number;
+  totalPriceInCents: number;
+};
 
-export type Transition&lt;
-  From extends SessionState,
-  To   extends SessionState,
-  Event extends keyof SessionEventMap
-&gt; = { from: From; to: To; event: Event };
+// Four-variant discriminated union (yours to complete):
+export type CartAction = never; // ← replace with your union
 
-export type Listener&lt;E extends keyof SessionEventMap&gt; =
-  (payload: SessionEventMap[E]) =&gt; void;
-
-export class SessionMachine {
-  on&lt;E extends keyof SessionEventMap&gt;(
-    event: E,
-    listener: Listener&lt;E&gt;
-  ): () =&gt; void { /* ... */ }
-
-  dispatch&lt;E extends keyof SessionEventMap&gt;(
-    event: E,
-    payload: SessionEventMap[E]
-  ): boolean { /* ... */ }
-
-  getState(): SessionState { /* ... */ }
+// Pure reducer — compiler must catch any unhandled action variant:
+export function cartReducer(state: CartState, action: CartAction): CartState {
+  // switch on action.type ...
+  throw new Error(&quot;Not implemented&quot;);
 }
 </code></pre>
       </div>
@@ -101,33 +92,33 @@ export class SessionMachine {
       <div class="challenge-hints">
         <h3>Hints</h3>
         <ul>
-          <li>Use `Extract&lt;LegalTransition, { event: E }&gt;` inside `DispatchFor&lt;E&gt;` to filter the union of all legal transitions down to only those relevant for a given event — this gives you both the valid `from` states and the `to` state for free.</li>
-          <li>Store listeners in a `Map&lt;keyof SessionEventMap, Set&lt;Listener&lt;keyof SessionEventMap&gt;&gt;&gt;` — but be careful: when calling listeners, you'll need to narrow the key to `E` inside `dispatch` so TypeScript can connect the payload type to the listener signature.</li>
-          <li>For `once`, capture the unsubscribe function returned by `on` inside a wrapper listener, call it immediately after invoking the original listener — no external state needed.</li>
+          <li>A `never`-typed variable in the default branch (e.g. `const _exhaustive: never = action`) is the idiomatic way to get compile-time exhaustiveness checking in a switch.</li>
+          <li>For ADD_ITEM, search `state.items` for an existing id first — if found, map over items to increment quantity; otherwise spread in a new item with quantity 1.</li>
+          <li>computeTotals only needs a single Array.reduce pass to accumulate both totalItems and totalPriceInCents simultaneously.</li>
         </ul>
       </div>
       </details>
       <div class="challenge-docs">
         <h3>Useful resources</h3>
         <ul>
-          <li><a href="https://www.typescriptlang.org/docs/handbook/2/conditional-types.html" target="_blank" rel="noopener noreferrer">TypeScript Handbook — Conditional Types</a></li>
-          <li><a href="https://www.typescriptlang.org/docs/handbook/2/mapped-types.html" target="_blank" rel="noopener noreferrer">TypeScript Handbook — Mapped Types</a></li>
-          <li><a href="https://www.typescriptlang.org/docs/handbook/2/generics.html" target="_blank" rel="noopener noreferrer">TypeScript Handbook — Generics</a></li>
-          <li><a href="https://www.typescriptlang.org/docs/handbook/utility-types.html#extracttype-union" target="_blank" rel="noopener noreferrer">TypeScript Utility Types — Extract</a></li>
+          <li><a href="https://www.typescriptlang.org/docs/handbook/2/narrowing.html#discriminated-unions" target="_blank" rel="noopener noreferrer">TypeScript Handbook — Discriminated Unions</a></li>
+          <li><a href="https://www.typescriptlang.org/docs/handbook/utility-types.html" target="_blank" rel="noopener noreferrer">TypeScript Handbook — Utility Types (Omit, Pick)</a></li>
+          <li><a href="https://www.typescriptlang.org/docs/handbook/2/narrowing.html#exhaustiveness-checking" target="_blank" rel="noopener noreferrer">TypeScript Handbook — Exhaustiveness Checking</a></li>
+          <li><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/reduce" target="_blank" rel="noopener noreferrer">MDN — Array.prototype.reduce</a></li>
         </ul>
       </div>
       <div class="cta-row">
-        <a class="cta-button cta-primary" href="https://stackblitz.com/github/niltonheck/typedrop/tree/challenge/2026-10-18" target="_blank" rel="noopener noreferrer">
+        <a class="cta-button cta-primary" href="https://stackblitz.com/github/niltonheck/typedrop/tree/challenge/2026-10-19" target="_blank" rel="noopener noreferrer">
           <img class="sb-icon" src="https://cdn.simpleicons.org/stackblitz/e0e0e0" alt=""> StackBlitz
         </a>
-        <a class="cta-button" href="https://codesandbox.io/p/devbox/github/niltonheck/typedrop/tree/challenge/2026-10-18" target="_blank" rel="noopener noreferrer">
+        <a class="cta-button" href="https://codesandbox.io/p/devbox/github/niltonheck/typedrop/tree/challenge/2026-10-19" target="_blank" rel="noopener noreferrer">
           <img class="csb-icon" src="https://cdn.simpleicons.org/codesandbox/e0e0e0" alt=""> CodeSandbox
         </a>
       </div>
       <div class="clone-section">
         <h3>Or clone locally</h3>
         <div class="clone-box">
-          <code id="clone-cmd">git clone -b challenge/2026-10-18 https://github.com/niltonheck/typedrop.git</code>
+          <code id="clone-cmd">git clone -b challenge/2026-10-19 https://github.com/niltonheck/typedrop.git</code>
           <button class="clone-copy-btn" onclick="navigator.clipboard.writeText(document.getElementById('clone-cmd').textContent).then(()=>{this.textContent='Copied!';this.classList.add('copied');setTimeout(()=>{this.textContent='Copy';this.classList.remove('copied')},2000)})">Copy</button>
         </div>
       </div>

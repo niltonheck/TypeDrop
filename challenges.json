@@ -8565,5 +8565,41 @@
         "url": "https://www.typescriptlang.org/docs/handbook/utility-types.html#extracttype-union"
       }
     ]
+  },
+  {
+    "date": "2026-10-19",
+    "name": "Typed Shopping Cart Reducer",
+    "difficulty": "Easy",
+    "description": "You're building the cart logic for a lightweight e-commerce checkout flow. Cart actions arrive as a discriminated union, and a pure reducer must apply each action to produce a new typed cart state — the compiler must enforce that every action variant carries exactly the right payload and that the derived totals always stay in sync.",
+    "snippet": "\n// Core types you must define:\nexport type CartItem = {\n  id: string;\n  name: string;\n  priceInCents: number;\n  quantity: number;\n};\n\nexport type CartState = {\n  items: CartItem[];\n  totalItems: number;\n  totalPriceInCents: number;\n};\n\n// Four-variant discriminated union (yours to complete):\nexport type CartAction = never; // ← replace with your union\n\n// Pure reducer — compiler must catch any unhandled action variant:\nexport function cartReducer(state: CartState, action: CartAction): CartState {\n  // switch on action.type ...\n  throw new Error(\"Not implemented\");\n}\n",
+    "goals": [
+      "Define CartItem, CartState, and a four-variant CartAction discriminated union with correctly typed payloads.",
+      "Implement cartReducer as a pure function that handles all four action types and keeps totals in sync.",
+      "Use Omit<CartItem, 'quantity'> for the ADD_ITEM payload and Pick<CartState, ...> for the computeTotals return type.",
+      "Add an exhaustive default branch using a never variable so the compiler catches any unhandled action variant."
+    ],
+    "hints": [
+      "A `never`-typed variable in the default branch (e.g. `const _exhaustive: never = action`) is the idiomatic way to get compile-time exhaustiveness checking in a switch.",
+      "For ADD_ITEM, search `state.items` for an existing id first — if found, map over items to increment quantity; otherwise spread in a new item with quantity 1.",
+      "computeTotals only needs a single Array.reduce pass to accumulate both totalItems and totalPriceInCents simultaneously."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript Handbook — Discriminated Unions",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html#discriminated-unions"
+      },
+      {
+        "title": "TypeScript Handbook — Utility Types (Omit, Pick)",
+        "url": "https://www.typescriptlang.org/docs/handbook/utility-types.html"
+      },
+      {
+        "title": "TypeScript Handbook — Exhaustiveness Checking",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html#exhaustiveness-checking"
+      },
+      {
+        "title": "MDN — Array.prototype.reduce",
+        "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/reduce"
+      }
+    ]
   }
 ]
