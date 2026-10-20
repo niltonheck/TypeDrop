@@ -8601,5 +8601,41 @@
         "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/reduce"
       }
     ]
+  },
+  {
+    "date": "2026-10-20",
+    "name": "Typed Paginated API Client with Cursor-Based Pagination",
+    "difficulty": "Hard",
+    "description": "You're building the data-access layer for an analytics dashboard that fetches large datasets from a REST API using cursor-based pagination. The client must be fully generic over the resource shape, enforce that every page request and response is structurally consistent, accumulate results across pages with a typed concurrency limit, and surface every failure through a discriminated Result type — the compiler must make it impossible to misuse the cursor, mix up resource types, or silently swallow errors.",
+    "snippet": "// Core types and main function signature\n\nexport type Cursor = string & { readonly __brand: \"Cursor\" };\n\nexport interface Page<T> {\n  items: T[];\n  nextCursor: Cursor | null;\n  totalCount: number;\n}\n\nexport type PageFetcher<T> = (\n  cursor: Cursor | null,\n  pageSize: number\n) => Promise<Page<T>>;\n\nexport type Result<T, E> =\n  | { ok: true;  value: T }\n  | { ok: false; error: E };\n\nexport type FetchError =\n  | { kind: \"NetworkError\"; message: string; statusCode: number }\n  | { kind: \"ParseError\";   message: string; page: number }\n  | { kind: \"CursorError\";  message: string; invalidCursor: string }\n  | { kind: \"TimeoutError\"; message: string; afterMs: number };\n\nexport async function fetchAllPages<T>(\n  options: PaginatedClientOptions<T>\n): Promise<Result<AccumulatedResult<T>, FetchError>>;\n",
+    "goals": [
+      "Define all branded types, generic interfaces, and the discriminated FetchError union with zero use of `any`.",
+      "Implement `fetchAllPages<T>` so it fetches all pages sequentially/concurrently, respects the concurrency limit, races each request against a per-request timeout, and returns a typed Result.",
+      "Propagate errors correctly: classify thrown values into the right FetchError variant and short-circuit on the first failure.",
+      "Implement `exhaustiveFetchError` with a `never`-based exhaustiveness check that formats all four FetchError variants into the exact required strings."
+    ],
+    "hints": [
+      "For the timeout race, create a helper like `withTimeout<T>(p: Promise<T>, ms: number, afterMs: number): Promise<T>` that uses `Promise.race` against a `new Promise((_, reject) => setTimeout(...))` — type the rejection as `TimeoutError` before throwing.",
+      "To classify a caught `unknown` value as a `FetchError`, write a type-guard `isFetchError(e: unknown): e is FetchError` that checks `typeof e === 'object' && e !== null && 'kind' in e` and that the `kind` is one of the four known strings.",
+      "For the chunked concurrency limit, collect the cursors for all remaining pages upfront, then slice them into batches of size `concurrencyLimit` and `await Promise.all(batch)` one batch at a time — but remember you may not know all cursors in advance (cursor-based!), so you'll need to chain pages sequentially or use a sliding window."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript Handbook — Branded / Nominal Types",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html"
+      },
+      {
+        "title": "TypeScript Handbook — Conditional Types & infer",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/conditional-types.html"
+      },
+      {
+        "title": "MDN — Promise.race()",
+        "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise/race"
+      },
+      {
+        "title": "TypeScript Handbook — Narrowing (exhaustiveness with never)",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html#exhaustiveness-checking"
+      }
+    ]
   }
 ]
