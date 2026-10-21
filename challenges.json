@@ -8637,5 +8637,41 @@
         "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html#exhaustiveness-checking"
       }
     ]
+  },
+  {
+    "date": "2026-10-21",
+    "name": "Typed In-Memory Query Engine",
+    "difficulty": "Medium",
+    "description": "You're building a lightweight client-side query engine for a product catalog dashboard. It must filter, sort, and aggregate a typed collection of records — and the compiler must guarantee that every field name, comparator, and aggregation function is valid for the shape of the record being queried.",
+    "snippet": "\n// Key types you'll work with:\ntype Primitive = string | number | boolean;\ntype FlatRecord = Record<string, Primitive>;\n\n// Links field name to its value type — no mismatched comparisons!\ntype FilterClause<T extends FlatRecord> = {\n  [K in keyof T]: { field: K; op: CompareOp; value: T[K] };\n}[keyof T];\n\n// Only numeric fields are legal aggregation targets\ntype AggregateClause<T extends FlatRecord> = {\n  op: AggregateOp;\n  field: KeysOfType<T, number>; // ← compiler rejects string/boolean fields\n  alias: string;\n};\n\n// Main entry point\nfunction runQuery<T extends FlatRecord>(\n  data: T[],\n  query: Query<T>\n): QueryResult<T> { /* TODO */ }\n",
+    "goals": [
+      "Implement `KeysOfType<T, V>` to extract only the keys of T whose value extends V, and use it to restrict `AggregateClause` to numeric fields.",
+      "Implement `applyFilter` to evaluate all six comparison operators plus case-insensitive `contains`, using `typeof` guards to handle mixed Primitive types safely.",
+      "Implement `runQuery` to apply AND-chained filters, then sort, then limit — computing aggregations over the full filtered set before the limit is applied.",
+      "Ensure `rows` is always `[]` when aggregations are requested, and that `totalMatched` always reflects the pre-limit filtered count."
+    ],
+    "hints": [
+      "For `FilterClause<T>`, map over `keyof T` to create a per-key object, then index with `[keyof T]` to turn it into a union — this is the standard trick for pairing correlated fields.",
+      "In `applyFilter`, use `typeof record[clause.field]` guards before applying `>` / `<` so TypeScript (and your runtime logic) handles booleans correctly.",
+      "Compute aggregations before slicing with `limit` — store the full filtered array, run aggregations on it, then apply `slice(0, limit)` for `rows`."
+    ],
+    "docs": [
+      {
+        "title": "Mapped Types — TypeScript Handbook",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/mapped-types.html"
+      },
+      {
+        "title": "Conditional Types — TypeScript Handbook",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/conditional-types.html"
+      },
+      {
+        "title": "keyof and Lookup Types",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/indexed-access-types.html"
+      },
+      {
+        "title": "Narrowing — TypeScript Handbook",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html"
+      }
+    ]
   }
 ]
