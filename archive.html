@@ -32,6 +32,13 @@
         </thead>
         <tbody>
         <tr>
+          <td>2026-10-22</td>
+          <td><span class="badge hard">Hard</span></td>
+          <td>Typed Middleware Pipeline with Context Propagation</td>
+          <td>You're building the request-processing backbone for an HTTP gateway. Middleware handlers are composed into a typed pipeline where each layer can read from and write to a shared context object — the compiler must guarantee that every middleware declares exactly what context keys it reads (its dependencies) and writes (its contributions), that contributions from earlier layers are available to later ones, and that the final handler only executes when all required keys are present in the accumulated context.</td>
+          <td><a href="archive/2026-10-22/typed-middleware-pipeline-with-context-propagation.html">See</a></td>
+        </tr>
+        <tr>
           <td>2026-10-21</td>
           <td><span class="badge medium">Medium</span></td>
           <td>Typed In-Memory Query Engine</td>

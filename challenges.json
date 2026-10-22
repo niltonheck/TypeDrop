@@ -8673,5 +8673,41 @@
         "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html"
       }
     ]
+  },
+  {
+    "date": "2026-10-22",
+    "name": "Typed Middleware Pipeline with Context Propagation",
+    "difficulty": "Hard",
+    "description": "You're building the request-processing backbone for an HTTP gateway. Middleware handlers are composed into a typed pipeline where each layer can read from and write to a shared context object — the compiler must guarantee that every middleware declares exactly what context keys it reads (its dependencies) and writes (its contributions), that contributions from earlier layers are available to later ones, and that the final handler only executes when all required keys are present in the accumulated context.",
+    "snippet": "// Key types and main Pipeline class signature\n\nexport type Spread<A extends object, B extends object> = {\n  [K in keyof A | keyof B]: K extends keyof B ? B[K] : K extends keyof A ? A[K] : never;\n};\n\nexport type MiddlewareDescriptor<Reads extends object, Writes extends object> = {\n  reads: Reads;\n  writes: Writes;\n};\n\nexport type AccumulateContext<\n  Middlewares extends MiddlewareDescriptor<object, object>[],\n  Ctx extends object = {}\n> = /* recursive — walks the tuple, spreading each `writes` into Ctx */ Ctx;\n\nexport type VerifyReads<Reads extends object, Ctx extends object> =\n  keyof Reads extends keyof Ctx ? true : false;\n\nexport type MiddlewareFn<Ctx extends object, Contribution extends object> = (\n  req: RawRequest,\n  ctx: Ctx,\n  next: (contribution: Contribution) => Promise<PipelineResponse>\n) => Promise<PipelineResponse>;\n\nexport class Pipeline<\n  Middlewares extends MiddlewareDescriptor<object, object>[] = [],\n  CurrentCtx extends object = {}\n> {\n  use<Reads extends object, Writes extends object>(\n    fn: VerifyReads<Reads, CurrentCtx> extends true ? MiddlewareFn<Reads, Writes> : never\n  ): Pipeline<[...Middlewares, MiddlewareDescriptor<Reads, Writes>], Spread<CurrentCtx, Writes>>;\n\n  handle<Reads extends object>(\n    handler: VerifyReads<Reads, CurrentCtx> extends true ? FinalHandler<Reads> : never\n  ): ExecutablePipeline;\n}",
+    "goals": [
+      "Implement `Spread<A, B>`, `AccumulateContext<Middlewares, Ctx>`, and `VerifyReads<Reads, Ctx>` as pure mapped/conditional types with no `any`.",
+      "Implement the `Pipeline` class so that `.use()` rejects (via `never`) any middleware whose `Reads` keys are not yet present in `CurrentCtx`, and accumulates `Writes` into the next `CurrentCtx`.",
+      "Implement the three middleware factories (`makeAuthMiddleware`, `makeLoggingMiddleware`, `makeRateLimitMiddleware`) and the `makeEchoHandler` with correct `Reads`/`Writes` declarations and runtime logic.",
+      "Assemble `buildGatewayPipeline` in the correct order (auth → logging → rateLimit → handler) and verify that swapping any two layers produces a compile-time type error."
+    ],
+    "hints": [
+      "For `AccumulateContext`, use `Middlewares extends [infer Head, ...infer Tail]` to peel off one descriptor at a time and `Spread` its `writes` into the growing `Ctx` — then recurse on `Tail`.",
+      "The `never` trick in `.use()` works because passing a real function where `never` is expected is a type error — no extra overloads needed; the conditional on `VerifyReads` does all the work.",
+      "Keep `Pipeline`'s runtime internals typed as `MiddlewareFn<object, object>[]` and cast with `as` only inside the class body — all the safety lives in the public API's generic signatures."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript Handbook — Conditional Types",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/conditional-types.html"
+      },
+      {
+        "title": "TypeScript Handbook — Mapped Types",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/mapped-types.html"
+      },
+      {
+        "title": "TypeScript Handbook — Variadic Tuple Types",
+        "url": "https://www.typescriptlang.org/docs/handbook/release-notes/typescript-4-0.html#variadic-tuple-types"
+      },
+      {
+        "title": "TypeScript Handbook — Generics (Generic Classes)",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/generics.html#generic-classes"
+      }
+    ]
   }
 ]
