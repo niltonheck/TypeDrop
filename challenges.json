@@ -8709,5 +8709,41 @@
         "url": "https://www.typescriptlang.org/docs/handbook/2/generics.html#generic-classes"
       }
     ]
+  },
+  {
+    "date": "2026-10-23",
+    "name": "Typed Contact Book Aggregator",
+    "difficulty": "Easy",
+    "description": "You're building the data layer for a personal contact book app. Contacts arrive from multiple sources (manual entry, email import, phone sync), and you need to group, search, and summarize them — with the compiler enforcing every field name, group key, and summary shape.",
+    "snippet": "// Key types & main function signatures\n\nexport type ContactSource = \"manual\" | \"email\" | \"phone\";\n\nexport interface Contact {\n  id: string;\n  firstName: string;\n  lastName: string;\n  email: string;\n  phone: string | null;   // nullable — should be excluded from sortable fields\n  source: ContactSource;\n  tags: string[];\n  createdAt: Date;\n}\n\n// Your job: fill in these type aliases correctly\nexport type ContactSortField = /* ??? — only string | Date fields of Contact */;\nexport type ContactSummary  = /* ??? — Omit phone & tags, add displayName */;\nexport type GroupedContacts = /* ??? — Record keyed by ContactSource */;\n\nexport function toSummary(contact: Contact): ContactSummary;\nexport function sortContacts(contacts: Contact[], field: ContactSortField): Contact[];\nexport function groupBySource(contacts: Contact[]): GroupedContacts;\nexport function searchContacts(\n  contacts: Contact[],\n  query: string,\n  fields: [SearchableField, ...SearchableField[]]  // non-empty tuple\n): Contact[];",
+    "goals": [
+      "Define `ContactSortField` using a mapped + conditional type that extracts only the `string | Date` keys of `Contact`, excluding nullable fields.",
+      "Define `ContactSummary` with utility types (`Omit`/`Pick`) — never manually re-list property names — and add a `displayName` field via intersection.",
+      "Implement `groupBySource` so that every `ContactSource` key is always present in the result, even when its contact list is empty.",
+      "Implement `searchContacts` with a non-empty tuple parameter type so the compiler rejects an empty `fields` array at the call site."
+    ],
+    "hints": [
+      "For `ContactSortField`, use a distributive mapped type: map each key to itself or `never`, then index with `[keyof Contact]` to collect the keepers.",
+      "For `ContactSummary`, `Omit<Contact, 'tags' | 'phone'> & { displayName: string }` is the idiomatic two-step — no manual property listing needed.",
+      "To guarantee all `ContactSource` keys exist in `groupBySource`, seed your accumulator with `{ manual: [], email: [], phone: [] }` before iterating."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript Handbook — Mapped Types",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/mapped-types.html"
+      },
+      {
+        "title": "TypeScript Handbook — Conditional Types",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/conditional-types.html"
+      },
+      {
+        "title": "TypeScript Handbook — Utility Types (Omit, Record, Pick)",
+        "url": "https://www.typescriptlang.org/docs/handbook/utility-types.html"
+      },
+      {
+        "title": "TypeScript Handbook — Variadic Tuple Types",
+        "url": "https://www.typescriptlang.org/docs/handbook/release-notes/typescript-4-0.html#variadic-tuple-types"
+      }
+    ]
   }
 ]
