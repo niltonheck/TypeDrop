@@ -8745,5 +8745,41 @@
         "url": "https://www.typescriptlang.org/docs/handbook/release-notes/typescript-4-0.html#variadic-tuple-types"
       }
     ]
+  },
+  {
+    "date": "2026-10-24",
+    "name": "Typed Event-Sourced State Machine",
+    "difficulty": "Hard",
+    "description": "You're building the order-lifecycle engine for a fulfillment platform. Orders move through a strict set of states driven by domain events — the compiler must guarantee that every transition is valid for the current state, every event carries exactly the right payload, and replaying an event log always reconstructs a consistent, fully-typed snapshot.",
+    "snippet": "\n// Key types you'll define and combine:\n\nexport type OrderState =\n  | { kind: \"Pending\";   orderId: string; customerId: string; createdAt: Date }\n  | { kind: \"Confirmed\"; orderId: string; customerId: string; createdAt: Date;\n      confirmedAt: Date; totalCents: number }\n  | { kind: \"Shipped\";   /* ... cumulative fields ... */ trackingCode: string; shippedAt: Date }\n  // | ... more variants\n\nexport type OrderEvent =\n  | { kind: \"PlaceOrder\";     orderId: string; customerId: string; createdAt: Date }\n  | { kind: \"ConfirmPayment\"; confirmedAt: Date; totalCents: number }\n  // | ... more events\n\nexport type Transition<From extends string, Evt extends string, To extends string> = {\n  readonly from: From;\n  readonly on: Evt;\n  readonly to: To;\n};\n\n// Compile-time transition table — narrowly typed via `satisfies`:\nexport const TRANSITIONS = [\n  { from: \"Pending\", on: \"ConfirmPayment\", to: \"Confirmed\" },\n  // ...\n] satisfies ReadonlyArray<Transition<string, string, string>>;\n\n// Core functions to implement:\nexport function transition(state: OrderState, event: OrderEvent): OrderState { /* TODO */ }\nexport function replay(events: ReadonlyArray<OrderEvent>): OrderState { /* TODO */ }\nexport function project<K extends keyof OrderSnapshot>(\n  state: OrderState, keys: ReadonlyArray<K>\n): Pick<OrderSnapshot, K> { /* TODO */ }\n",
+    "goals": [
+      "Define `OrderState` and `OrderEvent` as exhaustive discriminated unions, with each variant carrying only the data meaningful at that stage of the lifecycle.",
+      "Build `TRANSITIONS` as a narrowly-typed compile-time table using `satisfies`, and derive the `LegalMove` union from it with a conditional type and `infer`.",
+      "Implement `transition` exhaustively over all state/event combinations — using structural narrowing only (no `as` or `any`) — and throw a typed `MachineError` for every invalid edge.",
+      "Implement `replay` to reconstruct state by folding an event log, and `project` to extract a `Pick<OrderSnapshot, K>` read-model from any state using a generic key constraint."
+    ],
+    "hints": [
+      "Each `OrderState` variant should be *cumulative* — a `Shipped` order still carries `confirmedAt` and `warehouseId` — so `transition` can safely spread earlier state into the new variant.",
+      "For exhaustiveness in `transition`, nest your `switch` statements: outer on `state.kind`, inner on `event.kind`; TypeScript will flag any unhandled combination as a type error.",
+      "In `project`, build a full `OrderSnapshot` object from the state first, then use `keys.reduce` (or a for-of loop) to assemble the `Pick` — the generic `K` constraint ensures the return type is exact."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript Handbook — Narrowing",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html"
+      },
+      {
+        "title": "TypeScript Handbook — Conditional Types & infer",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/conditional-types.html"
+      },
+      {
+        "title": "TypeScript 4.9 — satisfies operator",
+        "url": "https://www.typescriptlang.org/docs/handbook/release-notes/typescript-4-9.html#the-satisfies-operator"
+      },
+      {
+        "title": "TypeScript Handbook — Utility Types (Pick, Omit, Record…)",
+        "url": "https://www.typescriptlang.org/docs/handbook/utility-types.html"
+      }
+    ]
   }
 ]
