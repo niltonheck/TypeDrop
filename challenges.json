@@ -8781,5 +8781,41 @@
         "url": "https://www.typescriptlang.org/docs/handbook/utility-types.html"
       }
     ]
+  },
+  {
+    "date": "2026-10-25",
+    "name": "Typed Recipe Cost Calculator",
+    "difficulty": "Easy",
+    "description": "You're building the pricing engine for a meal-kit delivery app. Recipes are made up of ingredients with quantities and units, and you need to calculate costs, flag expensive recipes, and summarize a weekly menu — with the compiler enforcing every unit, field name, and summary shape.",
+    "snippet": "/** All supported units of measure */\ntype Unit = \"g\" | \"kg\" | \"ml\" | \"l\" | \"unit\";\n\ninterface IngredientPrice {\n  readonly name: string;\n  readonly pricePerBaseUnit: number;\n  readonly baseUnit: Extract<Unit, \"g\" | \"ml\" | \"unit\">;\n}\n\ninterface RecipeCost {\n  readonly recipeId: string;\n  readonly recipeName: string;\n  readonly totalCost: number;\n  readonly costPerServing: number;\n  readonly isExpensive: boolean;\n}\n\ninterface MenuSummary {\n  readonly totalRecipes: number;\n  readonly averageCostPerServing: number;\n  readonly cheapestRecipe: Pick<RecipeCost, \"recipeId\" | \"recipeName\" | \"costPerServing\">;\n  readonly mostExpensiveRecipe: Pick<RecipeCost, \"recipeId\" | \"recipeName\" | \"costPerServing\">;\n  readonly expensiveCount: number;\n}\n\n// Convert any Unit quantity to its base unit (g, ml, or unit)\nfunction toBaseUnit(quantity: number, unit: Unit): number { ... }\n\n// Calculate full cost breakdown for one recipe\nfunction calculateRecipeCost(\n  recipe: Recipe,\n  prices: readonly IngredientPrice[],\n  expensiveThreshold: number\n): RecipeCost { ... }\n\n// Aggregate an array of RecipeCost into a MenuSummary\nfunction summarizeMenu(costs: readonly RecipeCost[]): MenuSummary { ... }",
+    "goals": [
+      "Implement `toBaseUnit` using a `Record<Unit, number>` multiplier map to convert any quantity to its ingredient's base unit.",
+      "Implement `calculateRecipeCost` to look up prices, convert units, sum ingredient costs, and populate a fully-typed `RecipeCost` object.",
+      "Implement `summarizeMenu` to aggregate an array of `RecipeCost` values into a `MenuSummary` — including `Pick`-typed cheapest/most-expensive fields — and throw a `RangeError` on empty input.",
+      "Implement `filterByMaxCostPerServing` to return a sorted, filtered `readonly RecipeCost[]` within a given per-serving budget."
+    ],
+    "hints": [
+      "A `Record<Unit, number>` multiplier (e.g. `{ kg: 1000, l: 1000, g: 1, ml: 1, unit: 1 }`) makes `toBaseUnit` a one-liner — no `if`/`switch` needed.",
+      "Remember that `Array.find` returns `T | undefined`; use optional chaining (`?.`) or a nullish fallback to avoid a type error when an ingredient isn't in the price list.",
+      "`Pick<RecipeCost, 'recipeId' | 'recipeName' | 'costPerServing'>` is already the declared type in `MenuSummary` — you only need to return an object with exactly those three keys, which TypeScript will verify structurally."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript Utility Types (Pick, Extract, Record)",
+        "url": "https://www.typescriptlang.org/docs/handbook/utility-types.html"
+      },
+      {
+        "title": "TypeScript — readonly & const assertions",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/objects.html#readonly-properties"
+      },
+      {
+        "title": "MDN — Array.prototype.find",
+        "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/find"
+      },
+      {
+        "title": "TypeScript — Union and Intersection Types",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/everyday-types.html#union-types"
+      }
+    ]
   }
 ]
