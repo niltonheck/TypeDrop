@@ -8817,5 +8817,41 @@
         "url": "https://www.typescriptlang.org/docs/handbook/2/everyday-types.html#union-types"
       }
     ]
+  },
+  {
+    "date": "2026-10-26",
+    "name": "Typed Concurrent Task Scheduler with Retry & Cancellation",
+    "difficulty": "Hard",
+    "description": "You're building the background job engine for a data-pipeline platform. Tasks arrive with priorities, dependencies, and retry policies — the scheduler must run them with a concurrency cap, propagate cancellation cleanly, and return a fully-typed result manifest that distinguishes successes, failures, and cancellations without a single `any` in sight.",
+    "snippet": "\n// Core domain types + main function signature\n\ntype TaskId = string & { readonly __brand: \"TaskId\" };\ntype Ms     = number & { readonly __brand: \"Ms\" };\n\ntype RetryPolicy =\n  | { kind: \"none\" }\n  | { kind: \"fixed\";       attempts: number; delayMs: Ms }\n  | { kind: \"exponential\"; attempts: number; baseDelayMs: Ms; maxDelayMs: Ms };\n\ninterface TaskDefinition<TOutput> {\n  readonly id:         TaskId;\n  readonly priority:   \"critical\" | \"high\" | \"normal\" | \"low\";\n  readonly dependsOn:  ReadonlyArray<TaskId>;\n  readonly retry:      RetryPolicy;\n  readonly timeoutMs:  Ms;\n  readonly work:       (signal: AbortSignal) => Promise<TOutput>;\n}\n\ntype TaskResult<TOutput> =\n  | { status: \"success\";   id: TaskId; output: TOutput; attempts: number; durationMs: number }\n  | { status: \"failure\";   id: TaskId; error: unknown;  attempts: number; durationMs: number }\n  | { status: \"cancelled\"; id: TaskId; reason: \"timeout\" | \"dependency-failed\" | \"aborted\" };\n\ntype TaskRegistry = Record<string, TaskDefinition<unknown>>;\n\ntype ScheduleManifest<TRegistry extends TaskRegistry> = {\n  readonly [K in keyof TRegistry]: TaskResult<OutputTypeOf<TRegistry[K]>>;\n};\n\n// Entry point — implement this!\nasync function schedule<TRegistry extends TaskRegistry>(\n  registry: TRegistry,\n  config: SchedulerConfig,\n  signal?: AbortSignal\n): Promise<ScheduleManifest<TRegistry>>\n",
+    "goals": [
+      "Implement branded-type constructors (`toTaskId`, `toMs`) using a generic identity trick — no `as` allowed.",
+      "Implement `OutputTypeOf<T>` as a conditional type using `infer` to extract the output type from a `TaskDefinition<TOutput>`.",
+      "Implement `topologicalSort` using Kahn's BFS algorithm, detecting cycles and unknown dependency references.",
+      "Implement `schedule` to run tasks with a concurrency cap, per-task timeouts via `AbortController`, retry back-off, dependency-failure cancellation, `failFast` mode, and external signal propagation — returning a fully-typed `ScheduleManifest`."
+    ],
+    "hints": [
+      "For branded constructors without `as`: a function whose return type is declared as the branded type will let the compiler accept a plain `string`/`number` return — use a runtime validation guard and let the declared return type do the branding.",
+      "For `OutputTypeOf`, write: `type OutputTypeOf<T> = T extends TaskDefinition<infer O> ? O : never;`",
+      "Model the scheduler's inner loop as a recursive \"drain\" function: after each task settles, check which newly-unblocked tasks can enter the priority queue, then fill concurrency slots — `Promise.race` over in-flight tasks is your friend for the concurrency cap."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript Handbook — Conditional Types & infer",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/conditional-types.html"
+      },
+      {
+        "title": "TypeScript Handbook — Mapped Types",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/mapped-types.html"
+      },
+      {
+        "title": "MDN — AbortController",
+        "url": "https://developer.mozilla.org/en-US/docs/Web/API/AbortController"
+      },
+      {
+        "title": "TypeScript Handbook — Generics",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/generics.html"
+      }
+    ]
   }
 ]

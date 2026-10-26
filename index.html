@@ -41,18 +41,18 @@
     <!-- CHALLENGE_START -->
     <section class="challenge-card">
       <div class="challenge-header">
-        <span class="challenge-date">2026-10-25</span>
-        <span class="badge easy">Easy</span>
+        <span class="challenge-date">2026-10-26</span>
+        <span class="badge hard">Hard</span>
       </div>
-      <h2>Typed Recipe Cost Calculator</h2>
-      <p>You're building the pricing engine for a meal-kit delivery app. Recipes are made up of ingredients with quantities and units, and you need to calculate costs, flag expensive recipes, and summarize a weekly menu — with the compiler enforcing every unit, field name, and summary shape.</p>
+      <h2>Typed Concurrent Task Scheduler with Retry &amp; Cancellation</h2>
+      <p>You're building the background job engine for a data-pipeline platform. Tasks arrive with priorities, dependencies, and retry policies — the scheduler must run them with a concurrency cap, propagate cancellation cleanly, and return a fully-typed result manifest that distinguishes successes, failures, and cancellations without a single `any` in sight.</p>
       <div class="challenge-goals">
         <h3>Goals</h3>
         <ul>
-          <li>Implement `toBaseUnit` using a `Record&lt;Unit, number&gt;` multiplier map to convert any quantity to its ingredient's base unit.</li>
-          <li>Implement `calculateRecipeCost` to look up prices, convert units, sum ingredient costs, and populate a fully-typed `RecipeCost` object.</li>
-          <li>Implement `summarizeMenu` to aggregate an array of `RecipeCost` values into a `MenuSummary` — including `Pick`-typed cheapest/most-expensive fields — and throw a `RangeError` on empty input.</li>
-          <li>Implement `filterByMaxCostPerServing` to return a sorted, filtered `readonly RecipeCost[]` within a given per-serving budget.</li>
+          <li>Implement branded-type constructors (`toTaskId`, `toMs`) using a generic identity trick — no `as` allowed.</li>
+          <li>Implement `OutputTypeOf&lt;T&gt;` as a conditional type using `infer` to extract the output type from a `TaskDefinition&lt;TOutput&gt;`.</li>
+          <li>Implement `topologicalSort` using Kahn's BFS algorithm, detecting cycles and unknown dependency references.</li>
+          <li>Implement `schedule` to run tasks with a concurrency cap, per-task timeouts via `AbortController`, retry back-off, dependency-failure cancellation, `failFast` mode, and external signal propagation — returning a fully-typed `ScheduleManifest`.</li>
         </ul>
       </div>
       <div class="code-block">
@@ -62,76 +62,77 @@
           <span class="dot green"></span>
           <span class="code-block-title">challenge.ts</span>
         </div>
-        <pre><code class="language-typescript">/** All supported units of measure */
-type Unit = &quot;g&quot; | &quot;kg&quot; | &quot;ml&quot; | &quot;l&quot; | &quot;unit&quot;;
+        <pre><code class="language-typescript">
+// Core domain types + main function signature
 
-interface IngredientPrice {
-  readonly name: string;
-  readonly pricePerBaseUnit: number;
-  readonly baseUnit: Extract&lt;Unit, &quot;g&quot; | &quot;ml&quot; | &quot;unit&quot;&gt;;
+type TaskId = string &amp; { readonly __brand: &quot;TaskId&quot; };
+type Ms     = number &amp; { readonly __brand: &quot;Ms&quot; };
+
+type RetryPolicy =
+  | { kind: &quot;none&quot; }
+  | { kind: &quot;fixed&quot;;       attempts: number; delayMs: Ms }
+  | { kind: &quot;exponential&quot;; attempts: number; baseDelayMs: Ms; maxDelayMs: Ms };
+
+interface TaskDefinition&lt;TOutput&gt; {
+  readonly id:         TaskId;
+  readonly priority:   &quot;critical&quot; | &quot;high&quot; | &quot;normal&quot; | &quot;low&quot;;
+  readonly dependsOn:  ReadonlyArray&lt;TaskId&gt;;
+  readonly retry:      RetryPolicy;
+  readonly timeoutMs:  Ms;
+  readonly work:       (signal: AbortSignal) =&gt; Promise&lt;TOutput&gt;;
 }
 
-interface RecipeCost {
-  readonly recipeId: string;
-  readonly recipeName: string;
-  readonly totalCost: number;
-  readonly costPerServing: number;
-  readonly isExpensive: boolean;
-}
+type TaskResult&lt;TOutput&gt; =
+  | { status: &quot;success&quot;;   id: TaskId; output: TOutput; attempts: number; durationMs: number }
+  | { status: &quot;failure&quot;;   id: TaskId; error: unknown;  attempts: number; durationMs: number }
+  | { status: &quot;cancelled&quot;; id: TaskId; reason: &quot;timeout&quot; | &quot;dependency-failed&quot; | &quot;aborted&quot; };
 
-interface MenuSummary {
-  readonly totalRecipes: number;
-  readonly averageCostPerServing: number;
-  readonly cheapestRecipe: Pick&lt;RecipeCost, &quot;recipeId&quot; | &quot;recipeName&quot; | &quot;costPerServing&quot;&gt;;
-  readonly mostExpensiveRecipe: Pick&lt;RecipeCost, &quot;recipeId&quot; | &quot;recipeName&quot; | &quot;costPerServing&quot;&gt;;
-  readonly expensiveCount: number;
-}
+type TaskRegistry = Record&lt;string, TaskDefinition&lt;unknown&gt;&gt;;
 
-// Convert any Unit quantity to its base unit (g, ml, or unit)
-function toBaseUnit(quantity: number, unit: Unit): number { ... }
+type ScheduleManifest&lt;TRegistry extends TaskRegistry&gt; = {
+  readonly [K in keyof TRegistry]: TaskResult&lt;OutputTypeOf&lt;TRegistry[K]&gt;&gt;;
+};
 
-// Calculate full cost breakdown for one recipe
-function calculateRecipeCost(
-  recipe: Recipe,
-  prices: readonly IngredientPrice[],
-  expensiveThreshold: number
-): RecipeCost { ... }
-
-// Aggregate an array of RecipeCost into a MenuSummary
-function summarizeMenu(costs: readonly RecipeCost[]): MenuSummary { ... }</code></pre>
+// Entry point — implement this!
+async function schedule&lt;TRegistry extends TaskRegistry&gt;(
+  registry: TRegistry,
+  config: SchedulerConfig,
+  signal?: AbortSignal
+): Promise&lt;ScheduleManifest&lt;TRegistry&gt;&gt;
+</code></pre>
       </div>
       <details class="challenge-hints-details">
         <summary>Hints (click to reveal)</summary>
       <div class="challenge-hints">
         <h3>Hints</h3>
         <ul>
-          <li>A `Record&lt;Unit, number&gt;` multiplier (e.g. `{ kg: 1000, l: 1000, g: 1, ml: 1, unit: 1 }`) makes `toBaseUnit` a one-liner — no `if`/`switch` needed.</li>
-          <li>Remember that `Array.find` returns `T | undefined`; use optional chaining (`?.`) or a nullish fallback to avoid a type error when an ingredient isn't in the price list.</li>
-          <li>`Pick&lt;RecipeCost, 'recipeId' | 'recipeName' | 'costPerServing'&gt;` is already the declared type in `MenuSummary` — you only need to return an object with exactly those three keys, which TypeScript will verify structurally.</li>
+          <li>For branded constructors without `as`: a function whose return type is declared as the branded type will let the compiler accept a plain `string`/`number` return — use a runtime validation guard and let the declared return type do the branding.</li>
+          <li>For `OutputTypeOf`, write: `type OutputTypeOf&lt;T&gt; = T extends TaskDefinition&lt;infer O&gt; ? O : never;`</li>
+          <li>Model the scheduler's inner loop as a recursive &quot;drain&quot; function: after each task settles, check which newly-unblocked tasks can enter the priority queue, then fill concurrency slots — `Promise.race` over in-flight tasks is your friend for the concurrency cap.</li>
         </ul>
       </div>
       </details>
       <div class="challenge-docs">
         <h3>Useful resources</h3>
         <ul>
-          <li><a href="https://www.typescriptlang.org/docs/handbook/utility-types.html" target="_blank" rel="noopener noreferrer">TypeScript Utility Types (Pick, Extract, Record)</a></li>
-          <li><a href="https://www.typescriptlang.org/docs/handbook/2/objects.html#readonly-properties" target="_blank" rel="noopener noreferrer">TypeScript — readonly &amp; const assertions</a></li>
-          <li><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/find" target="_blank" rel="noopener noreferrer">MDN — Array.prototype.find</a></li>
-          <li><a href="https://www.typescriptlang.org/docs/handbook/2/everyday-types.html#union-types" target="_blank" rel="noopener noreferrer">TypeScript — Union and Intersection Types</a></li>
+          <li><a href="https://www.typescriptlang.org/docs/handbook/2/conditional-types.html" target="_blank" rel="noopener noreferrer">TypeScript Handbook — Conditional Types &amp; infer</a></li>
+          <li><a href="https://www.typescriptlang.org/docs/handbook/2/mapped-types.html" target="_blank" rel="noopener noreferrer">TypeScript Handbook — Mapped Types</a></li>
+          <li><a href="https://developer.mozilla.org/en-US/docs/Web/API/AbortController" target="_blank" rel="noopener noreferrer">MDN — AbortController</a></li>
+          <li><a href="https://www.typescriptlang.org/docs/handbook/2/generics.html" target="_blank" rel="noopener noreferrer">TypeScript Handbook — Generics</a></li>
         </ul>
       </div>
       <div class="cta-row">
-        <a class="cta-button cta-primary" href="https://stackblitz.com/github/niltonheck/typedrop/tree/challenge/2026-10-25" target="_blank" rel="noopener noreferrer">
+        <a class="cta-button cta-primary" href="https://stackblitz.com/github/niltonheck/typedrop/tree/challenge/2026-10-26" target="_blank" rel="noopener noreferrer">
           <img class="sb-icon" src="https://cdn.simpleicons.org/stackblitz/e0e0e0" alt=""> StackBlitz
         </a>
-        <a class="cta-button" href="https://codesandbox.io/p/devbox/github/niltonheck/typedrop/tree/challenge/2026-10-25" target="_blank" rel="noopener noreferrer">
+        <a class="cta-button" href="https://codesandbox.io/p/devbox/github/niltonheck/typedrop/tree/challenge/2026-10-26" target="_blank" rel="noopener noreferrer">
           <img class="csb-icon" src="https://cdn.simpleicons.org/codesandbox/e0e0e0" alt=""> CodeSandbox
         </a>
       </div>
       <div class="clone-section">
         <h3>Or clone locally</h3>
         <div class="clone-box">
-          <code id="clone-cmd">git clone -b challenge/2026-10-25 https://github.com/niltonheck/typedrop.git</code>
+          <code id="clone-cmd">git clone -b challenge/2026-10-26 https://github.com/niltonheck/typedrop.git</code>
           <button class="clone-copy-btn" onclick="navigator.clipboard.writeText(document.getElementById('clone-cmd').textContent).then(()=>{this.textContent='Copied!';this.classList.add('copied');setTimeout(()=>{this.textContent='Copy';this.classList.remove('copied')},2000)})">Copy</button>
         </div>
       </div>
