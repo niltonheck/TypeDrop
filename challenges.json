@@ -8853,5 +8853,41 @@
         "url": "https://www.typescriptlang.org/docs/handbook/2/generics.html"
       }
     ]
+  },
+  {
+    "date": "2026-10-27",
+    "name": "Typed Paginated API Client with Result Accumulation",
+    "difficulty": "Medium",
+    "description": "You're building the data-fetching layer for an analytics dashboard that pulls reports from a paginated REST API. The client must walk pages automatically, accumulate results into typed summaries, and surface per-page errors without losing successfully fetched data.",
+    "snippet": "export type ReportCategory = \"revenue\" | \"engagement\" | \"retention\" | \"churn\";\n\nexport interface ReportRow {\n  id: string;\n  category: ReportCategory;\n  value: number;\n  label: string;\n}\n\nexport type CategorySummary = Record<\n  ReportCategory,\n  { count: number; totalValue: number; avgValue: number }\n>;\n\nexport interface FetchAllResult {\n  rows: ReportRow[];\n  summary: CategorySummary;\n  errors: PageError[];\n  pagesAttempted: number;\n}\n\n// Your two utility types:\nexport type PickRows<R extends { category: string }, C extends string> = never; // TODO A\nexport type SummaryDisplay = never; // TODO B\n\n// Core function to implement:\nexport async function fetchAllPages(\n  fetchPage: FetchPage,\n  maxPages?: number\n): Promise<FetchAllResult> { /* TODO */ throw new Error(); }",
+    "goals": [
+      "Implement `PickRows<R, C>` as a distributive conditional type that filters rows by category.",
+      "Implement `SummaryDisplay` as a mapped type over `ReportCategory` producing a string per key.",
+      "Implement `buildCategorySummary` to aggregate all rows in a single pass, including zero-row categories.",
+      "Implement `fetchAllPages` to sequentially follow page cursors, accumulate rows, record errors, and stop pagination on failure."
+    ],
+    "hints": [
+      "For `PickRows`, a distributive conditional type distributes over unions automatically when the type parameter appears naked on the left side of `extends`.",
+      "For `SummaryDisplay`, use `{ [K in ReportCategory]: string }` rather than `Record<ReportCategory, string>` to satisfy the mapped-type requirement.",
+      "In `fetchAllPages`, a `while (cursor !== null && pagesAttempted < maxPages)` loop with sequential `await` is the cleanest pattern — break out of it when you receive a `PageError`."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript Handbook — Conditional Types",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/conditional-types.html"
+      },
+      {
+        "title": "TypeScript Handbook — Mapped Types",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/mapped-types.html"
+      },
+      {
+        "title": "TypeScript Handbook — Discriminated Unions",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html#discriminated-unions"
+      },
+      {
+        "title": "TypeScript Handbook — Utility Types (Record)",
+        "url": "https://www.typescriptlang.org/docs/handbook/utility-types.html#recordkeys-type"
+      }
+    ]
   }
 ]
