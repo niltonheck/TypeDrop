@@ -8889,5 +8889,41 @@
         "url": "https://www.typescriptlang.org/docs/handbook/utility-types.html#recordkeys-type"
       }
     ]
+  },
+  {
+    "date": "2026-10-28",
+    "name": "Typed Library Book Checkout Tracker",
+    "difficulty": "Easy",
+    "description": "You're building the checkout desk software for a public library. Books are checked out and returned by members, and you need to track availability, compute overdue fines, and produce a per-member borrowing summary — with the compiler enforcing every status, field name, and summary shape.",
+    "snippet": "// Key types and main function signatures at a glance\n\ntype ISBN   = string & { readonly __brand: \"ISBN\" };\ntype MemberID = string & { readonly __brand: \"MemberID\" };\n\ntype Book =\n  | { status: \"available\";  isbn: ISBN; title: string; author: string }\n  | { status: \"checkedOut\"; isbn: ISBN; title: string; author: string;\n      memberId: MemberID; dueDate: string }\n  | { status: \"lost\";       isbn: ISBN; title: string; author: string;\n      memberId: MemberID };\n\ntype FinePolicy = { overduePerDay: number; lostFlatFee: number };\n\ntype MemberSummary = {\n  memberId: MemberID;\n  checkedOutCount: number;\n  lostCount: number;\n  totalFinesDue: number;      // rounded to 2 decimal places\n  overdueTitles: string[];\n};\n\n// --- Functions you must implement ---\nfunction isOverdue(book: Book, today: string): book is CheckedOutBook;\nfunction calculateFine(book: Book, today: string, policy: FinePolicy): number;\nfunction buildLibraryReport(books: Book[], today: string, policy: FinePolicy): LibraryReport;\n",
+    "goals": [
+      "Implement `isOverdue` as a proper type-predicate guard that narrows `Book` to `CheckedOutBook`.",
+      "Implement `calculateFine` using discriminated-union narrowing to return the correct dollar amount for available, checked-out, and lost books.",
+      "Implement `buildLibraryReport` to aggregate per-member statistics (counts, fines, overdue titles) into a sorted `LibraryReport`.",
+      "Use branded types (`ISBN`, `MemberID`) throughout without casting to plain `string`."
+    ],
+    "hints": [
+      "A type predicate has the form `book is CheckedOutBook` — you must check `book.status === 'checkedOut'` AND compare ISO date strings before returning `true`.",
+      "For day-difference arithmetic between two ISO date strings, `(new Date(a).getTime() - new Date(b).getTime()) / 86_400_000` gives calendar days as a float — `Math.floor` it.",
+      "Use a `Map<MemberID, MemberSummary>` (or a plain object keyed by `MemberID`) to accumulate per-member data in a single pass through the `books` array."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript — Narrowing & Type Predicates",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html#using-type-predicates"
+      },
+      {
+        "title": "TypeScript — Discriminated Unions",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html#discriminated-unions"
+      },
+      {
+        "title": "TypeScript — Branded / Nominal Types (handbook)",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/types-from-types.html"
+      },
+      {
+        "title": "MDN — Date.prototype.getTime()",
+        "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date/getTime"
+      }
+    ]
   }
 ]

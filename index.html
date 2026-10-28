@@ -41,18 +41,18 @@
     <!-- CHALLENGE_START -->
     <section class="challenge-card">
       <div class="challenge-header">
-        <span class="challenge-date">2026-10-27</span>
-        <span class="badge medium">Medium</span>
+        <span class="challenge-date">2026-10-28</span>
+        <span class="badge easy">Easy</span>
       </div>
-      <h2>Typed Paginated API Client with Result Accumulation</h2>
-      <p>You're building the data-fetching layer for an analytics dashboard that pulls reports from a paginated REST API. The client must walk pages automatically, accumulate results into typed summaries, and surface per-page errors without losing successfully fetched data.</p>
+      <h2>Typed Library Book Checkout Tracker</h2>
+      <p>You're building the checkout desk software for a public library. Books are checked out and returned by members, and you need to track availability, compute overdue fines, and produce a per-member borrowing summary — with the compiler enforcing every status, field name, and summary shape.</p>
       <div class="challenge-goals">
         <h3>Goals</h3>
         <ul>
-          <li>Implement `PickRows&lt;R, C&gt;` as a distributive conditional type that filters rows by category.</li>
-          <li>Implement `SummaryDisplay` as a mapped type over `ReportCategory` producing a string per key.</li>
-          <li>Implement `buildCategorySummary` to aggregate all rows in a single pass, including zero-row categories.</li>
-          <li>Implement `fetchAllPages` to sequentially follow page cursors, accumulate rows, record errors, and stop pagination on failure.</li>
+          <li>Implement `isOverdue` as a proper type-predicate guard that narrows `Book` to `CheckedOutBook`.</li>
+          <li>Implement `calculateFine` using discriminated-union narrowing to return the correct dollar amount for available, checked-out, and lost books.</li>
+          <li>Implement `buildLibraryReport` to aggregate per-member statistics (counts, fines, overdue titles) into a sorted `LibraryReport`.</li>
+          <li>Use branded types (`ISBN`, `MemberID`) throughout without casting to plain `string`.</li>
         </ul>
       </div>
       <div class="code-block">
@@ -62,69 +62,66 @@
           <span class="dot green"></span>
           <span class="code-block-title">challenge.ts</span>
         </div>
-        <pre><code class="language-typescript">export type ReportCategory = &quot;revenue&quot; | &quot;engagement&quot; | &quot;retention&quot; | &quot;churn&quot;;
+        <pre><code class="language-typescript">// Key types and main function signatures at a glance
 
-export interface ReportRow {
-  id: string;
-  category: ReportCategory;
-  value: number;
-  label: string;
-}
+type ISBN   = string &amp; { readonly __brand: &quot;ISBN&quot; };
+type MemberID = string &amp; { readonly __brand: &quot;MemberID&quot; };
 
-export type CategorySummary = Record&lt;
-  ReportCategory,
-  { count: number; totalValue: number; avgValue: number }
-&gt;;
+type Book =
+  | { status: &quot;available&quot;;  isbn: ISBN; title: string; author: string }
+  | { status: &quot;checkedOut&quot;; isbn: ISBN; title: string; author: string;
+      memberId: MemberID; dueDate: string }
+  | { status: &quot;lost&quot;;       isbn: ISBN; title: string; author: string;
+      memberId: MemberID };
 
-export interface FetchAllResult {
-  rows: ReportRow[];
-  summary: CategorySummary;
-  errors: PageError[];
-  pagesAttempted: number;
-}
+type FinePolicy = { overduePerDay: number; lostFlatFee: number };
 
-// Your two utility types:
-export type PickRows&lt;R extends { category: string }, C extends string&gt; = never; // TODO A
-export type SummaryDisplay = never; // TODO B
+type MemberSummary = {
+  memberId: MemberID;
+  checkedOutCount: number;
+  lostCount: number;
+  totalFinesDue: number;      // rounded to 2 decimal places
+  overdueTitles: string[];
+};
 
-// Core function to implement:
-export async function fetchAllPages(
-  fetchPage: FetchPage,
-  maxPages?: number
-): Promise&lt;FetchAllResult&gt; { /* TODO */ throw new Error(); }</code></pre>
+// --- Functions you must implement ---
+function isOverdue(book: Book, today: string): book is CheckedOutBook;
+function calculateFine(book: Book, today: string, policy: FinePolicy): number;
+function buildLibraryReport(books: Book[], today: string, policy: FinePolicy): LibraryReport;
+</code></pre>
       </div>
       <details class="challenge-hints-details">
         <summary>Hints (click to reveal)</summary>
       <div class="challenge-hints">
         <h3>Hints</h3>
         <ul>
-          <li>For `PickRows`, a distributive conditional type distributes over unions automatically when the type parameter appears naked on the left side of `extends`.</li>
-          <li>For `SummaryDisplay`, use `{ [K in ReportCategory]: string }` rather than `Record&lt;ReportCategory, string&gt;` to satisfy the mapped-type requirement.</li>
-          <li>In `fetchAllPages`, a `while (cursor !== null &amp;&amp; pagesAttempted &lt; maxPages)` loop with sequential `await` is the cleanest pattern — break out of it when you receive a `PageError`.</li>
+          <li>A type predicate has the form `book is CheckedOutBook` — you must check `book.status === 'checkedOut'` AND compare ISO date strings before returning `true`.</li>
+          <li>For day-difference arithmetic between two ISO date strings, `(new Date(a).getTime() - new Date(b).getTime()) / 86_400_000` gives calendar days as a float — `Math.floor` it.</li>
+          <li>Use a `Map&lt;MemberID, MemberSummary&gt;` (or a plain object keyed by `MemberID`) to accumulate per-member data in a single pass through the `books` array.</li>
         </ul>
       </div>
       </details>
       <div class="challenge-docs">
         <h3>Useful resources</h3>
         <ul>
-          <li><a href="https://www.typescriptlang.org/docs/handbook/2/conditional-types.html" target="_blank" rel="noopener noreferrer">TypeScript Handbook — Conditional Types</a></li>
-          <li><a href="https://www.typescriptlang.org/docs/handbook/2/mapped-types.html" target="_blank" rel="noopener noreferrer">TypeScript Handbook — Mapped Types</a></li>
-          <li><a href="https://www.typescriptlang.org/docs/handbook/2/narrowing.html#discriminated-unions" target="_blank" rel="noopener noreferrer">TypeScript Handbook — Discriminated Unions</a></li>
-          <li><a href="https://www.typescriptlang.org/docs/handbook/utility-types.html#recordkeys-type" target="_blank" rel="noopener noreferrer">TypeScript Handbook — Utility Types (Record)</a></li>
+          <li><a href="https://www.typescriptlang.org/docs/handbook/2/narrowing.html#using-type-predicates" target="_blank" rel="noopener noreferrer">TypeScript — Narrowing &amp; Type Predicates</a></li>
+          <li><a href="https://www.typescriptlang.org/docs/handbook/2/narrowing.html#discriminated-unions" target="_blank" rel="noopener noreferrer">TypeScript — Discriminated Unions</a></li>
+          <li><a href="https://www.typescriptlang.org/docs/handbook/2/types-from-types.html" target="_blank" rel="noopener noreferrer">TypeScript — Branded / Nominal Types (handbook)</a></li>
+          <li><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date/getTime" target="_blank" rel="noopener noreferrer">MDN — Date.prototype.getTime()</a></li>
         </ul>
       </div>
       <div class="cta-row">
-        <a class="cta-button cta-primary" href="https://stackblitz.com/github/niltonheck/typedrop/tree/challenge/2026-10-27" target="_blank" rel="noopener noreferrer">
+        <a class="cta-button cta-primary" href="https://stackblitz.com/github/niltonheck/typedrop/tree/challenge/2026-10-28" target="_blank" rel="noopener noreferrer">
           <img class="sb-icon" src="https://cdn.simpleicons.org/stackblitz/e0e0e0" alt=""> StackBlitz
         </a>
-        <a class="cta-button" href="https://codesandbox.io/p/devbox/github/niltonheck/typedrop/tree/challenge/2026-10-27" target="_blank" rel="noopener noreferrer">
+        <a class="cta-button" href="https://codesandbox.io/p/devbox/github/niltonheck/typedrop/tree/challenge/2026-10-28" target="_blank" rel="noopener noreferrer">
           <img class="csb-icon" src="https://cdn.simpleicons.org/codesandbox/e0e0e0" alt=""> CodeSandbox
         </a>
       </div>
       <div class="clone-section">
         <h3>Or clone locally</h3>
         <div class="clone-box">
-          <code id="clone-cmd">git clone -b challenge/2026-10-27 https://github.com/niltonheck/typedrop.git</code>
+          <code id="clone-cmd">git clone -b challenge/2026-10-28 https://github.com/niltonheck/typedrop.git</code>
           <button class="clone-copy-btn" onclick="navigator.clipboard.writeText(document.getElementById('clone-cmd').textContent).then(()=>{this.textContent='Copied!';this.classList.add('copied');setTimeout(()=>{this.textContent='Copy';this.classList.remove('copied')},2000)})">Copy</button>
         </div>
       </div>
