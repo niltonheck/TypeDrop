@@ -8925,5 +8925,41 @@
         "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date/getTime"
       }
     ]
+  },
+  {
+    "date": "2026-10-29",
+    "name": "Typed Streaming Log Aggregator with Plugin Pipeline",
+    "difficulty": "Hard",
+    "description": "You're building the observability backbone for a cloud-native platform. Raw log entries stream in from multiple services, pass through a typed plugin pipeline (enrichment → filtering → transformation), and are aggregated into per-service health summaries — the compiler must enforce plugin input/output contracts, discriminated log levels, and exhaustive aggregation shapes with zero escape hatches.",
+    "snippet": "// Key types & main function signatures\n\ntype LogLevel = \"debug\" | \"info\" | \"warn\" | \"error\" | \"fatal\";\ntype ServiceId = string & { readonly __brand: \"ServiceId\" };\n\n// Discriminated union — each level carries its own metadata shape\ntype LogEntry =\n  | { level: \"debug\" | \"info\"; id: string; serviceId: ServiceId; /* … */ }\n  | { level: \"warn\";  warnCode: string;  /* … */ }\n  | { level: \"error\"; errorCode: string; stack: string; /* … */ }\n  | { level: \"fatal\"; errorCode: string; stack: string;\n      affectedServiceIds: ServiceId[]; /* … */ };\n\n// Generic plugin interface — In and Out must extend RawLogEntry\ninterface Plugin<In extends RawLogEntry, Out extends RawLogEntry> {\n  name: string;\n  process(entries: In[]): Promise<Out[]>;\n}\n\n// Conditional types that thread the pipeline's I/O types\ntype PipelineInput<Stages extends Plugin<RawLogEntry, RawLogEntry>[]> = /* … */;\ntype PipelineOutput<Stages extends Plugin<RawLogEntry, RawLogEntry>[]> = /* … */;\n\n// Builds a type-safe sequential pipeline from a tuple of plugins\nfunction buildPipeline<Stages extends Plugin<RawLogEntry, RawLogEntry>[]>(\n  ...plugins: Stages\n): Pipeline<Stages>;\n\n// Wraps pipeline execution in a typed Result monad\nasync function runPipelineWithResult<\n  Stages extends Plugin<RawLogEntry, RawLogEntry>[]\n>(\n  pipeline: Pipeline<Stages>,\n  entries: PipelineInput<Stages>,\n): Promise<Result<PipelineOutput<Stages>>>;\n",
+    "goals": [
+      "Define the `LogEntry` discriminated union so each severity level carries its own distinct metadata fields, with the `level` literal acting as the discriminant.",
+      "Implement `Plugin<In, Out>` and the `PipelineInput` / `PipelineOutput` conditional types so the compiler threads input/output types through the pipeline tuple automatically.",
+      "Build `buildPipeline` with variadic tuple generics so plugins execute sequentially and type-check end-to-end, and wrap execution in the `Result<T, E>` monad via `runPipelineWithResult`.",
+      "Implement `aggregateLogs` with a fully exhaustive switch over `LogLevel` (using `assertNever`) that zero-fills all level counts and derives the correct `HealthStatus` and `topErrors`."
+    ],
+    "hints": [
+      "For `PipelineInput`/`PipelineOutput`, reach for `infer` inside a conditional type: `Stages extends [Plugin<infer In, any>, ...] ? In : never` — then adapt to avoid `any` by using `RawLogEntry` as the fallback bound.",
+      "The variadic `buildPipeline` signature works best when `Stages` is constrained as a non-empty tuple: `[Plugin<RawLogEntry, RawLogEntry>, ...Plugin<RawLogEntry, RawLogEntry>[]]`.",
+      "Inside `aggregateLogs`, model your per-service accumulator as a mutable object typed exactly as `ServiceSummary` (minus `status`/`topErrors` derived at flush time) — the `LevelCounts` mapped type will force you to initialise all five keys up front."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript Handbook — Discriminated Unions",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html#discriminated-unions"
+      },
+      {
+        "title": "TypeScript Handbook — Conditional Types & infer",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/conditional-types.html"
+      },
+      {
+        "title": "TypeScript Handbook — Variadic Tuple Types",
+        "url": "https://www.typescriptlang.org/docs/handbook/release-notes/typescript-4-0.html#variadic-tuple-types"
+      },
+      {
+        "title": "TypeScript Handbook — Mapped Types",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/mapped-types.html"
+      }
+    ]
   }
 ]

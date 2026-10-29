@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TypeDrop — Typed Streaming Log Aggregator with Plugin Pipeline</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Permanent+Marker&display=swap">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/fontsource/fonts/0x-proto@latest/latin-400-normal.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/fontsource/fonts/0x-proto@latest/latin-700-normal.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1/themes/prism-tomorrow.min.css">
+  <link rel="icon" href="../../misc/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="../../style.css">
+</head>
+<body>
+  <main>
+    <header>
+      <h1><a href="../../index.html" style="color: inherit; text-decoration: none;">TypeDrop</a></h1>
+      <p class="tagline">2026-10-29 Challenge</p>
+    </header>
+
+    <section class="challenge-card">
+      <div class="challenge-header">
+        <span class="challenge-date">2026-10-29</span>
+        <span class="badge hard">Hard</span>
+      </div>
+      <h2>Typed Streaming Log Aggregator with Plugin Pipeline</h2>
+      <p>You're building the observability backbone for a cloud-native platform. Raw log entries stream in from multiple services, pass through a typed plugin pipeline (enrichment → filtering → transformation), and are aggregated into per-service health summaries — the compiler must enforce plugin input/output contracts, discriminated log levels, and exhaustive aggregation shapes with zero escape hatches.</p>
+      <div class="challenge-goals">
+        <h3>Goals</h3>
+        <ul>
+          <li>Define the `LogEntry` discriminated union so each severity level carries its own distinct metadata fields, with the `level` literal acting as the discriminant.</li>
+          <li>Implement `Plugin&lt;In, Out&gt;` and the `PipelineInput` / `PipelineOutput` conditional types so the compiler threads input/output types through the pipeline tuple automatically.</li>
+          <li>Build `buildPipeline` with variadic tuple generics so plugins execute sequentially and type-check end-to-end, and wrap execution in the `Result&lt;T, E&gt;` monad via `runPipelineWithResult`.</li>
+          <li>Implement `aggregateLogs` with a fully exhaustive switch over `LogLevel` (using `assertNever`) that zero-fills all level counts and derives the correct `HealthStatus` and `topErrors`.</li>
+        </ul>
+      </div>
+      <div class="code-block">
+        <div class="code-block-header">
+          <span class="dot red"></span>
+          <span class="dot yellow"></span>
+          <span class="dot green"></span>
+          <span class="code-block-title">challenge.ts</span>
+        </div>
+        <pre><code class="language-typescript">// Key types &amp; main function signatures
+
+type LogLevel = &quot;debug&quot; | &quot;info&quot; | &quot;warn&quot; | &quot;error&quot; | &quot;fatal&quot;;
+type ServiceId = string &amp; { readonly __brand: &quot;ServiceId&quot; };
+
+// Discriminated union — each level carries its own metadata shape
+type LogEntry =
+  | { level: &quot;debug&quot; | &quot;info&quot;; id: string; serviceId: ServiceId; /* … */ }
+  | { level: &quot;warn&quot;;  warnCode: string;  /* … */ }
+  | { level: &quot;error&quot;; errorCode: string; stack: string; /* … */ }
+  | { level: &quot;fatal&quot;; errorCode: string; stack: string;
+      affectedServiceIds: ServiceId[]; /* … */ };
+
+// Generic plugin interface — In and Out must extend RawLogEntry
+interface Plugin&lt;In extends RawLogEntry, Out extends RawLogEntry&gt; {
+  name: string;
+  process(entries: In[]): Promise&lt;Out[]&gt;;
+}
+
+// Conditional types that thread the pipeline's I/O types
+type PipelineInput&lt;Stages extends Plugin&lt;RawLogEntry, RawLogEntry&gt;[]&gt; = /* … */;
+type PipelineOutput&lt;Stages extends Plugin&lt;RawLogEntry, RawLogEntry&gt;[]&gt; = /* … */;
+
+// Builds a type-safe sequential pipeline from a tuple of plugins
+function buildPipeline&lt;Stages extends Plugin&lt;RawLogEntry, RawLogEntry&gt;[]&gt;(
+  ...plugins: Stages
+): Pipeline&lt;Stages&gt;;
+
+// Wraps pipeline execution in a typed Result monad
+async function runPipelineWithResult&lt;
+  Stages extends Plugin&lt;RawLogEntry, RawLogEntry&gt;[]
+&gt;(
+  pipeline: Pipeline&lt;Stages&gt;,
+  entries: PipelineInput&lt;Stages&gt;,
+): Promise&lt;Result&lt;PipelineOutput&lt;Stages&gt;&gt;&gt;;
+</code></pre>
+      </div>
+      <details class="challenge-hints-details">
+        <summary>Hints (click to reveal)</summary>
+      <div class="challenge-hints">
+        <h3>Hints</h3>
+        <ul>
+          <li>For `PipelineInput`/`PipelineOutput`, reach for `infer` inside a conditional type: `Stages extends [Plugin&lt;infer In, any&gt;, ...] ? In : never` — then adapt to avoid `any` by using `RawLogEntry` as the fallback bound.</li>
+          <li>The variadic `buildPipeline` signature works best when `Stages` is constrained as a non-empty tuple: `[Plugin&lt;RawLogEntry, RawLogEntry&gt;, ...Plugin&lt;RawLogEntry, RawLogEntry&gt;[]]`.</li>
+          <li>Inside `aggregateLogs`, model your per-service accumulator as a mutable object typed exactly as `ServiceSummary` (minus `status`/`topErrors` derived at flush time) — the `LevelCounts` mapped type will force you to initialise all five keys up front.</li>
+        </ul>
+      </div>
+      </details>
+      <div class="challenge-docs">
+        <h3>Useful resources</h3>
+        <ul>
+          <li><a href="https://www.typescriptlang.org/docs/handbook/2/narrowing.html#discriminated-unions" target="_blank" rel="noopener noreferrer">TypeScript Handbook — Discriminated Unions</a></li>
+          <li><a href="https://www.typescriptlang.org/docs/handbook/2/conditional-types.html" target="_blank" rel="noopener noreferrer">TypeScript Handbook — Conditional Types &amp; infer</a></li>
+          <li><a href="https://www.typescriptlang.org/docs/handbook/release-notes/typescript-4-0.html#variadic-tuple-types" target="_blank" rel="noopener noreferrer">TypeScript Handbook — Variadic Tuple Types</a></li>
+          <li><a href="https://www.typescriptlang.org/docs/handbook/2/mapped-types.html" target="_blank" rel="noopener noreferrer">TypeScript Handbook — Mapped Types</a></li>
+        </ul>
+      </div>
+      <div class="cta-row">
+        <a class="cta-button cta-primary" href="https://stackblitz.com/github/niltonheck/typedrop/tree/challenge/2026-10-29" target="_blank" rel="noopener noreferrer">
+          <img class="sb-icon" src="https://cdn.simpleicons.org/stackblitz/e0e0e0" alt=""> StackBlitz
+        </a>
+        <a class="cta-button" href="https://codesandbox.io/p/devbox/github/niltonheck/typedrop/tree/challenge/2026-10-29" target="_blank" rel="noopener noreferrer">
+          <img class="csb-icon" src="https://cdn.simpleicons.org/codesandbox/e0e0e0" alt=""> CodeSandbox
+        </a>
+      </div>
+      <div class="clone-section">
+        <h3>Or clone locally</h3>
+        <div class="clone-box">
+          <code id="clone-cmd">git clone -b challenge/2026-10-29 https://github.com/niltonheck/typedrop.git</code>
+          <button class="clone-copy-btn" onclick="navigator.clipboard.writeText(document.getElementById('clone-cmd').textContent).then(()=>{this.textContent='Copied!';this.classList.add('copied');setTimeout(()=>{this.textContent='Copy';this.classList.remove('copied')},2000)})">Copy</button>
+        </div>
+      </div>
+    </section>
+
+    <footer>
+      <p>
+        <a href="../../index.html">&larr; Today's challenge</a>
+        &middot;
+        <a href="../../archive.html">Archive</a>
+      </p>
+    </footer>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1/prism.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1/components/prism-typescript.min.js"></script>
+  <script data-goatcounter="https://niltonheck.goatcounter.com/count"
+        async src="//gc.zgo.at/count.js"></script>
+</body>
+</html>
