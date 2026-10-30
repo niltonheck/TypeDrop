@@ -8961,5 +8961,41 @@
         "url": "https://www.typescriptlang.org/docs/handbook/2/mapped-types.html"
       }
     ]
+  },
+  {
+    "date": "2026-10-30",
+    "name": "Typed Contact Directory Merger",
+    "difficulty": "Easy",
+    "description": "You're building the import tool for a small-business CRM. Contacts arrive from two sources — an internal database and a CSV export — and you need to merge them, resolve duplicates by email, normalize phone formats, and produce a typed directory summary the compiler fully enforces.",
+    "snippet": "export type ContactSource = \"internal\" | \"csv\";\nexport type NormalizedPhone = `+1${string}`;\nexport type CompletenessLevel = \"full\" | \"partial\" | \"minimal\";\n\nexport interface RawContact {\n  readonly source: ContactSource;\n  readonly name: string;\n  readonly email: string;\n  readonly phone?: string;\n  readonly accountId?: number;  // internal only\n  readonly company?: string;    // csv only\n}\n\nexport interface MergedContact {\n  readonly name: string;\n  readonly email: string;\n  readonly phone: NormalizedPhone | null;\n  readonly accountId: number | null;\n  readonly company: string | null;\n  readonly sources: ReadonlyArray<ContactSource>;\n  readonly completeness: CompletenessLevel;\n}\n\nexport function normalizePhone(raw: string): NormalizedPhone | null { ... }\nexport function liftContact(raw: RawContact): MergedContact { ... }\nexport function mergeContacts(a: RawContact, b: RawContact): MergedContact { ... }\nexport function buildDirectory(contacts: ReadonlyArray<RawContact>): {\n  directory: Map<string, MergedContact>;\n  summary: DirectorySummary;\n} { ... }",
+    "goals": [
+      "Implement `normalizePhone` so it returns the branded `NormalizedPhone` template-literal type or `null` — without any type assertions.",
+      "Implement `liftContact` and `mergeContacts` to produce fully-typed `MergedContact` objects with correct source preference, null-coalescing, and completeness classification.",
+      "Implement `buildDirectory` to group contacts by email, delegate to `liftContact` or `mergeContacts`, throw on same-source duplicates, and return a correctly shaped `DirectorySummary`.",
+      "Ensure `bySource` and `byCompleteness` in the summary use `Record<ContactSource, number>` and `Record<CompletenessLevel, number>` so every key is always present."
+    ],
+    "hints": [
+      "To satisfy the `NormalizedPhone` template-literal type without `as`, write a helper that constructs the string and returns it with a type-predicate (`is NormalizedPhone`) or simply returns the correctly-prefixed string through a narrow typed path.",
+      "When picking fields in `mergeContacts`, check `a.source === 'internal'` to decide which variable holds `accountId` vs `company` — the compiler will narrow the optional fields for you.",
+      "For `buildDirectory`'s `bySource` count, iterate the final `MergedContact` values and increment a counter for each entry in `contact.sources` — merged records will increment both keys."
+    ],
+    "docs": [
+      {
+        "title": "Template Literal Types — TS Handbook",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/template-literal-types.html"
+      },
+      {
+        "title": "Utility Types (Record, Pick, Omit) — TS Handbook",
+        "url": "https://www.typescriptlang.org/docs/handbook/utility-types.html"
+      },
+      {
+        "title": "Narrowing — TS Handbook",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html"
+      },
+      {
+        "title": "Map — MDN Reference",
+        "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Map"
+      }
+    ]
   }
 ]
