@@ -8997,5 +8997,41 @@
         "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Map"
       }
     ]
+  },
+  {
+    "date": "2026-10-31",
+    "name": "Typed Event Sourcing Engine with Projection & Snapshot",
+    "difficulty": "Hard",
+    "description": "You're building the core of an event-sourced order management system. Domain events are appended to an immutable ledger, typed projections fold them into read models, and periodic snapshots checkpoint state so replays don't have to start from the beginning of time.",
+    "snippet": "export type OrderEvent =\n  | ({ type: \"OrderPlaced\";   orderId: string; customerId: string; placedAt: Date; totalCents: number } & Base)\n  | ({ type: \"ItemAdded\";     orderId: string; sku: string; qty: number; unitCents: number }           & Base)\n  | ({ type: \"ItemRemoved\";   orderId: string; sku: string; qty: number }                              & Base)\n  | ({ type: \"OrderShipped\";  orderId: string; carrier: string; trackingCode: string; shippedAt: Date } & Base)\n  | ({ type: \"OrderCancelled\";orderId: string; reason: string; cancelledAt: Date }                     & Base);\n\ntype Base = { eventId: string; version: number };\n\nexport type OrderStatus = \"pending\" | \"active\" | \"shipped\" | \"cancelled\";\n\nexport type OrderReadModel = {\n  readonly orderId: string;\n  readonly customerId: string;\n  readonly status: OrderStatus;\n  readonly totalCents: number;\n  readonly items: readonly LineItem[];\n  readonly shippedAt: Date | null;\n  readonly cancelledAt: Date | null;\n  readonly lastVersion: number;\n};\n\nexport interface Projector<S> {\n  init(orderId: string): S;\n  apply(state: S, event: OrderEvent): S;   // must be exhaustive!\n  replayFrom(stream: readonly OrderEvent[], snapshot?: S): S;\n}\n",
+    "goals": [
+      "Define a five-variant discriminated union `OrderEvent` with branded ID types and implement the three branded constructor functions.",
+      "Implement `EventStore` with strict sequential version enforcement, `OrderProjector` with exhaustive event folding (all five variants), and `SnapshotStore<S>` with save/load/shouldSnapshot.",
+      "Wire everything together in `OrderAggregate` so that appending events auto-snapshots at the configured interval and `getReadModel` correctly replays from the nearest snapshot.",
+      "Implement the constrained generic helper `buildEventStream<E>` that filters by version and returns events sorted ascending."
+    ],
+    "hints": [
+      "For exhaustive switch coverage in `OrderProjector.apply`, add a `default: return assertNever(event)` branch — the compiler will catch any missing case.",
+      "Branded types use `unique symbol` as a phantom property; the constructor just returns the raw string with a type cast — but the cast must live only in the constructor, nowhere else.",
+      "In `OrderAggregate.getReadModel`, load the snapshot first, then call `buildEventStream` with `snapshot.atVersion` as `fromVersion` to get only the delta events before replaying."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript Handbook — Discriminated Unions",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html#discriminated-unions"
+      },
+      {
+        "title": "TypeScript Handbook — Generics",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/generics.html"
+      },
+      {
+        "title": "TypeScript Deep Dive — Branded Types",
+        "url": "https://basarat.gitbook.io/typescript/main-1/nominaltyping"
+      },
+      {
+        "title": "TypeScript Handbook — Exhaustiveness Checking",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html#exhaustiveness-checking"
+      }
+    ]
   }
 ]
