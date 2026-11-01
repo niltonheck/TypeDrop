@@ -9033,5 +9033,41 @@
         "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html#exhaustiveness-checking"
       }
     ]
+  },
+  {
+    "date": "2026-11-01",
+    "name": "Typed Expense Report Categorizer",
+    "difficulty": "Easy",
+    "description": "You're building the finance module for a small startup's internal tools. Employees submit raw expense entries, and your job is to validate, categorize, and summarize them — with the compiler enforcing every category label, status field, reimbursement rule, and summary shape.",
+    "snippet": "/** All valid expense categories */\ntype ExpenseCategory = \"travel\" | \"meals\" | \"software\" | \"hardware\" | \"training\" | \"other\";\n\n/** Reasons an expense can fail — discriminated union */\ntype ValidationFailure =\n  | { reason: \"invalid_category\"; raw: string }\n  | { reason: \"non_positive_amount\"; raw: number }\n  | { reason: \"invalid_date\"; raw: string };\n\n/** Discriminated result of validating one RawExpense */\ntype ValidationResult =\n  | { ok: true;  expense: ValidExpense }\n  | { ok: false; id: string; failures: ValidationFailure[] };\n\n/** Caps must cover every ExpenseCategory — no omissions allowed */\ntype CategoryCaps = Record<ExpenseCategory, number>;\n\n// ── Functions you must implement ──────────────────────────────\nfunction validateExpense(raw: RawExpense): ValidationResult { ... }\nfunction applycat(expense: ValidExpense, caps: CategoryCaps): number { ... }\nfunction buildEmployeeSummaries(raws: RawExpense[]): EmployeeSummary[] { ... }\n",
+    "goals": [
+      "Implement `validateExpense` to collect ALL validation failures (invalid category, non-positive amount, malformed date) into a typed discriminated-union result.",
+      "Implement `applycat` to compute the reimbursable amount for a valid expense by capping it against a fully-typed `CategoryCaps` record.",
+      "Implement `buildEmployeeSummaries` to group valid and invalid expenses by employee, accumulate per-category breakdowns, and return a fully-typed `EmployeeSummary[]`.",
+      "Use type narrowing on `ValidationResult` (discriminated union) so the compiler enforces which fields are accessible in each branch."
+    ],
+    "hints": [
+      "Use `Array.prototype.includes` with a typed constant array (e.g. `const CATEGORIES = [...] as const`) to narrow a `string` into `ExpenseCategory` without a type assertion.",
+      "A `Partial<Record<ExpenseCategory, CategorySummary>>` lets you build the `byCategory` map incrementally — use the nullish coalescing assignment operator (`??=`) to initialise missing entries.",
+      "When narrowing `ValidationResult`, check `result.ok` first — the compiler will then know exactly which branch's fields are available."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript Handbook — Narrowing",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html"
+      },
+      {
+        "title": "TypeScript Handbook — Discriminated Unions",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html#discriminated-unions"
+      },
+      {
+        "title": "TypeScript Utility Types — Record & Partial",
+        "url": "https://www.typescriptlang.org/docs/handbook/utility-types.html"
+      },
+      {
+        "title": "MDN — Date() constructor & isNaN",
+        "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date/Date"
+      }
+    ]
   }
 ]
