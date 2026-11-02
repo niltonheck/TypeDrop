@@ -9069,5 +9069,41 @@
         "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date/Date"
       }
     ]
+  },
+  {
+    "date": "2026-11-02",
+    "name": "Typed Async Job Queue with Retry & Concurrency Control",
+    "difficulty": "Medium",
+    "description": "You're building the background job runner for a SaaS platform. Jobs arrive with varying priorities and retry budgets, must be executed with a bounded concurrency limit, and each outcome — success, failure, or exhausted retries — must be captured in a fully typed result record that downstream consumers can pattern-match exhaustively.",
+    "snippet": "// Key types at a glance\n\nexport type JobId = string & { readonly __brand: \"JobId\" };\n\nexport interface Job<T> {\n  id: JobId;\n  priority: \"high\" | \"normal\" | \"low\";\n  maxRetries: number;\n  payload: T;\n  execute: (payload: T) => Promise<T>;\n}\n\nexport type JobOutcome<T> =\n  | { status: \"succeeded\"; jobId: JobId; result: T;    attempts: number }\n  | { status: \"failed\";    jobId: JobId; error: string; attempts: number }\n  | { status: \"exhausted\"; jobId: JobId; error: string; totalAttempts: number };\n\n// ---- Functions you must implement -------------------------\n\nexport function makeJobId(raw: string): JobId { ... }\n\nexport async function runJob<T>(job: Job<T>): Promise<JobOutcome<T>> { ... }\n\nexport async function runQueue<T>(\n  jobs: Job<T>[],\n  concurrency: number\n): Promise<JobOutcome<T>[]> { ... }\n\nexport function summariseOutcomes<T>(outcomes: JobOutcome<T>[]): QueueSummary { ... }",
+    "goals": [
+      "Define a branded `JobId` type and a generic `Job<T>` interface so the compiler rejects raw strings and untyped payloads.",
+      "Implement `runJob<T>` with correct retry logic that returns the right discriminated-union variant (`succeeded`, `failed`, or `exhausted`) based on attempt count and outcome.",
+      "Implement `runQueue<T>` that enforces a concurrency cap, sorts by priority (high → normal → low), and returns outcomes in the original input order.",
+      "Implement `summariseOutcomes<T>` that exhaustively pattern-matches every `JobOutcome` variant to produce a fully typed `QueueSummary`."
+    ],
+    "hints": [
+      "For bounded concurrency without a library, maintain an active-count counter and a Promise chain — or use a pool of `concurrency` worker loops that each pull from a shared index.",
+      "Branded types require only a type-level intersection (`string & { readonly __brand: 'JobId' }`); the factory just casts internally — but resist using `as` anywhere in the stubs themselves.",
+      "When narrowing `JobOutcome<T>` in `summariseOutcomes`, switch on `outcome.status` — TypeScript will enforce exhaustiveness if you add a `default: never` guard."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript Handbook — Branded Types (Nominal Typing)",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/types-from-types.html"
+      },
+      {
+        "title": "TypeScript Handbook — Discriminated Unions",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html#discriminated-unions"
+      },
+      {
+        "title": "MDN — Promise.allSettled",
+        "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise/allSettled"
+      },
+      {
+        "title": "TypeScript Handbook — Generics",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/generics.html"
+      }
+    ]
   }
 ]

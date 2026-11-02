@@ -41,18 +41,18 @@
     <!-- CHALLENGE_START -->
     <section class="challenge-card">
       <div class="challenge-header">
-        <span class="challenge-date">2026-11-01</span>
-        <span class="badge easy">Easy</span>
+        <span class="challenge-date">2026-11-02</span>
+        <span class="badge medium">Medium</span>
       </div>
-      <h2>Typed Expense Report Categorizer</h2>
-      <p>You're building the finance module for a small startup's internal tools. Employees submit raw expense entries, and your job is to validate, categorize, and summarize them — with the compiler enforcing every category label, status field, reimbursement rule, and summary shape.</p>
+      <h2>Typed Async Job Queue with Retry &amp; Concurrency Control</h2>
+      <p>You're building the background job runner for a SaaS platform. Jobs arrive with varying priorities and retry budgets, must be executed with a bounded concurrency limit, and each outcome — success, failure, or exhausted retries — must be captured in a fully typed result record that downstream consumers can pattern-match exhaustively.</p>
       <div class="challenge-goals">
         <h3>Goals</h3>
         <ul>
-          <li>Implement `validateExpense` to collect ALL validation failures (invalid category, non-positive amount, malformed date) into a typed discriminated-union result.</li>
-          <li>Implement `applycat` to compute the reimbursable amount for a valid expense by capping it against a fully-typed `CategoryCaps` record.</li>
-          <li>Implement `buildEmployeeSummaries` to group valid and invalid expenses by employee, accumulate per-category breakdowns, and return a fully-typed `EmployeeSummary[]`.</li>
-          <li>Use type narrowing on `ValidationResult` (discriminated union) so the compiler enforces which fields are accessible in each branch.</li>
+          <li>Define a branded `JobId` type and a generic `Job&lt;T&gt;` interface so the compiler rejects raw strings and untyped payloads.</li>
+          <li>Implement `runJob&lt;T&gt;` with correct retry logic that returns the right discriminated-union variant (`succeeded`, `failed`, or `exhausted`) based on attempt count and outcome.</li>
+          <li>Implement `runQueue&lt;T&gt;` that enforces a concurrency cap, sorts by priority (high → normal → low), and returns outcomes in the original input order.</li>
+          <li>Implement `summariseOutcomes&lt;T&gt;` that exhaustively pattern-matches every `JobOutcome` variant to produce a fully typed `QueueSummary`.</li>
         </ul>
       </div>
       <div class="code-block">
@@ -62,61 +62,68 @@
           <span class="dot green"></span>
           <span class="code-block-title">challenge.ts</span>
         </div>
-        <pre><code class="language-typescript">/** All valid expense categories */
-type ExpenseCategory = &quot;travel&quot; | &quot;meals&quot; | &quot;software&quot; | &quot;hardware&quot; | &quot;training&quot; | &quot;other&quot;;
+        <pre><code class="language-typescript">// Key types at a glance
 
-/** Reasons an expense can fail — discriminated union */
-type ValidationFailure =
-  | { reason: &quot;invalid_category&quot;; raw: string }
-  | { reason: &quot;non_positive_amount&quot;; raw: number }
-  | { reason: &quot;invalid_date&quot;; raw: string };
+export type JobId = string &amp; { readonly __brand: &quot;JobId&quot; };
 
-/** Discriminated result of validating one RawExpense */
-type ValidationResult =
-  | { ok: true;  expense: ValidExpense }
-  | { ok: false; id: string; failures: ValidationFailure[] };
+export interface Job&lt;T&gt; {
+  id: JobId;
+  priority: &quot;high&quot; | &quot;normal&quot; | &quot;low&quot;;
+  maxRetries: number;
+  payload: T;
+  execute: (payload: T) =&gt; Promise&lt;T&gt;;
+}
 
-/** Caps must cover every ExpenseCategory — no omissions allowed */
-type CategoryCaps = Record&lt;ExpenseCategory, number&gt;;
+export type JobOutcome&lt;T&gt; =
+  | { status: &quot;succeeded&quot;; jobId: JobId; result: T;    attempts: number }
+  | { status: &quot;failed&quot;;    jobId: JobId; error: string; attempts: number }
+  | { status: &quot;exhausted&quot;; jobId: JobId; error: string; totalAttempts: number };
 
-// ── Functions you must implement ──────────────────────────────
-function validateExpense(raw: RawExpense): ValidationResult { ... }
-function applycat(expense: ValidExpense, caps: CategoryCaps): number { ... }
-function buildEmployeeSummaries(raws: RawExpense[]): EmployeeSummary[] { ... }
-</code></pre>
+// ---- Functions you must implement -------------------------
+
+export function makeJobId(raw: string): JobId { ... }
+
+export async function runJob&lt;T&gt;(job: Job&lt;T&gt;): Promise&lt;JobOutcome&lt;T&gt;&gt; { ... }
+
+export async function runQueue&lt;T&gt;(
+  jobs: Job&lt;T&gt;[],
+  concurrency: number
+): Promise&lt;JobOutcome&lt;T&gt;[]&gt; { ... }
+
+export function summariseOutcomes&lt;T&gt;(outcomes: JobOutcome&lt;T&gt;[]): QueueSummary { ... }</code></pre>
       </div>
       <details class="challenge-hints-details">
         <summary>Hints (click to reveal)</summary>
       <div class="challenge-hints">
         <h3>Hints</h3>
         <ul>
-          <li>Use `Array.prototype.includes` with a typed constant array (e.g. `const CATEGORIES = [...] as const`) to narrow a `string` into `ExpenseCategory` without a type assertion.</li>
-          <li>A `Partial&lt;Record&lt;ExpenseCategory, CategorySummary&gt;&gt;` lets you build the `byCategory` map incrementally — use the nullish coalescing assignment operator (`??=`) to initialise missing entries.</li>
-          <li>When narrowing `ValidationResult`, check `result.ok` first — the compiler will then know exactly which branch's fields are available.</li>
+          <li>For bounded concurrency without a library, maintain an active-count counter and a Promise chain — or use a pool of `concurrency` worker loops that each pull from a shared index.</li>
+          <li>Branded types require only a type-level intersection (`string &amp; { readonly __brand: 'JobId' }`); the factory just casts internally — but resist using `as` anywhere in the stubs themselves.</li>
+          <li>When narrowing `JobOutcome&lt;T&gt;` in `summariseOutcomes`, switch on `outcome.status` — TypeScript will enforce exhaustiveness if you add a `default: never` guard.</li>
         </ul>
       </div>
       </details>
       <div class="challenge-docs">
         <h3>Useful resources</h3>
         <ul>
-          <li><a href="https://www.typescriptlang.org/docs/handbook/2/narrowing.html" target="_blank" rel="noopener noreferrer">TypeScript Handbook — Narrowing</a></li>
+          <li><a href="https://www.typescriptlang.org/docs/handbook/2/types-from-types.html" target="_blank" rel="noopener noreferrer">TypeScript Handbook — Branded Types (Nominal Typing)</a></li>
           <li><a href="https://www.typescriptlang.org/docs/handbook/2/narrowing.html#discriminated-unions" target="_blank" rel="noopener noreferrer">TypeScript Handbook — Discriminated Unions</a></li>
-          <li><a href="https://www.typescriptlang.org/docs/handbook/utility-types.html" target="_blank" rel="noopener noreferrer">TypeScript Utility Types — Record &amp; Partial</a></li>
-          <li><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date/Date" target="_blank" rel="noopener noreferrer">MDN — Date() constructor &amp; isNaN</a></li>
+          <li><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise/allSettled" target="_blank" rel="noopener noreferrer">MDN — Promise.allSettled</a></li>
+          <li><a href="https://www.typescriptlang.org/docs/handbook/2/generics.html" target="_blank" rel="noopener noreferrer">TypeScript Handbook — Generics</a></li>
         </ul>
       </div>
       <div class="cta-row">
-        <a class="cta-button cta-primary" href="https://stackblitz.com/github/niltonheck/typedrop/tree/challenge/2026-11-01" target="_blank" rel="noopener noreferrer">
+        <a class="cta-button cta-primary" href="https://stackblitz.com/github/niltonheck/typedrop/tree/challenge/2026-11-02" target="_blank" rel="noopener noreferrer">
           <img class="sb-icon" src="https://cdn.simpleicons.org/stackblitz/e0e0e0" alt=""> StackBlitz
         </a>
-        <a class="cta-button" href="https://codesandbox.io/p/devbox/github/niltonheck/typedrop/tree/challenge/2026-11-01" target="_blank" rel="noopener noreferrer">
+        <a class="cta-button" href="https://codesandbox.io/p/devbox/github/niltonheck/typedrop/tree/challenge/2026-11-02" target="_blank" rel="noopener noreferrer">
           <img class="csb-icon" src="https://cdn.simpleicons.org/codesandbox/e0e0e0" alt=""> CodeSandbox
         </a>
       </div>
       <div class="clone-section">
         <h3>Or clone locally</h3>
         <div class="clone-box">
-          <code id="clone-cmd">git clone -b challenge/2026-11-01 https://github.com/niltonheck/typedrop.git</code>
+          <code id="clone-cmd">git clone -b challenge/2026-11-02 https://github.com/niltonheck/typedrop.git</code>
           <button class="clone-copy-btn" onclick="navigator.clipboard.writeText(document.getElementById('clone-cmd').textContent).then(()=>{this.textContent='Copied!';this.classList.add('copied');setTimeout(()=>{this.textContent='Copy';this.classList.remove('copied')},2000)})">Copy</button>
         </div>
       </div>
