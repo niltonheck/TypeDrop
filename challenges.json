@@ -9105,5 +9105,41 @@
         "url": "https://www.typescriptlang.org/docs/handbook/2/generics.html"
       }
     ]
+  },
+  {
+    "date": "2026-11-03",
+    "name": "Typed Permission Policy Engine with Conditional Grants",
+    "difficulty": "Hard",
+    "description": "You're building the authorization core for a multi-tenant SaaS platform. Every API request carries a principal (user or service account) whose access is governed by a layered policy system — role-based defaults, resource-scoped overrides, and runtime conditions — and the compiler must enforce every policy shape, decision outcome, and exhaustive condition evaluation with no escape hatches.",
+    "snippet": "\n// Key types and main engine function:\n\ntype Action = \"resource:read\" | \"resource:write\" | \"resource:delete\"\n            | \"resource:share\" | \"admin:impersonate\" | \"admin:audit\";\n\ntype Role = \"viewer\" | \"editor\" | \"manager\" | \"admin\" | \"superadmin\";\n\ntype Decision =\n  | { outcome: \"allow\";   grantedBy: PolicyId }\n  | { outcome: \"deny\";    reason: DenyReason  }\n  | { outcome: \"abstain\" };\n\ntype Condition =\n  | { kind: \"time-window\";  startHour: number; endHour: number }\n  | { kind: \"ip-allowlist\"; cidrs: string[]                    }\n  | { kind: \"mfa-required\"                                     }\n  | { kind: \"same-tenant\";  resourceTenantId: TenantId         }\n  | { kind: \"min-role\";     role: Role                         }\n  | { kind: \"all\";          conditions: Condition[]            }  // recursive AND\n  | { kind: \"any\";          conditions: Condition[]            }; // recursive OR\n\ntype ActionSummary = {\n  readonly [A in Action]: {\n    readonly allowed: number; readonly denied: number; readonly abstained: number;\n  };\n};\n\n// Evaluate an ordered list of policies → final AuthResult\nexport function evaluatePolicies(\n  policies: Policy[],\n  request: AuthRequest\n): AuthResult { /* TODO */ }\n",
+    "goals": [
+      "Implement roleAtLeast to establish a strict total ordering over the Role union without any casting.",
+      "Implement evaluateCondition to exhaustively handle all 7 Condition variants, including recursive 'all' and 'any' compositions.",
+      "Implement evaluatePolicy and evaluatePolicies to enforce priority rules: tenant isolation → explicit deny → role/resource policies → abstain.",
+      "Implement batchEvaluate with Promise.all and buildAuditSummary with a fully-keyed mapped ActionSummary type."
+    ],
+    "hints": [
+      "A const array of roles in ascending order (e.g. `const ROLE_ORDER = ['viewer', 'editor', ...] as const`) lets you compare indexes without any casting — but you'll need to type it so indexOf is safe.",
+      "For exhaustiveness in a switch/if-else chain over a discriminated union, call assertNever(x) in the default branch — the compiler will error if any variant is unhandled.",
+      "ActionSummary's mapped type means you must initialise every Action key before returning — consider building a zero-filled record first using a typed array of all Action values."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript Handbook: Discriminated Unions",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html#discriminated-unions"
+      },
+      {
+        "title": "TypeScript Handbook: Mapped Types",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/mapped-types.html"
+      },
+      {
+        "title": "TypeScript Handbook: Branded / Opaque Types (Nominal Typing)",
+        "url": "https://www.typescriptlang.org/play#example/nominal-typing"
+      },
+      {
+        "title": "MDN: Promise.all",
+        "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise/all"
+      }
+    ]
   }
 ]

@@ -41,18 +41,18 @@
     <!-- CHALLENGE_START -->
     <section class="challenge-card">
       <div class="challenge-header">
-        <span class="challenge-date">2026-11-02</span>
-        <span class="badge medium">Medium</span>
+        <span class="challenge-date">2026-11-03</span>
+        <span class="badge hard">Hard</span>
       </div>
-      <h2>Typed Async Job Queue with Retry &amp; Concurrency Control</h2>
-      <p>You're building the background job runner for a SaaS platform. Jobs arrive with varying priorities and retry budgets, must be executed with a bounded concurrency limit, and each outcome — success, failure, or exhausted retries — must be captured in a fully typed result record that downstream consumers can pattern-match exhaustively.</p>
+      <h2>Typed Permission Policy Engine with Conditional Grants</h2>
+      <p>You're building the authorization core for a multi-tenant SaaS platform. Every API request carries a principal (user or service account) whose access is governed by a layered policy system — role-based defaults, resource-scoped overrides, and runtime conditions — and the compiler must enforce every policy shape, decision outcome, and exhaustive condition evaluation with no escape hatches.</p>
       <div class="challenge-goals">
         <h3>Goals</h3>
         <ul>
-          <li>Define a branded `JobId` type and a generic `Job&lt;T&gt;` interface so the compiler rejects raw strings and untyped payloads.</li>
-          <li>Implement `runJob&lt;T&gt;` with correct retry logic that returns the right discriminated-union variant (`succeeded`, `failed`, or `exhausted`) based on attempt count and outcome.</li>
-          <li>Implement `runQueue&lt;T&gt;` that enforces a concurrency cap, sorts by priority (high → normal → low), and returns outcomes in the original input order.</li>
-          <li>Implement `summariseOutcomes&lt;T&gt;` that exhaustively pattern-matches every `JobOutcome` variant to produce a fully typed `QueueSummary`.</li>
+          <li>Implement roleAtLeast to establish a strict total ordering over the Role union without any casting.</li>
+          <li>Implement evaluateCondition to exhaustively handle all 7 Condition variants, including recursive 'all' and 'any' compositions.</li>
+          <li>Implement evaluatePolicy and evaluatePolicies to enforce priority rules: tenant isolation → explicit deny → role/resource policies → abstain.</li>
+          <li>Implement batchEvaluate with Promise.all and buildAuditSummary with a fully-keyed mapped ActionSummary type.</li>
         </ul>
       </div>
       <div class="code-block">
@@ -62,68 +62,73 @@
           <span class="dot green"></span>
           <span class="code-block-title">challenge.ts</span>
         </div>
-        <pre><code class="language-typescript">// Key types at a glance
+        <pre><code class="language-typescript">
+// Key types and main engine function:
 
-export type JobId = string &amp; { readonly __brand: &quot;JobId&quot; };
+type Action = &quot;resource:read&quot; | &quot;resource:write&quot; | &quot;resource:delete&quot;
+            | &quot;resource:share&quot; | &quot;admin:impersonate&quot; | &quot;admin:audit&quot;;
 
-export interface Job&lt;T&gt; {
-  id: JobId;
-  priority: &quot;high&quot; | &quot;normal&quot; | &quot;low&quot;;
-  maxRetries: number;
-  payload: T;
-  execute: (payload: T) =&gt; Promise&lt;T&gt;;
-}
+type Role = &quot;viewer&quot; | &quot;editor&quot; | &quot;manager&quot; | &quot;admin&quot; | &quot;superadmin&quot;;
 
-export type JobOutcome&lt;T&gt; =
-  | { status: &quot;succeeded&quot;; jobId: JobId; result: T;    attempts: number }
-  | { status: &quot;failed&quot;;    jobId: JobId; error: string; attempts: number }
-  | { status: &quot;exhausted&quot;; jobId: JobId; error: string; totalAttempts: number };
+type Decision =
+  | { outcome: &quot;allow&quot;;   grantedBy: PolicyId }
+  | { outcome: &quot;deny&quot;;    reason: DenyReason  }
+  | { outcome: &quot;abstain&quot; };
 
-// ---- Functions you must implement -------------------------
+type Condition =
+  | { kind: &quot;time-window&quot;;  startHour: number; endHour: number }
+  | { kind: &quot;ip-allowlist&quot;; cidrs: string[]                    }
+  | { kind: &quot;mfa-required&quot;                                     }
+  | { kind: &quot;same-tenant&quot;;  resourceTenantId: TenantId         }
+  | { kind: &quot;min-role&quot;;     role: Role                         }
+  | { kind: &quot;all&quot;;          conditions: Condition[]            }  // recursive AND
+  | { kind: &quot;any&quot;;          conditions: Condition[]            }; // recursive OR
 
-export function makeJobId(raw: string): JobId { ... }
+type ActionSummary = {
+  readonly [A in Action]: {
+    readonly allowed: number; readonly denied: number; readonly abstained: number;
+  };
+};
 
-export async function runJob&lt;T&gt;(job: Job&lt;T&gt;): Promise&lt;JobOutcome&lt;T&gt;&gt; { ... }
-
-export async function runQueue&lt;T&gt;(
-  jobs: Job&lt;T&gt;[],
-  concurrency: number
-): Promise&lt;JobOutcome&lt;T&gt;[]&gt; { ... }
-
-export function summariseOutcomes&lt;T&gt;(outcomes: JobOutcome&lt;T&gt;[]): QueueSummary { ... }</code></pre>
+// Evaluate an ordered list of policies → final AuthResult
+export function evaluatePolicies(
+  policies: Policy[],
+  request: AuthRequest
+): AuthResult { /* TODO */ }
+</code></pre>
       </div>
       <details class="challenge-hints-details">
         <summary>Hints (click to reveal)</summary>
       <div class="challenge-hints">
         <h3>Hints</h3>
         <ul>
-          <li>For bounded concurrency without a library, maintain an active-count counter and a Promise chain — or use a pool of `concurrency` worker loops that each pull from a shared index.</li>
-          <li>Branded types require only a type-level intersection (`string &amp; { readonly __brand: 'JobId' }`); the factory just casts internally — but resist using `as` anywhere in the stubs themselves.</li>
-          <li>When narrowing `JobOutcome&lt;T&gt;` in `summariseOutcomes`, switch on `outcome.status` — TypeScript will enforce exhaustiveness if you add a `default: never` guard.</li>
+          <li>A const array of roles in ascending order (e.g. `const ROLE_ORDER = ['viewer', 'editor', ...] as const`) lets you compare indexes without any casting — but you'll need to type it so indexOf is safe.</li>
+          <li>For exhaustiveness in a switch/if-else chain over a discriminated union, call assertNever(x) in the default branch — the compiler will error if any variant is unhandled.</li>
+          <li>ActionSummary's mapped type means you must initialise every Action key before returning — consider building a zero-filled record first using a typed array of all Action values.</li>
         </ul>
       </div>
       </details>
       <div class="challenge-docs">
         <h3>Useful resources</h3>
         <ul>
-          <li><a href="https://www.typescriptlang.org/docs/handbook/2/types-from-types.html" target="_blank" rel="noopener noreferrer">TypeScript Handbook — Branded Types (Nominal Typing)</a></li>
-          <li><a href="https://www.typescriptlang.org/docs/handbook/2/narrowing.html#discriminated-unions" target="_blank" rel="noopener noreferrer">TypeScript Handbook — Discriminated Unions</a></li>
-          <li><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise/allSettled" target="_blank" rel="noopener noreferrer">MDN — Promise.allSettled</a></li>
-          <li><a href="https://www.typescriptlang.org/docs/handbook/2/generics.html" target="_blank" rel="noopener noreferrer">TypeScript Handbook — Generics</a></li>
+          <li><a href="https://www.typescriptlang.org/docs/handbook/2/narrowing.html#discriminated-unions" target="_blank" rel="noopener noreferrer">TypeScript Handbook: Discriminated Unions</a></li>
+          <li><a href="https://www.typescriptlang.org/docs/handbook/2/mapped-types.html" target="_blank" rel="noopener noreferrer">TypeScript Handbook: Mapped Types</a></li>
+          <li><a href="https://www.typescriptlang.org/play#example/nominal-typing" target="_blank" rel="noopener noreferrer">TypeScript Handbook: Branded / Opaque Types (Nominal Typing)</a></li>
+          <li><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise/all" target="_blank" rel="noopener noreferrer">MDN: Promise.all</a></li>
         </ul>
       </div>
       <div class="cta-row">
-        <a class="cta-button cta-primary" href="https://stackblitz.com/github/niltonheck/typedrop/tree/challenge/2026-11-02" target="_blank" rel="noopener noreferrer">
+        <a class="cta-button cta-primary" href="https://stackblitz.com/github/niltonheck/typedrop/tree/challenge/2026-11-03" target="_blank" rel="noopener noreferrer">
           <img class="sb-icon" src="https://cdn.simpleicons.org/stackblitz/e0e0e0" alt=""> StackBlitz
         </a>
-        <a class="cta-button" href="https://codesandbox.io/p/devbox/github/niltonheck/typedrop/tree/challenge/2026-11-02" target="_blank" rel="noopener noreferrer">
+        <a class="cta-button" href="https://codesandbox.io/p/devbox/github/niltonheck/typedrop/tree/challenge/2026-11-03" target="_blank" rel="noopener noreferrer">
           <img class="csb-icon" src="https://cdn.simpleicons.org/codesandbox/e0e0e0" alt=""> CodeSandbox
         </a>
       </div>
       <div class="clone-section">
         <h3>Or clone locally</h3>
         <div class="clone-box">
-          <code id="clone-cmd">git clone -b challenge/2026-11-02 https://github.com/niltonheck/typedrop.git</code>
+          <code id="clone-cmd">git clone -b challenge/2026-11-03 https://github.com/niltonheck/typedrop.git</code>
           <button class="clone-copy-btn" onclick="navigator.clipboard.writeText(document.getElementById('clone-cmd').textContent).then(()=>{this.textContent='Copied!';this.classList.add('copied');setTimeout(()=>{this.textContent='Copy';this.classList.remove('copied')},2000)})">Copy</button>
         </div>
       </div>
