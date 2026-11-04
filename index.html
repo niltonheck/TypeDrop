@@ -41,18 +41,18 @@
     <!-- CHALLENGE_START -->
     <section class="challenge-card">
       <div class="challenge-header">
-        <span class="challenge-date">2026-11-03</span>
-        <span class="badge hard">Hard</span>
+        <span class="challenge-date">2026-11-04</span>
+        <span class="badge medium">Medium</span>
       </div>
-      <h2>Typed Permission Policy Engine with Conditional Grants</h2>
-      <p>You're building the authorization core for a multi-tenant SaaS platform. Every API request carries a principal (user or service account) whose access is governed by a layered policy system — role-based defaults, resource-scoped overrides, and runtime conditions — and the compiler must enforce every policy shape, decision outcome, and exhaustive condition evaluation with no escape hatches.</p>
+      <h2>Typed API Response Paginator with Result Accumulation</h2>
+      <p>You're building the data-sync layer for a dashboard that ingests records from a paginated REST API. Pages arrive one at a time, each fetch can fail independently, and the final accumulation must be fully typed — distinguishing partial successes from total failures so the UI can render the right state.</p>
       <div class="challenge-goals">
         <h3>Goals</h3>
         <ul>
-          <li>Implement roleAtLeast to establish a strict total ordering over the Role union without any casting.</li>
-          <li>Implement evaluateCondition to exhaustively handle all 7 Condition variants, including recursive 'all' and 'any' compositions.</li>
-          <li>Implement evaluatePolicy and evaluatePolicies to enforce priority rules: tenant isolation → explicit deny → role/resource policies → abstain.</li>
-          <li>Implement batchEvaluate with Promise.all and buildAuditSummary with a fully-keyed mapped ActionSummary type.</li>
+          <li>Implement the `ok` and `err` constructor functions that produce correctly-tagged discriminated union values.</li>
+          <li>Implement `paginateAll` to sequentially fetch all pages, accumulate items from successes, collect typed errors from failures, and derive the correct `outcome` literal.</li>
+          <li>Implement `filterItems` using a generic type guard to narrow `ReadonlyArray&lt;TItem&gt;` to `ReadonlyArray&lt;TNarrowed&gt;`.</li>
+          <li>Implement `toValidPageNumber` to validate and return a branded `ValidPageNumber` wrapped in a `Result&lt;ValidPageNumber, string&gt;`.</li>
         </ul>
       </div>
       <div class="code-block">
@@ -62,39 +62,36 @@
           <span class="dot green"></span>
           <span class="code-block-title">challenge.ts</span>
         </div>
-        <pre><code class="language-typescript">
-// Key types and main engine function:
+        <pre><code class="language-typescript">// Key types and main function signature
 
-type Action = &quot;resource:read&quot; | &quot;resource:write&quot; | &quot;resource:delete&quot;
-            | &quot;resource:share&quot; | &quot;admin:impersonate&quot; | &quot;admin:audit&quot;;
+export type Ok&lt;T&gt;  = { readonly status: &quot;ok&quot;;  readonly value: T };
+export type Err&lt;E&gt; = { readonly status: &quot;err&quot;; readonly error: E };
+export type Result&lt;T, E&gt; = Ok&lt;T&gt; | Err&lt;E&gt;;
 
-type Role = &quot;viewer&quot; | &quot;editor&quot; | &quot;manager&quot; | &quot;admin&quot; | &quot;superadmin&quot;;
+export interface ApiPage&lt;TItem&gt; {
+  readonly page: number;
+  readonly totalPages: number;
+  readonly items: ReadonlyArray&lt;TItem&gt;;
+}
 
-type Decision =
-  | { outcome: &quot;allow&quot;;   grantedBy: PolicyId }
-  | { outcome: &quot;deny&quot;;    reason: DenyReason  }
-  | { outcome: &quot;abstain&quot; };
+export interface PageFetchError {
+  readonly page: number;
+  readonly reason: string;
+}
 
-type Condition =
-  | { kind: &quot;time-window&quot;;  startHour: number; endHour: number }
-  | { kind: &quot;ip-allowlist&quot;; cidrs: string[]                    }
-  | { kind: &quot;mfa-required&quot;                                     }
-  | { kind: &quot;same-tenant&quot;;  resourceTenantId: TenantId         }
-  | { kind: &quot;min-role&quot;;     role: Role                         }
-  | { kind: &quot;all&quot;;          conditions: Condition[]            }  // recursive AND
-  | { kind: &quot;any&quot;;          conditions: Condition[]            }; // recursive OR
+export type PageFetcher&lt;TItem&gt; =
+  (page: number) =&gt; Promise&lt;Result&lt;ApiPage&lt;TItem&gt;, PageFetchError&gt;&gt;;
 
-type ActionSummary = {
-  readonly [A in Action]: {
-    readonly allowed: number; readonly denied: number; readonly abstained: number;
-  };
-};
+export interface PaginationSummary&lt;TItem&gt; {
+  readonly items: ReadonlyArray&lt;TItem&gt;;
+  readonly failures: ReadonlyArray&lt;PageFetchError&gt;;
+  readonly totalPagesAttempted: number;
+  readonly outcome: &quot;full&quot; | &quot;partial&quot; | &quot;empty&quot;;
+}
 
-// Evaluate an ordered list of policies → final AuthResult
-export function evaluatePolicies(
-  policies: Policy[],
-  request: AuthRequest
-): AuthResult { /* TODO */ }
+export async function paginateAll&lt;TItem&gt;(
+  fetcher: PageFetcher&lt;TItem&gt;
+): Promise&lt;PaginationSummary&lt;TItem&gt;&gt; { /* TODO */ throw new Error(); }
 </code></pre>
       </div>
       <details class="challenge-hints-details">
@@ -102,33 +99,33 @@ export function evaluatePolicies(
       <div class="challenge-hints">
         <h3>Hints</h3>
         <ul>
-          <li>A const array of roles in ascending order (e.g. `const ROLE_ORDER = ['viewer', 'editor', ...] as const`) lets you compare indexes without any casting — but you'll need to type it so indexOf is safe.</li>
-          <li>For exhaustiveness in a switch/if-else chain over a discriminated union, call assertNever(x) in the default branch — the compiler will error if any variant is unhandled.</li>
-          <li>ActionSummary's mapped type means you must initialise every Action key before returning — consider building a zero-filled record first using a typed array of all Action values.</li>
+          <li>For `paginateAll`, fetch page 1 first and read `totalPages` from the response before looping — the total is unknown until the first successful page arrives.</li>
+          <li>A type guard has the signature `(item: TItem) =&gt; item is TNarrowed`; pass it directly to `Array.prototype.filter` and TypeScript will narrow the return type for you.</li>
+          <li>Branded types require a `unique symbol` key in an intersection — you can cast inside `toValidPageNumber` using a type assertion only at the single trust boundary where you've already validated the value.</li>
         </ul>
       </div>
       </details>
       <div class="challenge-docs">
         <h3>Useful resources</h3>
         <ul>
-          <li><a href="https://www.typescriptlang.org/docs/handbook/2/narrowing.html#discriminated-unions" target="_blank" rel="noopener noreferrer">TypeScript Handbook: Discriminated Unions</a></li>
-          <li><a href="https://www.typescriptlang.org/docs/handbook/2/mapped-types.html" target="_blank" rel="noopener noreferrer">TypeScript Handbook: Mapped Types</a></li>
-          <li><a href="https://www.typescriptlang.org/play#example/nominal-typing" target="_blank" rel="noopener noreferrer">TypeScript Handbook: Branded / Opaque Types (Nominal Typing)</a></li>
-          <li><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise/all" target="_blank" rel="noopener noreferrer">MDN: Promise.all</a></li>
+          <li><a href="https://www.typescriptlang.org/docs/handbook/2/narrowing.html" target="_blank" rel="noopener noreferrer">TypeScript Handbook — Narrowing &amp; Type Guards</a></li>
+          <li><a href="https://www.typescriptlang.org/docs/handbook/2/generics.html" target="_blank" rel="noopener noreferrer">TypeScript Handbook — Generics</a></li>
+          <li><a href="https://www.typescriptlang.org/docs/handbook/utility-types.html" target="_blank" rel="noopener noreferrer">TypeScript Handbook — Utility Types</a></li>
+          <li><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise/allSettled" target="_blank" rel="noopener noreferrer">MDN — Promise.allSettled</a></li>
         </ul>
       </div>
       <div class="cta-row">
-        <a class="cta-button cta-primary" href="https://stackblitz.com/github/niltonheck/typedrop/tree/challenge/2026-11-03" target="_blank" rel="noopener noreferrer">
+        <a class="cta-button cta-primary" href="https://stackblitz.com/github/niltonheck/typedrop/tree/challenge/2026-11-04" target="_blank" rel="noopener noreferrer">
           <img class="sb-icon" src="https://cdn.simpleicons.org/stackblitz/e0e0e0" alt=""> StackBlitz
         </a>
-        <a class="cta-button" href="https://codesandbox.io/p/devbox/github/niltonheck/typedrop/tree/challenge/2026-11-03" target="_blank" rel="noopener noreferrer">
+        <a class="cta-button" href="https://codesandbox.io/p/devbox/github/niltonheck/typedrop/tree/challenge/2026-11-04" target="_blank" rel="noopener noreferrer">
           <img class="csb-icon" src="https://cdn.simpleicons.org/codesandbox/e0e0e0" alt=""> CodeSandbox
         </a>
       </div>
       <div class="clone-section">
         <h3>Or clone locally</h3>
         <div class="clone-box">
-          <code id="clone-cmd">git clone -b challenge/2026-11-03 https://github.com/niltonheck/typedrop.git</code>
+          <code id="clone-cmd">git clone -b challenge/2026-11-04 https://github.com/niltonheck/typedrop.git</code>
           <button class="clone-copy-btn" onclick="navigator.clipboard.writeText(document.getElementById('clone-cmd').textContent).then(()=>{this.textContent='Copied!';this.classList.add('copied');setTimeout(()=>{this.textContent='Copy';this.classList.remove('copied')},2000)})">Copy</button>
         </div>
       </div>

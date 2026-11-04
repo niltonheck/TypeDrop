@@ -9141,5 +9141,41 @@
         "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise/all"
       }
     ]
+  },
+  {
+    "date": "2026-11-04",
+    "name": "Typed API Response Paginator with Result Accumulation",
+    "difficulty": "Medium",
+    "description": "You're building the data-sync layer for a dashboard that ingests records from a paginated REST API. Pages arrive one at a time, each fetch can fail independently, and the final accumulation must be fully typed — distinguishing partial successes from total failures so the UI can render the right state.",
+    "snippet": "// Key types and main function signature\n\nexport type Ok<T>  = { readonly status: \"ok\";  readonly value: T };\nexport type Err<E> = { readonly status: \"err\"; readonly error: E };\nexport type Result<T, E> = Ok<T> | Err<E>;\n\nexport interface ApiPage<TItem> {\n  readonly page: number;\n  readonly totalPages: number;\n  readonly items: ReadonlyArray<TItem>;\n}\n\nexport interface PageFetchError {\n  readonly page: number;\n  readonly reason: string;\n}\n\nexport type PageFetcher<TItem> =\n  (page: number) => Promise<Result<ApiPage<TItem>, PageFetchError>>;\n\nexport interface PaginationSummary<TItem> {\n  readonly items: ReadonlyArray<TItem>;\n  readonly failures: ReadonlyArray<PageFetchError>;\n  readonly totalPagesAttempted: number;\n  readonly outcome: \"full\" | \"partial\" | \"empty\";\n}\n\nexport async function paginateAll<TItem>(\n  fetcher: PageFetcher<TItem>\n): Promise<PaginationSummary<TItem>> { /* TODO */ throw new Error(); }\n",
+    "goals": [
+      "Implement the `ok` and `err` constructor functions that produce correctly-tagged discriminated union values.",
+      "Implement `paginateAll` to sequentially fetch all pages, accumulate items from successes, collect typed errors from failures, and derive the correct `outcome` literal.",
+      "Implement `filterItems` using a generic type guard to narrow `ReadonlyArray<TItem>` to `ReadonlyArray<TNarrowed>`.",
+      "Implement `toValidPageNumber` to validate and return a branded `ValidPageNumber` wrapped in a `Result<ValidPageNumber, string>`."
+    ],
+    "hints": [
+      "For `paginateAll`, fetch page 1 first and read `totalPages` from the response before looping — the total is unknown until the first successful page arrives.",
+      "A type guard has the signature `(item: TItem) => item is TNarrowed`; pass it directly to `Array.prototype.filter` and TypeScript will narrow the return type for you.",
+      "Branded types require a `unique symbol` key in an intersection — you can cast inside `toValidPageNumber` using a type assertion only at the single trust boundary where you've already validated the value."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript Handbook — Narrowing & Type Guards",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html"
+      },
+      {
+        "title": "TypeScript Handbook — Generics",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/generics.html"
+      },
+      {
+        "title": "TypeScript Handbook — Utility Types",
+        "url": "https://www.typescriptlang.org/docs/handbook/utility-types.html"
+      },
+      {
+        "title": "MDN — Promise.allSettled",
+        "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise/allSettled"
+      }
+    ]
   }
 ]
