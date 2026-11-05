@@ -9177,5 +9177,41 @@
         "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise/allSettled"
       }
     ]
+  },
+  {
+    "date": "2026-11-05",
+    "name": "Typed Contact Address Book with Search & Grouping",
+    "difficulty": "Easy",
+    "description": "You're building the contacts module for a lightweight CRM. Raw contact records arrive from a form submission, and your job is to validate them, normalize their phone numbers, search by field, and group them — with the compiler enforcing every field shape, group key, and search result type.",
+    "snippet": "\ntype ContactGroup = \"family\" | \"friend\" | \"colleague\" | \"acquaintance\";\ntype PhoneType    = \"mobile\" | \"home\" | \"work\";\ntype CountryCode  = string & { readonly __brand: \"CountryCode\" };\n\ninterface Contact {\n  readonly id:        string;\n  readonly firstName: string;\n  readonly lastName:  string;\n  readonly email:     string;       // lowercased + trimmed\n  readonly phones:    readonly PhoneNumber[];\n  readonly group:     ContactGroup;\n  readonly country:   CountryCode;\n  readonly fullName:  string;       // derived: \"firstName lastName\"\n}\n\n/** Only string-valued keys of Contact — enforced by a mapped type */\ntype StringContactField = {\n  [K in keyof Contact]: Contact[K] extends string ? K : never;\n}[keyof Contact];\n\nexport function validateContact(raw: RawContact): ValidationResult { ... }\nexport function searchContacts(contacts: readonly Contact[], query: SearchQuery): readonly Contact[] { ... }\nexport function groupByCategory(contacts: readonly Contact[]): Record<ContactGroup, readonly Contact[]> { ... }\nexport function summarizeGroup(group: ContactGroup, contacts: readonly Contact[]): string { ... }\n",
+    "goals": [
+      "Implement `validateContact` to narrow all `unknown` fields, collect every error, normalize email and phone digits, brand the country code, and return a discriminated-union result.",
+      "Implement `searchContacts` using the `StringContactField` mapped type so only string-valued Contact fields are valid search targets.",
+      "Implement `groupByCategory` returning a `Record<ContactGroup, readonly Contact[]>` with all four keys always present.",
+      "Implement `summarizeGroup` to format a human-readable bucket summary, capitalizing the group label and handling the empty-group case."
+    ],
+    "hints": [
+      "For `StringContactField`, a mapped type with a conditional (`extends string ? K : never`) plus an indexed lookup (`[keyof Contact]`) will distribute over all keys automatically.",
+      "Brand `CountryCode` by casting through an intersection — but remember you can't use `as`; consider a helper function with an explicit return type of `CountryCode` that validates the format first.",
+      "For `groupByCategory`, seed your accumulator with all four `ContactGroup` keys mapped to `[]` using `Object.fromEntries` or a typed initial value satisfying `Record<ContactGroup, Contact[]>`."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript Handbook – Mapped Types",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/mapped-types.html"
+      },
+      {
+        "title": "TypeScript Handbook – Narrowing (typeof, Array.isArray)",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html"
+      },
+      {
+        "title": "TypeScript Handbook – Discriminated Unions",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html#discriminated-unions"
+      },
+      {
+        "title": "TypeScript Handbook – Utility Types (Record, keyof)",
+        "url": "https://www.typescriptlang.org/docs/handbook/utility-types.html"
+      }
+    ]
   }
 ]
