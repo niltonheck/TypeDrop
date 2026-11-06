@@ -41,18 +41,18 @@
     <!-- CHALLENGE_START -->
     <section class="challenge-card">
       <div class="challenge-header">
-        <span class="challenge-date">2026-11-05</span>
-        <span class="badge easy">Easy</span>
+        <span class="challenge-date">2026-11-06</span>
+        <span class="badge medium">Medium</span>
       </div>
-      <h2>Typed Contact Address Book with Search &amp; Grouping</h2>
-      <p>You're building the contacts module for a lightweight CRM. Raw contact records arrive from a form submission, and your job is to validate them, normalize their phone numbers, search by field, and group them — with the compiler enforcing every field shape, group key, and search result type.</p>
+      <h2>Typed Event Stream Aggregator with Windowed Rollups</h2>
+      <p>You're building the analytics pipeline for a real-time monitoring dashboard. Raw telemetry events stream in from multiple services, and your job is to validate them, bucket them into fixed time windows, and compute per-metric rollups — with the compiler enforcing every event shape, window boundary, aggregation kind, and output record.</p>
       <div class="challenge-goals">
         <h3>Goals</h3>
         <ul>
-          <li>Implement `validateContact` to narrow all `unknown` fields, collect every error, normalize email and phone digits, brand the country code, and return a discriminated-union result.</li>
-          <li>Implement `searchContacts` using the `StringContactField` mapped type so only string-valued Contact fields are valid search targets.</li>
-          <li>Implement `groupByCategory` returning a `Record&lt;ContactGroup, readonly Contact[]&gt;` with all four keys always present.</li>
-          <li>Implement `summarizeGroup` to format a human-readable bucket summary, capitalizing the group label and handling the empty-group case.</li>
+          <li>Implement `validateEvent` to narrow `unknown` → `TelemetryEvent` using a `ValidationResult` discriminated union, checking every field at runtime without `any` or type assertions.</li>
+          <li>Implement `assignWindow` and `groupByWindow` to correctly bucket events into fixed-size time windows and index them by a `(windowKey × serviceId × metric)` key path.</li>
+          <li>Implement `aggregate` with an exhaustive dispatch over every `AggregationKind` literal so the compiler forces you to handle all five strategies.</li>
+          <li>Wire everything together in `processEventStream`, using the `MetricAggregationConfig` mapped type to look up the canonical aggregation strategy per metric and return sorted `RollupRecord[]` alongside typed rejected entries.</li>
         </ul>
       </div>
       <div class="code-block">
@@ -62,65 +62,72 @@
           <span class="dot green"></span>
           <span class="code-block-title">challenge.ts</span>
         </div>
-        <pre><code class="language-typescript">
-type ContactGroup = &quot;family&quot; | &quot;friend&quot; | &quot;colleague&quot; | &quot;acquaintance&quot;;
-type PhoneType    = &quot;mobile&quot; | &quot;home&quot; | &quot;work&quot;;
-type CountryCode  = string &amp; { readonly __brand: &quot;CountryCode&quot; };
+        <pre><code class="language-typescript">// Key types &amp; main pipeline signature
 
-interface Contact {
-  readonly id:        string;
-  readonly firstName: string;
-  readonly lastName:  string;
-  readonly email:     string;       // lowercased + trimmed
-  readonly phones:    readonly PhoneNumber[];
-  readonly group:     ContactGroup;
-  readonly country:   CountryCode;
-  readonly fullName:  string;       // derived: &quot;firstName lastName&quot;
+type MetricName = &quot;cpu_usage&quot; | &quot;memory_usage&quot; | &quot;request_latency&quot; | &quot;error_rate&quot; | &quot;throughput&quot;;
+type AggregationKind = &quot;sum&quot; | &quot;avg&quot; | &quot;min&quot; | &quot;max&quot; | &quot;count&quot;;
+
+type ValidationResult&lt;T&gt; =
+  | { readonly ok: true;  readonly data: T }
+  | { readonly ok: false; readonly error: string };
+
+interface TelemetryEvent {
+  readonly serviceId: string;
+  readonly metric: MetricName;
+  readonly value: number;
+  readonly timestampMs: number;
+  readonly aggregation: AggregationKind;
 }
 
-/** Only string-valued keys of Contact — enforced by a mapped type */
-type StringContactField = {
-  [K in keyof Contact]: Contact[K] extends string ? K : never;
-}[keyof Contact];
+type MetricAggregationConfig = { [K in MetricName]: AggregationKind };
 
-export function validateContact(raw: RawContact): ValidationResult { ... }
-export function searchContacts(contacts: readonly Contact[], query: SearchQuery): readonly Contact[] { ... }
-export function groupByCategory(contacts: readonly Contact[]): Record&lt;ContactGroup, readonly Contact[]&gt; { ... }
-export function summarizeGroup(group: ContactGroup, contacts: readonly Contact[]): string { ... }
-</code></pre>
+interface RollupRecord {
+  readonly window: { startMs: number; endMs: number };
+  readonly serviceId: string;
+  readonly metric: MetricName;
+  readonly aggregation: AggregationKind;
+  readonly result: number;
+  readonly eventCount: number;
+}
+
+declare function processEventStream(
+  rawEvents: readonly unknown[],
+  windowSizeMs: number,
+  config: MetricAggregationConfig
+): { rollups: RollupRecord[]; rejected: Array&lt;ValidationResult&lt;never&gt;&gt; };</code></pre>
       </div>
       <details class="challenge-hints-details">
         <summary>Hints (click to reveal)</summary>
       <div class="challenge-hints">
         <h3>Hints</h3>
         <ul>
-          <li>For `StringContactField`, a mapped type with a conditional (`extends string ? K : never`) plus an indexed lookup (`[keyof Contact]`) will distribute over all keys automatically.</li>
-          <li>Brand `CountryCode` by casting through an intersection — but remember you can't use `as`; consider a helper function with an explicit return type of `CountryCode` that validates the format first.</li>
-          <li>For `groupByCategory`, seed your accumulator with all four `ContactGroup` keys mapped to `[]` using `Object.fromEntries` or a typed initial value satisfying `Record&lt;ContactGroup, Contact[]&gt;`.</li>
+          <li>For `validateEvent`, build an array of the valid `MetricName` literals and use `Array.prototype.includes` — but note you'll need to widen the type correctly so the compiler accepts an `unknown` value as the argument.</li>
+          <li>The `WindowedGroups` type uses `Partial&lt;Record&lt;MetricName, TelemetryEvent[]&gt;&gt;` for the innermost level — use the nullish-coalescing assignment operator (`??=`) to lazily initialise each level as you iterate.</li>
+          <li>In `processEventStream`, collect failures as `ValidationResult&lt;never&gt;` — a `ValidationResult&lt;TelemetryEvent&gt;` where `ok === false` is assignable to `ValidationResult&lt;never&gt;` because the `data` field is absent on the false branch.</li>
         </ul>
       </div>
       </details>
       <div class="challenge-docs">
         <h3>Useful resources</h3>
         <ul>
-          <li><a href="https://www.typescriptlang.org/docs/handbook/2/mapped-types.html" target="_blank" rel="noopener noreferrer">TypeScript Handbook – Mapped Types</a></li>
-          <li><a href="https://www.typescriptlang.org/docs/handbook/2/narrowing.html" target="_blank" rel="noopener noreferrer">TypeScript Handbook – Narrowing (typeof, Array.isArray)</a></li>
-          <li><a href="https://www.typescriptlang.org/docs/handbook/2/narrowing.html#discriminated-unions" target="_blank" rel="noopener noreferrer">TypeScript Handbook – Discriminated Unions</a></li>
-          <li><a href="https://www.typescriptlang.org/docs/handbook/utility-types.html" target="_blank" rel="noopener noreferrer">TypeScript Handbook – Utility Types (Record, keyof)</a></li>
+          <li><a href="https://www.typescriptlang.org/docs/handbook/2/mapped-types.html" target="_blank" rel="noopener noreferrer">TypeScript — Mapped Types</a></li>
+          <li><a href="https://www.typescriptlang.org/docs/handbook/2/narrowing.html" target="_blank" rel="noopener noreferrer">TypeScript — Narrowing (type guards &amp; unknown)</a></li>
+          <li><a href="https://www.typescriptlang.org/docs/handbook/2/narrowing.html#discriminated-unions" target="_blank" rel="noopener noreferrer">TypeScript — Discriminated Unions</a></li>
+          <li><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/includes" target="_blank" rel="noopener noreferrer">MDN — Array.prototype.includes</a></li>
         </ul>
       </div>
       <div class="cta-row">
-        <a class="cta-button cta-primary" href="https://stackblitz.com/github/niltonheck/typedrop/tree/challenge/2026-11-05" target="_blank" rel="noopener noreferrer">
+        <a class="cta-button cta-primary" href="https://stackblitz.com/github/niltonheck/typedrop/tree/challenge/2026-11-06" target="_blank" rel="noopener noreferrer">
           <img class="sb-icon" src="https://cdn.simpleicons.org/stackblitz/e0e0e0" alt=""> StackBlitz
         </a>
-        <a class="cta-button" href="https://codesandbox.io/p/devbox/github/niltonheck/typedrop/tree/challenge/2026-11-05" target="_blank" rel="noopener noreferrer">
+        <a class="cta-button" href="https://codesandbox.io/p/devbox/github/niltonheck/typedrop/tree/challenge/2026-11-06" target="_blank" rel="noopener noreferrer">
           <img class="csb-icon" src="https://cdn.simpleicons.org/codesandbox/e0e0e0" alt=""> CodeSandbox
         </a>
       </div>
       <div class="clone-section">
         <h3>Or clone locally</h3>
         <div class="clone-box">
-          <code id="clone-cmd">git clone -b challenge/2026-11-05 https://github.com/niltonheck/typedrop.git</code>
+          <code id="clone-cmd">git clone -b challenge/2026-11-06 https://github.com/niltonheck/typedrop.git</code>
           <button class="clone-copy-btn" onclick="navigator.clipboard.writeText(document.getElementById('clone-cmd').textContent).then(()=>{this.textContent='Copied!';this.classList.add('copied');setTimeout(()=>{this.textContent='Copy';this.classList.remove('copied')},2000)})">Copy</button>
         </div>
       </div>

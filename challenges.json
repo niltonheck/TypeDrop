@@ -9213,5 +9213,41 @@
         "url": "https://www.typescriptlang.org/docs/handbook/utility-types.html"
       }
     ]
+  },
+  {
+    "date": "2026-11-06",
+    "name": "Typed Event Stream Aggregator with Windowed Rollups",
+    "difficulty": "Medium",
+    "description": "You're building the analytics pipeline for a real-time monitoring dashboard. Raw telemetry events stream in from multiple services, and your job is to validate them, bucket them into fixed time windows, and compute per-metric rollups — with the compiler enforcing every event shape, window boundary, aggregation kind, and output record.",
+    "snippet": "// Key types & main pipeline signature\n\ntype MetricName = \"cpu_usage\" | \"memory_usage\" | \"request_latency\" | \"error_rate\" | \"throughput\";\ntype AggregationKind = \"sum\" | \"avg\" | \"min\" | \"max\" | \"count\";\n\ntype ValidationResult<T> =\n  | { readonly ok: true;  readonly data: T }\n  | { readonly ok: false; readonly error: string };\n\ninterface TelemetryEvent {\n  readonly serviceId: string;\n  readonly metric: MetricName;\n  readonly value: number;\n  readonly timestampMs: number;\n  readonly aggregation: AggregationKind;\n}\n\ntype MetricAggregationConfig = { [K in MetricName]: AggregationKind };\n\ninterface RollupRecord {\n  readonly window: { startMs: number; endMs: number };\n  readonly serviceId: string;\n  readonly metric: MetricName;\n  readonly aggregation: AggregationKind;\n  readonly result: number;\n  readonly eventCount: number;\n}\n\ndeclare function processEventStream(\n  rawEvents: readonly unknown[],\n  windowSizeMs: number,\n  config: MetricAggregationConfig\n): { rollups: RollupRecord[]; rejected: Array<ValidationResult<never>> };",
+    "goals": [
+      "Implement `validateEvent` to narrow `unknown` → `TelemetryEvent` using a `ValidationResult` discriminated union, checking every field at runtime without `any` or type assertions.",
+      "Implement `assignWindow` and `groupByWindow` to correctly bucket events into fixed-size time windows and index them by a `(windowKey × serviceId × metric)` key path.",
+      "Implement `aggregate` with an exhaustive dispatch over every `AggregationKind` literal so the compiler forces you to handle all five strategies.",
+      "Wire everything together in `processEventStream`, using the `MetricAggregationConfig` mapped type to look up the canonical aggregation strategy per metric and return sorted `RollupRecord[]` alongside typed rejected entries."
+    ],
+    "hints": [
+      "For `validateEvent`, build an array of the valid `MetricName` literals and use `Array.prototype.includes` — but note you'll need to widen the type correctly so the compiler accepts an `unknown` value as the argument.",
+      "The `WindowedGroups` type uses `Partial<Record<MetricName, TelemetryEvent[]>>` for the innermost level — use the nullish-coalescing assignment operator (`??=`) to lazily initialise each level as you iterate.",
+      "In `processEventStream`, collect failures as `ValidationResult<never>` — a `ValidationResult<TelemetryEvent>` where `ok === false` is assignable to `ValidationResult<never>` because the `data` field is absent on the false branch."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript — Mapped Types",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/mapped-types.html"
+      },
+      {
+        "title": "TypeScript — Narrowing (type guards & unknown)",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html"
+      },
+      {
+        "title": "TypeScript — Discriminated Unions",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html#discriminated-unions"
+      },
+      {
+        "title": "MDN — Array.prototype.includes",
+        "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/includes"
+      }
+    ]
   }
 ]
