@@ -9249,5 +9249,41 @@
         "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/includes"
       }
     ]
+  },
+  {
+    "date": "2026-11-07",
+    "name": "Typed Middleware Pipeline Executor with Typed Context & Error Lanes",
+    "difficulty": "Hard",
+    "description": "You're building the request-processing core for an API gateway. Every inbound request passes through a configurable middleware pipeline — authentication, rate-limiting, transformation, and logging — where each middleware can enrich a shared typed context, short-circuit with a typed error, or pass control to the next stage. The compiler must enforce every middleware shape, context mutation, error variant, and exhaustive final outcome with no escape hatches.",
+    "snippet": "// Core types — understand these before implementing\n\ntype RequestId = string & { readonly __brand: \"RequestId\" };\ntype UserId    = string & { readonly __brand: \"UserId\" };\n\ninterface PipelineContext<TExtra extends Record<string, unknown> = Record<never, never>> {\n  readonly requestId: RequestId;\n  readonly method: \"GET\" | \"POST\" | \"PUT\" | \"DELETE\" | \"PATCH\";\n  readonly path: string;\n  readonly headers: Readonly<Record<string, string>>;\n  readonly receivedAt: Date;\n  extra: TExtra;\n}\n\n// TODO: MiddlewareResult<TOut> — discriminated union: \"next\" | \"halt\" | \"respond\"\ntype MiddlewareResult<TOut extends Record<string, unknown>> = never; // stub\n\n// TODO: Middleware<TIn, TOut extends TIn> — async function type\ntype Middleware<TIn extends Record<string, unknown>, TOut extends TIn> = never; // stub\n\n// TODO: PipelineOutcome<TFinal> — discriminated union: \"completed\" | \"responded\" | \"halted\" | \"threw\"\ntype PipelineOutcome<TFinal extends Record<string, unknown>> = never; // stub\n\n// Main entry point\nasync function runPipeline<TFinal extends Record<string, unknown>>(\n  initialContext: PipelineContext<Record<never, never>>,\n  middlewares: ReadonlyArray<Middleware<Record<string, unknown>, Record<string, unknown>>>,\n): Promise<PipelineOutcome<TFinal>> { /* TODO */ throw new Error(); }\n",
+    "goals": [
+      "Define `MiddlewareResult<TOut>` and `PipelineOutcome<TFinal>` as exhaustive discriminated unions with the correct generic constraints.",
+      "Implement `runPipeline` to execute middleware sequentially, threading enriched context forward and capturing every halt/respond/throw outcome with the correct variant.",
+      "Implement `reportOutcome` with a fully exhaustive outer switch over `PipelineOutcome` variants AND an inner exhaustive switch over `PipelineError.kind` for the 'halted' branch.",
+      "Implement the three middleware factories (`makeAuthMiddleware`, `makeRateLimitMiddleware`, `makeLoggingMiddleware`) with their precise typed signatures and correct halt/next logic."
+    ],
+    "hints": [
+      "Start with the discriminated unions (`MiddlewareResult`, `PipelineOutcome`, `PipelineError`) — all implementation depends on getting those shapes right first.",
+      "For exhaustive switches, add a `never`-asserting default branch: `const _exhaustive: never = x; throw new Error(...)` — the compiler will flag any unhandled variant.",
+      "The `Middleware<TIn, TOut extends TIn>` constraint means `TOut` must be a superset of `TIn`; when a middleware adds fields, express it as `TIn & { newField: Type }` for `TOut`."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript Handbook — Discriminated Unions",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html#discriminated-unions"
+      },
+      {
+        "title": "TypeScript Handbook — Generics with Constraints",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/generics.html#using-type-parameters-in-generic-constraints"
+      },
+      {
+        "title": "TypeScript Handbook — Narrowing & Exhaustive Checks",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html#exhaustiveness-checking"
+      },
+      {
+        "title": "TypeScript 5.x — `satisfies` operator & branded types patterns",
+        "url": "https://www.typescriptlang.org/docs/handbook/release-notes/typescript-4-9.html#the-satisfies-operator"
+      }
+    ]
   }
 ]
