@@ -9285,5 +9285,41 @@
         "url": "https://www.typescriptlang.org/docs/handbook/release-notes/typescript-4-9.html#the-satisfies-operator"
       }
     ]
+  },
+  {
+    "date": "2026-11-08",
+    "name": "Typed Shopping Cart with Discount Rules",
+    "difficulty": "Easy",
+    "description": "You're building the cart engine for a small e-commerce storefront. Products come in different categories, discounts are expressed as typed rules (percentage off, fixed amount off, or buy-X-get-Y free), and the compiler must enforce every product shape, discount variant, and line-item calculation with no escape hatches.",
+    "snippet": "// Key types and main function signatures:\n\ntype Category = \"electronics\" | \"clothing\" | \"food\";\n\ntype DiscountRule =\n  | { kind: \"percentage\"; percent: number }\n  | { kind: \"fixed\"; amountInCents: number }\n  | { kind: \"bxgy\"; buyQty: number; getQty: number };\n\ninterface CartItem {\n  product: Product;   // has id: ProductId, category: Category, priceInCents: number\n  quantity: number;\n  discount: DiscountRule | null;\n}\n\n// Functions you must implement:\nfunction makeProductId(raw: string): ProductId;\nfunction calcLineDiscount(item: CartItem): number;\nfunction buildCartSummary(items: ReadonlyArray<CartItem>): CartSummary;\nfunction filterByCategory<C extends Category>(\n  summary: CartSummary,\n  category: C\n): ReadonlyArray<CartItem>;",
+    "goals": [
+      "Define a branded `ProductId` type and the `Category` literal union.",
+      "Implement `calcLineDiscount` using exhaustive narrowing over the `DiscountRule` discriminated union.",
+      "Implement `buildCartSummary` to correctly compute subtotal, total discount, and a non-negative total.",
+      "Implement `filterByCategory` as a generic function constrained to `Category`."
+    ],
+    "hints": [
+      "Use a `switch` statement on `item.discount.kind` inside `calcLineDiscount` — TypeScript will narrow each branch automatically.",
+      "For the `bxgy` rule, the number of free units per group is `getQty`, and a group has size `buyQty + getQty`.",
+      "The branded type `Brand<T, B>` works by intersecting `T` with an object that has a unique symbol key — you just need to cast inside `makeProductId`."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript – Discriminated Unions",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html#discriminated-unions"
+      },
+      {
+        "title": "TypeScript – Generics with Constraints",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/generics.html#generic-constraints"
+      },
+      {
+        "title": "TypeScript – Literal Types",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/everyday-types.html#literal-types"
+      },
+      {
+        "title": "TypeScript – Utility Types (ReadonlyArray)",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/objects.html#the-readonly-modifier"
+      }
+    ]
   }
 ]
