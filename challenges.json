@@ -9321,5 +9321,41 @@
         "url": "https://www.typescriptlang.org/docs/handbook/2/objects.html#the-readonly-modifier"
       }
     ]
+  },
+  {
+    "date": "2026-11-09",
+    "name": "Typed Distributed Task Scheduler with Retry Policies & Concurrency Limits",
+    "difficulty": "Hard",
+    "description": "You're building the job-execution engine for a distributed background worker system. Tasks arrive with heterogeneous payloads, each task type carries its own retry policy (fixed delay, exponential backoff, or no retry), execution must respect a global concurrency cap, and the final run report must distinguish succeeded, exhausted, and cancelled outcomes — all enforced by the compiler with no escape hatches.",
+    "snippet": "// Core types and main function signature preview\n\ntype RetryPolicy =\n  | { kind: \"none\" }\n  | { kind: \"fixed\";       delayMs: number; maxAttempts: number }\n  | { kind: \"exponential\"; baseDelayMs: number; maxAttempts: number; factor: number };\n\ntype Task<TPayload> =\n  | { type: \"http\";    id: string; payload: HttpPayload;    retryPolicy: RetryPolicy }\n  | { type: \"compute\"; id: string; payload: ComputePayload; retryPolicy: RetryPolicy }\n  | { type: \"notify\";  id: string; payload: NotifyPayload;  retryPolicy: RetryPolicy };\n\ntype TaskOutcome<TPayload> =\n  | { status: \"succeeded\"; task: Task<TPayload>; result: string;    attempts: number }\n  | { status: \"exhausted\"; task: Task<TPayload>; lastError: string; attempts: number }\n  | { status: \"cancelled\"; task: Task<TPayload>; reason: string };\n\ntype TaskExecutor<TPayload> = (task: Task<TPayload>) => Promise<string>;\n\nasync function runScheduler<TPayload>(\n  tasks: Task<TPayload>[],\n  executor: TaskExecutor<TPayload>,\n  config: SchedulerConfig,\n): Promise<RunReport<TPayload>> { /* TODO */ }\n",
+    "goals": [
+      "Define all discriminated unions (RetryPolicy, Task<TPayload>, TaskOutcome<TPayload>) with no optional fields and no `any`.",
+      "Implement `computeNextDelay` with exhaustive narrowing over all three RetryPolicy variants, returning the correct delay or `null` when retries are exhausted.",
+      "Implement `runScheduler` respecting the concurrencyLimit slot pool, per-task retry loops with computed delays, and global wall-clock cancellation.",
+      "Implement `partitionOutcomes` returning three arrays each narrowed to the correct TaskOutcome variant via intersection types."
+    ],
+    "hints": [
+      "For the concurrency pool, keep a counter of active slots and use a queue of pending Promises — `Promise.race` over a set of running tasks is one clean approach.",
+      "For `computeNextDelay`, a `switch` on `policy.kind` gives you exhaustive narrowing; the exponential formula is `baseDelayMs * factor ** (attempt - 1)` and should return `null` when `attempt >= maxAttempts`.",
+      "For `partitionOutcomes`, filter with a type predicate `(o): o is TaskOutcome<TPayload> & { status: 'succeeded' } => o.status === 'succeeded'` to get compiler-narrowed arrays without assertions."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript Handbook — Discriminated Unions",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html#discriminated-unions"
+      },
+      {
+        "title": "TypeScript Handbook — Generics",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/generics.html"
+      },
+      {
+        "title": "MDN — Promise.race()",
+        "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise/race"
+      },
+      {
+        "title": "TypeScript Handbook — Using Type Predicates",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html#using-type-predicates"
+      }
+    ]
   }
 ]
