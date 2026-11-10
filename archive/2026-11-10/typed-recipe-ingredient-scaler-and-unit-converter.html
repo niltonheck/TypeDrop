@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TypeDrop — Typed Recipe Ingredient Scaler &amp; Unit Converter</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Permanent+Marker&display=swap">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/fontsource/fonts/0x-proto@latest/latin-400-normal.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/fontsource/fonts/0x-proto@latest/latin-700-normal.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1/themes/prism-tomorrow.min.css">
+  <link rel="icon" href="../../misc/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="../../style.css">
+</head>
+<body>
+  <main>
+    <header>
+      <h1><a href="../../index.html" style="color: inherit; text-decoration: none;">TypeDrop</a></h1>
+      <p class="tagline">2026-11-10 Challenge</p>
+    </header>
+
+    <section class="challenge-card">
+      <div class="challenge-header">
+        <span class="challenge-date">2026-11-10</span>
+        <span class="badge medium">Medium</span>
+      </div>
+      <h2>Typed Recipe Ingredient Scaler &amp; Unit Converter</h2>
+      <p>You're building the recipe engine for a meal-planning app. Recipes list ingredients with typed quantities and units, and your job is to scale them to a target serving count, convert between unit systems (metric ↔ imperial), and produce a normalized shopping list — with the compiler enforcing every unit family, conversion path, ingredient shape, and aggregated result type.</p>
+      <div class="challenge-goals">
+        <h3>Goals</h3>
+        <ul>
+          <li>Implement branded-type constructors (`toServingCount`, `toQuantity`) that validate at runtime and narrow at compile time without using `as`.</li>
+          <li>Fill in `UNIT_TO_BASE` using the `satisfies Record&lt;Unit, { baseValue: number }&gt;` pattern so the compiler enforces exhaustiveness across all 11 units.</li>
+          <li>Implement the three overloaded signatures of `convertMeasurement` using `Extract&lt;Measurement, { kind: ... }&gt;` and enforce unit-family safety at both the type and runtime level.</li>
+          <li>Implement `buildShoppingList` to convert all ingredients to canonical base units, aggregate same-name/same-family quantities, handle name collisions across families with a kind suffix, and return entries sorted alphabetically.</li>
+        </ul>
+      </div>
+      <div class="code-block">
+        <div class="code-block-header">
+          <span class="dot red"></span>
+          <span class="dot yellow"></span>
+          <span class="dot green"></span>
+          <span class="code-block-title">challenge.ts</span>
+        </div>
+        <pre><code class="language-typescript">// Key types &amp; main signatures — preview
+
+type ServingCount = number &amp; { readonly __brand: &quot;ServingCount&quot; };
+type Quantity     = number &amp; { readonly __brand: &quot;Quantity&quot; };
+
+type Measurement =
+  | { readonly kind: &quot;volume&quot;; readonly quantity: Quantity; readonly unit: VolumeUnit }
+  | { readonly kind: &quot;mass&quot;;   readonly quantity: Quantity; readonly unit: MassUnit   }
+  | { readonly kind: &quot;count&quot;;  readonly quantity: Quantity; readonly unit: CountUnit  };
+
+interface Recipe {
+  readonly name: string;
+  readonly servings: ServingCount;
+  readonly ingredients: ReadonlyArray&lt;Ingredient&gt;;
+}
+
+// Scale a recipe to a new serving count
+function scaleRecipe(recipe: Recipe, targetServings: ServingCount): Recipe;
+
+// Convert a measurement to a different unit in the same family
+function convertMeasurement(m: Extract&lt;Measurement, { kind: &quot;volume&quot; }&gt;, targetUnit: VolumeUnit): Extract&lt;Measurement, { kind: &quot;volume&quot; }&gt;;
+function convertMeasurement(m: Extract&lt;Measurement, { kind: &quot;mass&quot;   }&gt;, targetUnit: MassUnit  ): Extract&lt;Measurement, { kind: &quot;mass&quot;   }&gt;;
+function convertMeasurement(m: Extract&lt;Measurement, { kind: &quot;count&quot;  }&gt;, targetUnit: CountUnit ): Extract&lt;Measurement, { kind: &quot;count&quot;  }&gt;;
+
+// Aggregate scaled recipes into a sorted shopping list
+function buildShoppingList(scaledRecipes: ReadonlyArray&lt;Recipe&gt;): ShoppingListEntry[];
+</code></pre>
+      </div>
+      <details class="challenge-hints-details">
+        <summary>Hints (click to reveal)</summary>
+      <div class="challenge-hints">
+        <h3>Hints</h3>
+        <ul>
+          <li>Branded types can't use `as` — instead, write a regular type guard (`function isPositiveInt(n: number): n is ServingCount`) and return the value through that guard.</li>
+          <li>For `UNIT_TO_BASE`, start with the `satisfies` keyword: the compiler will immediately tell you which unit keys are missing — use that as your to-do list.</li>
+          <li>In `convertMeasurement`, the overload signatures do the family-safety work; the single implementation signature accepts `Measurement` and `Unit` — use `UNIT_TO_BASE` and the `kind` discriminant to branch correctly.</li>
+        </ul>
+      </div>
+      </details>
+      <div class="challenge-docs">
+        <h3>Useful resources</h3>
+        <ul>
+          <li><a href="https://www.typescriptlang.org/docs/handbook/2/narrowing.html" target="_blank" rel="noopener noreferrer">TypeScript Handbook — Branded / Nominal Types</a></li>
+          <li><a href="https://www.typescriptlang.org/docs/handbook/2/functions.html#function-overloads" target="_blank" rel="noopener noreferrer">TypeScript Handbook — Function Overloads</a></li>
+          <li><a href="https://www.typescriptlang.org/docs/handbook/release-notes/typescript-4-9.html#the-satisfies-operator" target="_blank" rel="noopener noreferrer">TypeScript Handbook — The `satisfies` Operator</a></li>
+          <li><a href="https://www.typescriptlang.org/docs/handbook/utility-types.html#extracttype-union" target="_blank" rel="noopener noreferrer">TypeScript Utility Types — Extract&lt;Type, Union&gt;</a></li>
+        </ul>
+      </div>
+      <div class="cta-row">
+        <a class="cta-button cta-primary" href="https://stackblitz.com/github/niltonheck/typedrop/tree/challenge/2026-11-10" target="_blank" rel="noopener noreferrer">
+          <img class="sb-icon" src="https://cdn.simpleicons.org/stackblitz/e0e0e0" alt=""> StackBlitz
+        </a>
+        <a class="cta-button" href="https://codesandbox.io/p/devbox/github/niltonheck/typedrop/tree/challenge/2026-11-10" target="_blank" rel="noopener noreferrer">
+          <img class="csb-icon" src="https://cdn.simpleicons.org/codesandbox/e0e0e0" alt=""> CodeSandbox
+        </a>
+      </div>
+      <div class="clone-section">
+        <h3>Or clone locally</h3>
+        <div class="clone-box">
+          <code id="clone-cmd">git clone -b challenge/2026-11-10 https://github.com/niltonheck/typedrop.git</code>
+          <button class="clone-copy-btn" onclick="navigator.clipboard.writeText(document.getElementById('clone-cmd').textContent).then(()=>{this.textContent='Copied!';this.classList.add('copied');setTimeout(()=>{this.textContent='Copy';this.classList.remove('copied')},2000)})">Copy</button>
+        </div>
+      </div>
+    </section>
+
+    <footer>
+      <p>
+        <a href="../../index.html">&larr; Today's challenge</a>
+        &middot;
+        <a href="../../archive.html">Archive</a>
+      </p>
+    </footer>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1/prism.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1/components/prism-typescript.min.js"></script>
+  <script data-goatcounter="https://niltonheck.goatcounter.com/count"
+        async src="//gc.zgo.at/count.js"></script>
+</body>
+</html>

@@ -9357,5 +9357,41 @@
         "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html#using-type-predicates"
       }
     ]
+  },
+  {
+    "date": "2026-11-10",
+    "name": "Typed Recipe Ingredient Scaler & Unit Converter",
+    "difficulty": "Medium",
+    "description": "You're building the recipe engine for a meal-planning app. Recipes list ingredients with typed quantities and units, and your job is to scale them to a target serving count, convert between unit systems (metric ↔ imperial), and produce a normalized shopping list — with the compiler enforcing every unit family, conversion path, ingredient shape, and aggregated result type.",
+    "snippet": "// Key types & main signatures — preview\n\ntype ServingCount = number & { readonly __brand: \"ServingCount\" };\ntype Quantity     = number & { readonly __brand: \"Quantity\" };\n\ntype Measurement =\n  | { readonly kind: \"volume\"; readonly quantity: Quantity; readonly unit: VolumeUnit }\n  | { readonly kind: \"mass\";   readonly quantity: Quantity; readonly unit: MassUnit   }\n  | { readonly kind: \"count\";  readonly quantity: Quantity; readonly unit: CountUnit  };\n\ninterface Recipe {\n  readonly name: string;\n  readonly servings: ServingCount;\n  readonly ingredients: ReadonlyArray<Ingredient>;\n}\n\n// Scale a recipe to a new serving count\nfunction scaleRecipe(recipe: Recipe, targetServings: ServingCount): Recipe;\n\n// Convert a measurement to a different unit in the same family\nfunction convertMeasurement(m: Extract<Measurement, { kind: \"volume\" }>, targetUnit: VolumeUnit): Extract<Measurement, { kind: \"volume\" }>;\nfunction convertMeasurement(m: Extract<Measurement, { kind: \"mass\"   }>, targetUnit: MassUnit  ): Extract<Measurement, { kind: \"mass\"   }>;\nfunction convertMeasurement(m: Extract<Measurement, { kind: \"count\"  }>, targetUnit: CountUnit ): Extract<Measurement, { kind: \"count\"  }>;\n\n// Aggregate scaled recipes into a sorted shopping list\nfunction buildShoppingList(scaledRecipes: ReadonlyArray<Recipe>): ShoppingListEntry[];\n",
+    "goals": [
+      "Implement branded-type constructors (`toServingCount`, `toQuantity`) that validate at runtime and narrow at compile time without using `as`.",
+      "Fill in `UNIT_TO_BASE` using the `satisfies Record<Unit, { baseValue: number }>` pattern so the compiler enforces exhaustiveness across all 11 units.",
+      "Implement the three overloaded signatures of `convertMeasurement` using `Extract<Measurement, { kind: ... }>` and enforce unit-family safety at both the type and runtime level.",
+      "Implement `buildShoppingList` to convert all ingredients to canonical base units, aggregate same-name/same-family quantities, handle name collisions across families with a kind suffix, and return entries sorted alphabetically."
+    ],
+    "hints": [
+      "Branded types can't use `as` — instead, write a regular type guard (`function isPositiveInt(n: number): n is ServingCount`) and return the value through that guard.",
+      "For `UNIT_TO_BASE`, start with the `satisfies` keyword: the compiler will immediately tell you which unit keys are missing — use that as your to-do list.",
+      "In `convertMeasurement`, the overload signatures do the family-safety work; the single implementation signature accepts `Measurement` and `Unit` — use `UNIT_TO_BASE` and the `kind` discriminant to branch correctly."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript Handbook — Branded / Nominal Types",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html"
+      },
+      {
+        "title": "TypeScript Handbook — Function Overloads",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/functions.html#function-overloads"
+      },
+      {
+        "title": "TypeScript Handbook — The `satisfies` Operator",
+        "url": "https://www.typescriptlang.org/docs/handbook/release-notes/typescript-4-9.html#the-satisfies-operator"
+      },
+      {
+        "title": "TypeScript Utility Types — Extract<Type, Union>",
+        "url": "https://www.typescriptlang.org/docs/handbook/utility-types.html#extracttype-union"
+      }
+    ]
   }
 ]
