@@ -9393,5 +9393,41 @@
         "url": "https://www.typescriptlang.org/docs/handbook/utility-types.html#extracttype-union"
       }
     ]
+  },
+  {
+    "date": "2026-11-11",
+    "name": "Typed GraphQL-Style Query Planner & Result Assembler",
+    "difficulty": "Hard",
+    "description": "You're building the query engine for a lightweight data-fetching layer that mimics GraphQL's selection-set model. Clients declare a typed selection tree over a known schema, the planner resolves which fields to fetch from which data sources, and the assembler stitches resolved fragments into a final result whose shape is entirely derived from the selection — all enforced by the compiler with no escape hatches.",
+    "snippet": "// Core schema & selection types — and the main execution function\n\ntype ScalarToTS<S extends ScalarType> =\n  S extends \"string\"  ? string  :\n  S extends \"number\"  ? number  :\n  S extends \"boolean\" ? boolean :\n  S extends \"date\"    ? Date    : never;\n\n// A SelectionSet over an entity schema — clients declare what they want:\ntype SelectionSet<E extends EntitySchema> = { /* TODO — mapped type */ };\n\n// The compiler-derived result shape from schema + selection:\ntype ResolvedResult<E extends EntitySchema, S extends SelectionSet<E>> = {\n  /* TODO — conditional mapped type */\n};\n\n// Run a typed query plan and get back fully-typed assembled records:\nasync function executePlan<E extends EntitySchema, S extends SelectionSet<E>>(\n  plan: QueryPlan<E, S>,\n  rootIds: readonly string[]\n): Promise<Map<string, ResolvedResult<E, S>>>;\n",
+    "goals": [
+      "Implement `SelectionSet<E>` as a mapped type that correctly constrains scalar fields to `boolean` and object/list fields to nested selection sets or `false`.",
+      "Implement `ResolvedResult<E, S>` as a deep conditional mapped type that produces the exact TypeScript shape of an assembled query result, including nullable wrapping and recursive nesting.",
+      "Implement `FieldResolver<E>` and `QueryPlan<E, S>` so the compiler enforces correct resolver signatures and nested plan shapes for every field kind.",
+      "Implement `buildPlan`, `executePlan` (with parallel nested fetches via Promise.all), and `getField` — all generic, strict, and free of `any` or type assertions."
+    ],
+    "hints": [
+      "For `ResolvedResult`, map over `keyof S` (not `keyof E`) and use `E[K & keyof E]` to access the field descriptor — then branch on `kind` with conditional types.",
+      "The trickiest part of `FieldResolver<E>` is that scalar resolvers receive the raw field value while object/list resolvers receive the whole parent `RawRecord` — use conditional types to pick the right argument type per key.",
+      "In `executePlan`, iterate `Object.keys(plan.selection)` at runtime to discover selected fields, and use `Promise.all` over an array of per-field async thunks to parallelize nested fetches within each record."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript Handbook — Conditional Types",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/conditional-types.html"
+      },
+      {
+        "title": "TypeScript Handbook — Mapped Types",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/mapped-types.html"
+      },
+      {
+        "title": "TypeScript Handbook — Template Literal & Indexed Access Types",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/indexed-access-types.html"
+      },
+      {
+        "title": "MDN — Promise.all",
+        "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise/all"
+      }
+    ]
   }
 ]

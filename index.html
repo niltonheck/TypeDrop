@@ -41,18 +41,18 @@
     <!-- CHALLENGE_START -->
     <section class="challenge-card">
       <div class="challenge-header">
-        <span class="challenge-date">2026-11-10</span>
-        <span class="badge medium">Medium</span>
+        <span class="challenge-date">2026-11-11</span>
+        <span class="badge hard">Hard</span>
       </div>
-      <h2>Typed Recipe Ingredient Scaler &amp; Unit Converter</h2>
-      <p>You're building the recipe engine for a meal-planning app. Recipes list ingredients with typed quantities and units, and your job is to scale them to a target serving count, convert between unit systems (metric ↔ imperial), and produce a normalized shopping list — with the compiler enforcing every unit family, conversion path, ingredient shape, and aggregated result type.</p>
+      <h2>Typed GraphQL-Style Query Planner &amp; Result Assembler</h2>
+      <p>You're building the query engine for a lightweight data-fetching layer that mimics GraphQL's selection-set model. Clients declare a typed selection tree over a known schema, the planner resolves which fields to fetch from which data sources, and the assembler stitches resolved fragments into a final result whose shape is entirely derived from the selection — all enforced by the compiler with no escape hatches.</p>
       <div class="challenge-goals">
         <h3>Goals</h3>
         <ul>
-          <li>Implement branded-type constructors (`toServingCount`, `toQuantity`) that validate at runtime and narrow at compile time without using `as`.</li>
-          <li>Fill in `UNIT_TO_BASE` using the `satisfies Record&lt;Unit, { baseValue: number }&gt;` pattern so the compiler enforces exhaustiveness across all 11 units.</li>
-          <li>Implement the three overloaded signatures of `convertMeasurement` using `Extract&lt;Measurement, { kind: ... }&gt;` and enforce unit-family safety at both the type and runtime level.</li>
-          <li>Implement `buildShoppingList` to convert all ingredients to canonical base units, aggregate same-name/same-family quantities, handle name collisions across families with a kind suffix, and return entries sorted alphabetically.</li>
+          <li>Implement `SelectionSet&lt;E&gt;` as a mapped type that correctly constrains scalar fields to `boolean` and object/list fields to nested selection sets or `false`.</li>
+          <li>Implement `ResolvedResult&lt;E, S&gt;` as a deep conditional mapped type that produces the exact TypeScript shape of an assembled query result, including nullable wrapping and recursive nesting.</li>
+          <li>Implement `FieldResolver&lt;E&gt;` and `QueryPlan&lt;E, S&gt;` so the compiler enforces correct resolver signatures and nested plan shapes for every field kind.</li>
+          <li>Implement `buildPlan`, `executePlan` (with parallel nested fetches via Promise.all), and `getField` — all generic, strict, and free of `any` or type assertions.</li>
         </ul>
       </div>
       <div class="code-block">
@@ -62,32 +62,27 @@
           <span class="dot green"></span>
           <span class="code-block-title">challenge.ts</span>
         </div>
-        <pre><code class="language-typescript">// Key types &amp; main signatures — preview
+        <pre><code class="language-typescript">// Core schema &amp; selection types — and the main execution function
 
-type ServingCount = number &amp; { readonly __brand: &quot;ServingCount&quot; };
-type Quantity     = number &amp; { readonly __brand: &quot;Quantity&quot; };
+type ScalarToTS&lt;S extends ScalarType&gt; =
+  S extends &quot;string&quot;  ? string  :
+  S extends &quot;number&quot;  ? number  :
+  S extends &quot;boolean&quot; ? boolean :
+  S extends &quot;date&quot;    ? Date    : never;
 
-type Measurement =
-  | { readonly kind: &quot;volume&quot;; readonly quantity: Quantity; readonly unit: VolumeUnit }
-  | { readonly kind: &quot;mass&quot;;   readonly quantity: Quantity; readonly unit: MassUnit   }
-  | { readonly kind: &quot;count&quot;;  readonly quantity: Quantity; readonly unit: CountUnit  };
+// A SelectionSet over an entity schema — clients declare what they want:
+type SelectionSet&lt;E extends EntitySchema&gt; = { /* TODO — mapped type */ };
 
-interface Recipe {
-  readonly name: string;
-  readonly servings: ServingCount;
-  readonly ingredients: ReadonlyArray&lt;Ingredient&gt;;
-}
+// The compiler-derived result shape from schema + selection:
+type ResolvedResult&lt;E extends EntitySchema, S extends SelectionSet&lt;E&gt;&gt; = {
+  /* TODO — conditional mapped type */
+};
 
-// Scale a recipe to a new serving count
-function scaleRecipe(recipe: Recipe, targetServings: ServingCount): Recipe;
-
-// Convert a measurement to a different unit in the same family
-function convertMeasurement(m: Extract&lt;Measurement, { kind: &quot;volume&quot; }&gt;, targetUnit: VolumeUnit): Extract&lt;Measurement, { kind: &quot;volume&quot; }&gt;;
-function convertMeasurement(m: Extract&lt;Measurement, { kind: &quot;mass&quot;   }&gt;, targetUnit: MassUnit  ): Extract&lt;Measurement, { kind: &quot;mass&quot;   }&gt;;
-function convertMeasurement(m: Extract&lt;Measurement, { kind: &quot;count&quot;  }&gt;, targetUnit: CountUnit ): Extract&lt;Measurement, { kind: &quot;count&quot;  }&gt;;
-
-// Aggregate scaled recipes into a sorted shopping list
-function buildShoppingList(scaledRecipes: ReadonlyArray&lt;Recipe&gt;): ShoppingListEntry[];
+// Run a typed query plan and get back fully-typed assembled records:
+async function executePlan&lt;E extends EntitySchema, S extends SelectionSet&lt;E&gt;&gt;(
+  plan: QueryPlan&lt;E, S&gt;,
+  rootIds: readonly string[]
+): Promise&lt;Map&lt;string, ResolvedResult&lt;E, S&gt;&gt;&gt;;
 </code></pre>
       </div>
       <details class="challenge-hints-details">
@@ -95,33 +90,33 @@ function buildShoppingList(scaledRecipes: ReadonlyArray&lt;Recipe&gt;): Shopping
       <div class="challenge-hints">
         <h3>Hints</h3>
         <ul>
-          <li>Branded types can't use `as` — instead, write a regular type guard (`function isPositiveInt(n: number): n is ServingCount`) and return the value through that guard.</li>
-          <li>For `UNIT_TO_BASE`, start with the `satisfies` keyword: the compiler will immediately tell you which unit keys are missing — use that as your to-do list.</li>
-          <li>In `convertMeasurement`, the overload signatures do the family-safety work; the single implementation signature accepts `Measurement` and `Unit` — use `UNIT_TO_BASE` and the `kind` discriminant to branch correctly.</li>
+          <li>For `ResolvedResult`, map over `keyof S` (not `keyof E`) and use `E[K &amp; keyof E]` to access the field descriptor — then branch on `kind` with conditional types.</li>
+          <li>The trickiest part of `FieldResolver&lt;E&gt;` is that scalar resolvers receive the raw field value while object/list resolvers receive the whole parent `RawRecord` — use conditional types to pick the right argument type per key.</li>
+          <li>In `executePlan`, iterate `Object.keys(plan.selection)` at runtime to discover selected fields, and use `Promise.all` over an array of per-field async thunks to parallelize nested fetches within each record.</li>
         </ul>
       </div>
       </details>
       <div class="challenge-docs">
         <h3>Useful resources</h3>
         <ul>
-          <li><a href="https://www.typescriptlang.org/docs/handbook/2/narrowing.html" target="_blank" rel="noopener noreferrer">TypeScript Handbook — Branded / Nominal Types</a></li>
-          <li><a href="https://www.typescriptlang.org/docs/handbook/2/functions.html#function-overloads" target="_blank" rel="noopener noreferrer">TypeScript Handbook — Function Overloads</a></li>
-          <li><a href="https://www.typescriptlang.org/docs/handbook/release-notes/typescript-4-9.html#the-satisfies-operator" target="_blank" rel="noopener noreferrer">TypeScript Handbook — The `satisfies` Operator</a></li>
-          <li><a href="https://www.typescriptlang.org/docs/handbook/utility-types.html#extracttype-union" target="_blank" rel="noopener noreferrer">TypeScript Utility Types — Extract&lt;Type, Union&gt;</a></li>
+          <li><a href="https://www.typescriptlang.org/docs/handbook/2/conditional-types.html" target="_blank" rel="noopener noreferrer">TypeScript Handbook — Conditional Types</a></li>
+          <li><a href="https://www.typescriptlang.org/docs/handbook/2/mapped-types.html" target="_blank" rel="noopener noreferrer">TypeScript Handbook — Mapped Types</a></li>
+          <li><a href="https://www.typescriptlang.org/docs/handbook/2/indexed-access-types.html" target="_blank" rel="noopener noreferrer">TypeScript Handbook — Template Literal &amp; Indexed Access Types</a></li>
+          <li><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise/all" target="_blank" rel="noopener noreferrer">MDN — Promise.all</a></li>
         </ul>
       </div>
       <div class="cta-row">
-        <a class="cta-button cta-primary" href="https://stackblitz.com/github/niltonheck/typedrop/tree/challenge/2026-11-10" target="_blank" rel="noopener noreferrer">
+        <a class="cta-button cta-primary" href="https://stackblitz.com/github/niltonheck/typedrop/tree/challenge/2026-11-11" target="_blank" rel="noopener noreferrer">
           <img class="sb-icon" src="https://cdn.simpleicons.org/stackblitz/e0e0e0" alt=""> StackBlitz
         </a>
-        <a class="cta-button" href="https://codesandbox.io/p/devbox/github/niltonheck/typedrop/tree/challenge/2026-11-10" target="_blank" rel="noopener noreferrer">
+        <a class="cta-button" href="https://codesandbox.io/p/devbox/github/niltonheck/typedrop/tree/challenge/2026-11-11" target="_blank" rel="noopener noreferrer">
           <img class="csb-icon" src="https://cdn.simpleicons.org/codesandbox/e0e0e0" alt=""> CodeSandbox
         </a>
       </div>
       <div class="clone-section">
         <h3>Or clone locally</h3>
         <div class="clone-box">
-          <code id="clone-cmd">git clone -b challenge/2026-11-10 https://github.com/niltonheck/typedrop.git</code>
+          <code id="clone-cmd">git clone -b challenge/2026-11-11 https://github.com/niltonheck/typedrop.git</code>
           <button class="clone-copy-btn" onclick="navigator.clipboard.writeText(document.getElementById('clone-cmd').textContent).then(()=>{this.textContent='Copied!';this.classList.add('copied');setTimeout(()=>{this.textContent='Copy';this.classList.remove('copied')},2000)})">Copy</button>
         </div>
       </div>
