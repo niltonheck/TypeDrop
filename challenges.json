@@ -9429,5 +9429,41 @@
         "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise/all"
       }
     ]
+  },
+  {
+    "date": "2026-11-12",
+    "name": "Typed Event Analytics Aggregator",
+    "difficulty": "Medium",
+    "description": "You're building the analytics engine for a SaaS dashboard. Raw events stream in from the client SDK — page views, button clicks, form submissions, and errors — and your job is to parse, validate, and aggregate them into a per-session summary report, with the compiler enforcing every event shape, aggregation field, and result type with no escape hatches.",
+    "snippet": "// Key types & main function signatures at a glance\n\ntype AnalyticsEvent =\n  | { kind: \"page_view\";   sessionId: string; url: string; durationMs: number; timestamp: number }\n  | { kind: \"click\";       sessionId: string; elementId: string;                timestamp: number }\n  | { kind: \"form_submit\"; sessionId: string; formId: string; success: boolean; timestamp: number }\n  | { kind: \"error\";       sessionId: string; message: string;                  timestamp: number };\n\ntype ParseResult<T> = { ok: true; value: T } | { ok: false; error: string };\n\n// TODO A — derive EventOfKind from the union (use Extract)\ntype EventOfKind<K extends AnalyticsEvent[\"kind\"]> = TODO_A;\n\n// TODO B — generic single-pass groupBy\nfunction groupBy<T, K extends string | number | symbol>(\n  items: readonly T[], keyFn: (item: T) => K\n): Map<K, T[]> { ... }\n\n// TODO C — validate unknown → typed event\nfunction parseEvent(raw: unknown): ParseResult<AnalyticsEvent> { ... }\n\n// TODO D — full aggregation pipeline\nfunction aggregateEvents(raws: readonly unknown[]): AggregationReport { ... }\n\n// TODO E — kind-narrowing filter with type predicate\nfunction filterByKind<K extends AnalyticsEvent[\"kind\"]>(\n  events: readonly AnalyticsEvent[], kind: K\n): EventOfKind<K>[] { ... }\n",
+    "goals": [
+      "Define `EventOfKind<K>` as a conditional/utility type derived purely from `AnalyticsEvent` using `Extract` — no manual mapping.",
+      "Implement `parseEvent` to validate an `unknown` value into a `ParseResult<AnalyticsEvent>` using type narrowing only — no `any` or type assertions.",
+      "Implement `aggregateEvents` to parse, group by session, and compute each `SessionSummary` in a single pass, returning a sorted `AggregationReport`.",
+      "Implement `filterByKind` with a type predicate so the returned array is narrowed to the exact `EventOfKind<K>` subtype."
+    ],
+    "hints": [
+      "For `EventOfKind<K>`, try `Extract<AnalyticsEvent, { kind: K }>` — `Extract` picks union members assignable to the second argument.",
+      "In `parseEvent`, use a `typeof` / `in` guard first to confirm `raw` is a non-null object before reading any properties; then switch on `raw.kind` to handle each variant.",
+      "For the single-pass accumulator in `aggregateEvents`, initialise every counter to 0 / ±Infinity before the loop and update them with `if` checks inside one `for...of`."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript — Extract<T, U> utility type",
+        "url": "https://www.typescriptlang.org/docs/handbook/utility-types.html#extracttype-union"
+      },
+      {
+        "title": "TypeScript — Narrowing (type guards & predicates)",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html"
+      },
+      {
+        "title": "TypeScript — Discriminated Unions",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html#discriminated-unions"
+      },
+      {
+        "title": "MDN — Map object",
+        "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Map"
+      }
+    ]
   }
 ]
