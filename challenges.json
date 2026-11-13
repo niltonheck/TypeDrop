@@ -9465,5 +9465,41 @@
         "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Map"
       }
     ]
+  },
+  {
+    "date": "2026-11-13",
+    "name": "Typed Streaming Log Pipeline with Severity Routing & Structured Sinks",
+    "difficulty": "Hard",
+    "description": "You're building the observability backbone for a cloud platform. Raw log entries arrive from heterogeneous services, each entry carries a discriminated severity level and a service-specific payload, and your pipeline must parse unknown input, route entries through typed middleware transforms, fan-out to multiple structured sinks (console, file, alerting), and produce a final drain report — all enforced by the compiler with no escape hatches.",
+    "snippet": "\n// Core discriminated union — derived from a mapped type\ntype SeverityLevel = \"debug\" | \"info\" | \"warn\" | \"error\" | \"fatal\";\n\ntype LogEntry = {\n  [S in SeverityLevel]: {\n    readonly severity:  S;\n    readonly payload:   SeverityPayloadMap[S];\n    readonly service:   ServiceName;\n    readonly timestamp: Timestamp;\n  };\n}[SeverityLevel];\n\n// Middleware type\ntype LogMiddleware = (entry: LogEntry) => LogEntry | null;\n\n// Composed pipeline\nfunction buildPipeline(middlewares: readonly LogMiddleware[]): LogMiddleware { ... }\n\n// Concurrent fan-out to named sinks → typed drain report\nasync function drainPipeline(\n  rawEntries: readonly unknown[],\n  pipeline:   LogMiddleware,\n  sinks:      Record<string, LogSink>,\n): Promise<DrainReport> { ... }\n\n// Conditional type utility\ntype SeverityEntries<S extends SeverityLevel> = Extract<LogEntry, { severity: S }>;\n",
+    "goals": [
+      "Implement `parseLogEntry` to safely narrow `unknown` input into a fully-branded `LogEntry` using type-guard predicates and a `Result<T, E>` return type — no `any` or `as`.",
+      "Build `severityFilter` and `serviceRedactor` middleware factories, then compose them with `buildPipeline` into a left-to-right short-circuiting chain.",
+      "Implement `drainPipeline` to parse raw entries, apply the composed pipeline, fan-out surviving entries to all named sinks concurrently via `Promise.allSettled`, and return a typed `DrainReport` with per-sink `SinkOutcome` discrimination.",
+      "Define `SeverityEntries<S>` using `Extract` and implement `groupBySeverity` so each severity bucket is typed to its specific `LogEntry` variant — using narrowing, not casts."
+    ],
+    "hints": [
+      "For `parseLogEntry`, write small helper type-guards (e.g. `function isSeverityLevel(s: unknown): s is SeverityLevel`) with explicit predicate return types — this lets the compiler track narrowing without `as`.",
+      "In `drainPipeline`, collect each sink's per-entry `Promise<void>` results in a `Record<string, PromiseSettledResult<void>[]>` as you process entries, then compute `SinkOutcome` in a single pass after `Promise.allSettled` resolves.",
+      "For `groupBySeverity`, iterate entries and use an `if (entry.severity === s)` or a `switch` — the discriminant narrows `entry` to the correct variant automatically, giving you the right element type for each bucket array."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript Handbook — Discriminated Unions",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html#discriminated-unions"
+      },
+      {
+        "title": "TypeScript Handbook — Conditional Types & Extract",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/conditional-types.html"
+      },
+      {
+        "title": "TypeScript Handbook — Mapped Types",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/mapped-types.html"
+      },
+      {
+        "title": "MDN — Promise.allSettled()",
+        "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise/allSettled"
+      }
+    ]
   }
 ]
