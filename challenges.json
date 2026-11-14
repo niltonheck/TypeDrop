@@ -9501,5 +9501,41 @@
         "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise/allSettled"
       }
     ]
+  },
+  {
+    "date": "2026-11-14",
+    "name": "Typed Product Catalog Filter & Facet Engine",
+    "difficulty": "Medium",
+    "description": "You're building the search & browse layer for an e-commerce platform. Raw catalog entries arrive as `unknown` JSON, your engine must validate and narrow them into typed products, apply a composable set of typed filters, and produce a faceted result — with counts per category, price-range buckets, and availability flags — all enforced by the compiler with no escape hatches.",
+    "snippet": "\nexport type Category = \"electronics\" | \"clothing\" | \"home\" | \"sports\" | \"books\";\nexport type PriceBucket = \"0-25\" | \"25-50\" | \"50-100\" | \"100-250\" | \"250+\";\n\nexport interface Product {\n  id: string;\n  name: string;\n  category: Category;\n  priceUSD: number;   // positive, finite\n  rating: number;     // 0–5 inclusive\n  inStock: boolean;\n  tags: string[];\n}\n\nexport interface CatalogFilter {\n  priceRange?: { minUSD?: number; maxUSD?: number };\n  categories?: Category[];  // OR logic\n  minRating?: number;\n  inStockOnly?: boolean;\n  tags?: string[];          // AND logic — product must have ALL\n}\n\nexport interface FacetedResult {\n  products: Product[];\n  totalCount: number;\n  facets: {\n    byCategory: Partial<Record<Category, number>>;\n    byPriceBucket: Partial<Record<PriceBucket, number>>;\n    inStockCount: number;\n    outOfStockCount: number;\n  };\n}\n\nexport function isProduct(value: unknown): value is Product { /* TODO */ }\nexport function parseProducts(raw: unknown): Product[] { /* TODO */ }\nexport function getPriceBucket(priceUSD: number): PriceBucket { /* TODO */ }\nexport function applyFilter(products: Product[], filter: CatalogFilter): Product[] { /* TODO */ }\nexport function buildFacets(products: Product[]): FacetSummary { /* TODO */ }\nexport function searchCatalog(rawCatalog: unknown, filter: CatalogFilter): FacetedResult { /* TODO */ }\n",
+    "goals": [
+      "Implement `isProduct` as a strict type guard that narrows `unknown` to `Product` using only control-flow narrowing — no type assertions.",
+      "Implement `getPriceBucket` returning the correct `PriceBucket` literal union for any positive price.",
+      "Implement `applyFilter` composing all optional filter axes with AND logic between axes and OR logic within `categories`.",
+      "Implement `buildFacets` and `searchCatalog` to wire the full pipeline, producing a `FacetedResult` with accurate per-category, per-price-bucket, and stock counts over the filtered product list."
+    ],
+    "hints": [
+      "For `isProduct`, use `typeof`, `Array.isArray`, and an explicit `includes` check on a `const` array of valid Category values to narrow the category field without casting.",
+      "For `getPriceBucket`, a chain of `if/else if` with explicit `return` statements is enough for TypeScript to infer the `PriceBucket` return type — no assertion needed.",
+      "`Partial<Record<Category, number>>` lets you accumulate counts in `buildFacets` with a simple `(acc[key] ?? 0) + 1` pattern while staying fully typed."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript — Narrowing & Type Guards",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html"
+      },
+      {
+        "title": "TypeScript — Utility Types (Partial, Record)",
+        "url": "https://www.typescriptlang.org/docs/handbook/utility-types.html"
+      },
+      {
+        "title": "TypeScript — Union Types",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/everyday-types.html#union-types"
+      },
+      {
+        "title": "MDN — Array.prototype.filter",
+        "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/filter"
+      }
+    ]
   }
 ]
