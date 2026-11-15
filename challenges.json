@@ -9537,5 +9537,41 @@
         "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/filter"
       }
     ]
+  },
+  {
+    "date": "2026-11-15",
+    "name": "Typed Contact Book: Group, Search & Export",
+    "difficulty": "Easy",
+    "description": "You're building the core logic for a personal contact-book app. Contacts are stored with typed fields, can belong to labelled groups, and must be searchable by name or email and exportable to a simple vCard-style string — with the compiler enforcing every field shape, search result, and export format.",
+    "snippet": "\n// Key types you'll work with:\n\nexport type GroupLabel = \"family\" | \"work\" | \"friend\" | \"other\";\n\nexport interface Contact {\n  readonly id: string;\n  readonly firstName: string;\n  readonly lastName: string;\n  readonly email: string;\n  readonly phones: ReadonlyArray<{ type: \"mobile\" | \"home\" | \"work\"; number: string }>;\n  readonly groups: ReadonlyArray<GroupLabel>;\n  readonly birthday?: string;\n}\n\nexport type ContactSummary   = Pick<Contact, \"id\" | \"firstName\" | \"lastName\" | \"email\">;\nexport type GroupedContacts  = Record<GroupLabel, Contact[]>;\n\n// The four functions you must implement:\nexport function groupContacts(contacts: Contact[]): GroupedContacts;\nexport function searchContacts(contacts: Contact[], query: string): ContactSummary[];\nexport function exportVCard(contact: Contact): string;\nexport function mergeContacts(base: Contact, override: Contact): Contact;\n",
+    "goals": [
+      "Implement `groupContacts` using `Record<GroupLabel, Contact[]>`, ensuring all four keys are always present and contacts with empty groups fall into 'other'.",
+      "Implement `searchContacts` with case-insensitive substring matching and return the `ContactSummary` Pick type — not full Contact records.",
+      "Implement `exportVCard` to produce a correctly formatted vCard 3.0 string, uppercasing phone types and conditionally including the BDAY line.",
+      "Implement `mergeContacts` to produce a valid `Contact` by preferring non-empty override scalars, unioning phone arrays, and de-duplicating group arrays."
+    ],
+    "hints": [
+      "For `groupContacts`, seed your result object with all four `GroupLabel` keys before iterating — `Record<GroupLabel, Contact[]>` requires every key to be present.",
+      "For `mergeContacts`, a simple `override.field.length > 0 ? override.field : base.field` pattern handles the non-empty-string preference without needing `any` or type assertions.",
+      "For `exportVCard`, build an array of lines, conditionally push the BDAY line using the optional `birthday` field, then join with '\\n' at the end."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript Utility Types (Pick, Record, Omit…)",
+        "url": "https://www.typescriptlang.org/docs/handbook/utility-types.html"
+      },
+      {
+        "title": "TypeScript — Union Types",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/everyday-types.html#union-types"
+      },
+      {
+        "title": "TypeScript — Mapped Types",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/mapped-types.html"
+      },
+      {
+        "title": "vCard 3.0 Format Specification (RFC 2426)",
+        "url": "https://datatracker.ietf.org/doc/html/rfc2426"
+      }
+    ]
   }
 ]

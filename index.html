@@ -41,18 +41,18 @@
     <!-- CHALLENGE_START -->
     <section class="challenge-card">
       <div class="challenge-header">
-        <span class="challenge-date">2026-11-14</span>
-        <span class="badge medium">Medium</span>
+        <span class="challenge-date">2026-11-15</span>
+        <span class="badge easy">Easy</span>
       </div>
-      <h2>Typed Product Catalog Filter &amp; Facet Engine</h2>
-      <p>You're building the search &amp; browse layer for an e-commerce platform. Raw catalog entries arrive as `unknown` JSON, your engine must validate and narrow them into typed products, apply a composable set of typed filters, and produce a faceted result — with counts per category, price-range buckets, and availability flags — all enforced by the compiler with no escape hatches.</p>
+      <h2>Typed Contact Book: Group, Search &amp; Export</h2>
+      <p>You're building the core logic for a personal contact-book app. Contacts are stored with typed fields, can belong to labelled groups, and must be searchable by name or email and exportable to a simple vCard-style string — with the compiler enforcing every field shape, search result, and export format.</p>
       <div class="challenge-goals">
         <h3>Goals</h3>
         <ul>
-          <li>Implement `isProduct` as a strict type guard that narrows `unknown` to `Product` using only control-flow narrowing — no type assertions.</li>
-          <li>Implement `getPriceBucket` returning the correct `PriceBucket` literal union for any positive price.</li>
-          <li>Implement `applyFilter` composing all optional filter axes with AND logic between axes and OR logic within `categories`.</li>
-          <li>Implement `buildFacets` and `searchCatalog` to wire the full pipeline, producing a `FacetedResult` with accurate per-category, per-price-bucket, and stock counts over the filtered product list.</li>
+          <li>Implement `groupContacts` using `Record&lt;GroupLabel, Contact[]&gt;`, ensuring all four keys are always present and contacts with empty groups fall into 'other'.</li>
+          <li>Implement `searchContacts` with case-insensitive substring matching and return the `ContactSummary` Pick type — not full Contact records.</li>
+          <li>Implement `exportVCard` to produce a correctly formatted vCard 3.0 string, uppercasing phone types and conditionally including the BDAY line.</li>
+          <li>Implement `mergeContacts` to produce a valid `Contact` by preferring non-empty override scalars, unioning phone arrays, and de-duplicating group arrays.</li>
         </ul>
       </div>
       <div class="code-block">
@@ -63,44 +63,28 @@
           <span class="code-block-title">challenge.ts</span>
         </div>
         <pre><code class="language-typescript">
-export type Category = &quot;electronics&quot; | &quot;clothing&quot; | &quot;home&quot; | &quot;sports&quot; | &quot;books&quot;;
-export type PriceBucket = &quot;0-25&quot; | &quot;25-50&quot; | &quot;50-100&quot; | &quot;100-250&quot; | &quot;250+&quot;;
+// Key types you'll work with:
 
-export interface Product {
-  id: string;
-  name: string;
-  category: Category;
-  priceUSD: number;   // positive, finite
-  rating: number;     // 0–5 inclusive
-  inStock: boolean;
-  tags: string[];
+export type GroupLabel = &quot;family&quot; | &quot;work&quot; | &quot;friend&quot; | &quot;other&quot;;
+
+export interface Contact {
+  readonly id: string;
+  readonly firstName: string;
+  readonly lastName: string;
+  readonly email: string;
+  readonly phones: ReadonlyArray&lt;{ type: &quot;mobile&quot; | &quot;home&quot; | &quot;work&quot;; number: string }&gt;;
+  readonly groups: ReadonlyArray&lt;GroupLabel&gt;;
+  readonly birthday?: string;
 }
 
-export interface CatalogFilter {
-  priceRange?: { minUSD?: number; maxUSD?: number };
-  categories?: Category[];  // OR logic
-  minRating?: number;
-  inStockOnly?: boolean;
-  tags?: string[];          // AND logic — product must have ALL
-}
+export type ContactSummary   = Pick&lt;Contact, &quot;id&quot; | &quot;firstName&quot; | &quot;lastName&quot; | &quot;email&quot;&gt;;
+export type GroupedContacts  = Record&lt;GroupLabel, Contact[]&gt;;
 
-export interface FacetedResult {
-  products: Product[];
-  totalCount: number;
-  facets: {
-    byCategory: Partial&lt;Record&lt;Category, number&gt;&gt;;
-    byPriceBucket: Partial&lt;Record&lt;PriceBucket, number&gt;&gt;;
-    inStockCount: number;
-    outOfStockCount: number;
-  };
-}
-
-export function isProduct(value: unknown): value is Product { /* TODO */ }
-export function parseProducts(raw: unknown): Product[] { /* TODO */ }
-export function getPriceBucket(priceUSD: number): PriceBucket { /* TODO */ }
-export function applyFilter(products: Product[], filter: CatalogFilter): Product[] { /* TODO */ }
-export function buildFacets(products: Product[]): FacetSummary { /* TODO */ }
-export function searchCatalog(rawCatalog: unknown, filter: CatalogFilter): FacetedResult { /* TODO */ }
+// The four functions you must implement:
+export function groupContacts(contacts: Contact[]): GroupedContacts;
+export function searchContacts(contacts: Contact[], query: string): ContactSummary[];
+export function exportVCard(contact: Contact): string;
+export function mergeContacts(base: Contact, override: Contact): Contact;
 </code></pre>
       </div>
       <details class="challenge-hints-details">
@@ -108,33 +92,33 @@ export function searchCatalog(rawCatalog: unknown, filter: CatalogFilter): Facet
       <div class="challenge-hints">
         <h3>Hints</h3>
         <ul>
-          <li>For `isProduct`, use `typeof`, `Array.isArray`, and an explicit `includes` check on a `const` array of valid Category values to narrow the category field without casting.</li>
-          <li>For `getPriceBucket`, a chain of `if/else if` with explicit `return` statements is enough for TypeScript to infer the `PriceBucket` return type — no assertion needed.</li>
-          <li>`Partial&lt;Record&lt;Category, number&gt;&gt;` lets you accumulate counts in `buildFacets` with a simple `(acc[key] ?? 0) + 1` pattern while staying fully typed.</li>
+          <li>For `groupContacts`, seed your result object with all four `GroupLabel` keys before iterating — `Record&lt;GroupLabel, Contact[]&gt;` requires every key to be present.</li>
+          <li>For `mergeContacts`, a simple `override.field.length &gt; 0 ? override.field : base.field` pattern handles the non-empty-string preference without needing `any` or type assertions.</li>
+          <li>For `exportVCard`, build an array of lines, conditionally push the BDAY line using the optional `birthday` field, then join with '\n' at the end.</li>
         </ul>
       </div>
       </details>
       <div class="challenge-docs">
         <h3>Useful resources</h3>
         <ul>
-          <li><a href="https://www.typescriptlang.org/docs/handbook/2/narrowing.html" target="_blank" rel="noopener noreferrer">TypeScript — Narrowing &amp; Type Guards</a></li>
-          <li><a href="https://www.typescriptlang.org/docs/handbook/utility-types.html" target="_blank" rel="noopener noreferrer">TypeScript — Utility Types (Partial, Record)</a></li>
+          <li><a href="https://www.typescriptlang.org/docs/handbook/utility-types.html" target="_blank" rel="noopener noreferrer">TypeScript Utility Types (Pick, Record, Omit…)</a></li>
           <li><a href="https://www.typescriptlang.org/docs/handbook/2/everyday-types.html#union-types" target="_blank" rel="noopener noreferrer">TypeScript — Union Types</a></li>
-          <li><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/filter" target="_blank" rel="noopener noreferrer">MDN — Array.prototype.filter</a></li>
+          <li><a href="https://www.typescriptlang.org/docs/handbook/2/mapped-types.html" target="_blank" rel="noopener noreferrer">TypeScript — Mapped Types</a></li>
+          <li><a href="https://datatracker.ietf.org/doc/html/rfc2426" target="_blank" rel="noopener noreferrer">vCard 3.0 Format Specification (RFC 2426)</a></li>
         </ul>
       </div>
       <div class="cta-row">
-        <a class="cta-button cta-primary" href="https://stackblitz.com/github/niltonheck/typedrop/tree/challenge/2026-11-14" target="_blank" rel="noopener noreferrer">
+        <a class="cta-button cta-primary" href="https://stackblitz.com/github/niltonheck/typedrop/tree/challenge/2026-11-15" target="_blank" rel="noopener noreferrer">
           <img class="sb-icon" src="https://cdn.simpleicons.org/stackblitz/e0e0e0" alt=""> StackBlitz
         </a>
-        <a class="cta-button" href="https://codesandbox.io/p/devbox/github/niltonheck/typedrop/tree/challenge/2026-11-14" target="_blank" rel="noopener noreferrer">
+        <a class="cta-button" href="https://codesandbox.io/p/devbox/github/niltonheck/typedrop/tree/challenge/2026-11-15" target="_blank" rel="noopener noreferrer">
           <img class="csb-icon" src="https://cdn.simpleicons.org/codesandbox/e0e0e0" alt=""> CodeSandbox
         </a>
       </div>
       <div class="clone-section">
         <h3>Or clone locally</h3>
         <div class="clone-box">
-          <code id="clone-cmd">git clone -b challenge/2026-11-14 https://github.com/niltonheck/typedrop.git</code>
+          <code id="clone-cmd">git clone -b challenge/2026-11-15 https://github.com/niltonheck/typedrop.git</code>
           <button class="clone-copy-btn" onclick="navigator.clipboard.writeText(document.getElementById('clone-cmd').textContent).then(()=>{this.textContent='Copied!';this.classList.add('copied');setTimeout(()=>{this.textContent='Copy';this.classList.remove('copied')},2000)})">Copy</button>
         </div>
       </div>
