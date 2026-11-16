@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TypeDrop — Typed Task Scheduler with Priority Queues &amp; Retry Policies</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Permanent+Marker&display=swap">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/fontsource/fonts/0x-proto@latest/latin-400-normal.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/fontsource/fonts/0x-proto@latest/latin-700-normal.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1/themes/prism-tomorrow.min.css">
+  <link rel="icon" href="../../misc/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="../../style.css">
+</head>
+<body>
+  <main>
+    <header>
+      <h1><a href="../../index.html" style="color: inherit; text-decoration: none;">TypeDrop</a></h1>
+      <p class="tagline">2026-11-16 Challenge</p>
+    </header>
+
+    <section class="challenge-card">
+      <div class="challenge-header">
+        <span class="challenge-date">2026-11-16</span>
+        <span class="badge medium">Medium</span>
+      </div>
+      <h2>Typed Task Scheduler with Priority Queues &amp; Retry Policies</h2>
+      <p>You're building the job-runner core for a background task platform. Tasks arrive with typed payloads, priority levels, and retry policies; your scheduler must enqueue them, drain them in priority order with a concurrency cap, and surface a typed run report — all enforced by the compiler with no escape hatches.</p>
+      <div class="challenge-goals">
+        <h3>Goals</h3>
+        <ul>
+          <li>Define all domain types — RetryPolicy, Task&lt;P&gt;, AttemptOutcome, TaskResult, and RunReport — using branded types, numeric literal unions, and discriminated unions.</li>
+          <li>Implement `runWithRetry` that executes a task's handler up to `maxAttempts` times, records every AttemptOutcome, and returns a correctly discriminated TaskResult.</li>
+          <li>Implement `drain` that processes tasks in strict priority-bucket order, runs tasks within each bucket concurrently up to `maxConcurrency`, and clears the queue afterwards.</li>
+          <li>Implement `createScheduler` that wires enqueue and drain together and returns a correctly typed Scheduler object.</li>
+        </ul>
+      </div>
+      <div class="code-block">
+        <div class="code-block-header">
+          <span class="dot red"></span>
+          <span class="dot yellow"></span>
+          <span class="dot green"></span>
+          <span class="code-block-title">challenge.ts</span>
+        </div>
+        <pre><code class="language-typescript">// Key types and main factory signature
+
+export type TaskId = string &amp; { readonly __brand: &quot;TaskId&quot; };
+export type Priority = 1 | 2 | 3;
+
+export type Task&lt;P&gt; = {
+  id:          TaskId;
+  priority:    Priority;
+  payload:     P;
+  retryPolicy: RetryPolicy;
+  handler:     (payload: P) =&gt; Promise&lt;string&gt;;
+};
+
+export type AttemptOutcome =
+  | { status: &quot;success&quot;; attemptNumber: number; message: string }
+  | { status: &quot;failure&quot;; attemptNumber: number; error:   string };
+
+export type TaskResult =
+  | { status: &quot;succeeded&quot;; taskId: TaskId; attempts: AttemptOutcome[] }
+  | { status: &quot;failed&quot;;    taskId: TaskId; attempts: AttemptOutcome[] };
+
+export interface Scheduler {
+  enqueue&lt;P&gt;(task: Task&lt;P&gt;): void;
+  drain(maxConcurrency: number): Promise&lt;RunReport&gt;;
+}
+
+// Wire it all together:
+export function createScheduler(): Scheduler { /* TODO */ }</code></pre>
+      </div>
+      <details class="challenge-hints-details">
+        <summary>Hints (click to reveal)</summary>
+      <div class="challenge-hints">
+        <h3>Hints</h3>
+        <ul>
+          <li>Group enqueued tasks by their `priority` value into a `Map&lt;Priority, Task&lt;unknown&gt;[]&gt;` and iterate the keys in ascending order to enforce bucket sequencing.</li>
+          <li>To batch an array of tasks with a concurrency cap, slice the array into chunks of size `maxConcurrency` and await `Promise.all` on each chunk before moving to the next.</li>
+          <li>Wrap each `handler` call in a try/catch inside a loop; push an AttemptOutcome on every iteration and `break` early as soon as a success is recorded.</li>
+        </ul>
+      </div>
+      </details>
+      <div class="challenge-docs">
+        <h3>Useful resources</h3>
+        <ul>
+          <li><a href="https://www.typescriptlang.org/docs/handbook/2/types-from-types.html" target="_blank" rel="noopener noreferrer">TypeScript Handbook — Branded / Nominal Types</a></li>
+          <li><a href="https://www.typescriptlang.org/docs/handbook/2/narrowing.html#discriminated-unions" target="_blank" rel="noopener noreferrer">TypeScript Handbook — Discriminated Unions</a></li>
+          <li><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise/all" target="_blank" rel="noopener noreferrer">MDN — Promise.all</a></li>
+          <li><a href="https://www.typescriptlang.org/docs/handbook/2/generics.html" target="_blank" rel="noopener noreferrer">TypeScript Handbook — Generics</a></li>
+        </ul>
+      </div>
+      <div class="cta-row">
+        <a class="cta-button cta-primary" href="https://stackblitz.com/github/niltonheck/typedrop/tree/challenge/2026-11-16" target="_blank" rel="noopener noreferrer">
+          <img class="sb-icon" src="https://cdn.simpleicons.org/stackblitz/e0e0e0" alt=""> StackBlitz
+        </a>
+        <a class="cta-button" href="https://codesandbox.io/p/devbox/github/niltonheck/typedrop/tree/challenge/2026-11-16" target="_blank" rel="noopener noreferrer">
+          <img class="csb-icon" src="https://cdn.simpleicons.org/codesandbox/e0e0e0" alt=""> CodeSandbox
+        </a>
+      </div>
+      <div class="clone-section">
+        <h3>Or clone locally</h3>
+        <div class="clone-box">
+          <code id="clone-cmd">git clone -b challenge/2026-11-16 https://github.com/niltonheck/typedrop.git</code>
+          <button class="clone-copy-btn" onclick="navigator.clipboard.writeText(document.getElementById('clone-cmd').textContent).then(()=>{this.textContent='Copied!';this.classList.add('copied');setTimeout(()=>{this.textContent='Copy';this.classList.remove('copied')},2000)})">Copy</button>
+        </div>
+      </div>
+    </section>
+
+    <footer>
+      <p>
+        <a href="../../index.html">&larr; Today's challenge</a>
+        &middot;
+        <a href="../../archive.html">Archive</a>
+      </p>
+    </footer>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1/prism.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1/components/prism-typescript.min.js"></script>
+  <script data-goatcounter="https://niltonheck.goatcounter.com/count"
+        async src="//gc.zgo.at/count.js"></script>
+</body>
+</html>

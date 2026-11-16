@@ -9573,5 +9573,41 @@
         "url": "https://datatracker.ietf.org/doc/html/rfc2426"
       }
     ]
+  },
+  {
+    "date": "2026-11-16",
+    "name": "Typed Task Scheduler with Priority Queues & Retry Policies",
+    "difficulty": "Medium",
+    "description": "You're building the job-runner core for a background task platform. Tasks arrive with typed payloads, priority levels, and retry policies; your scheduler must enqueue them, drain them in priority order with a concurrency cap, and surface a typed run report — all enforced by the compiler with no escape hatches.",
+    "snippet": "// Key types and main factory signature\n\nexport type TaskId = string & { readonly __brand: \"TaskId\" };\nexport type Priority = 1 | 2 | 3;\n\nexport type Task<P> = {\n  id:          TaskId;\n  priority:    Priority;\n  payload:     P;\n  retryPolicy: RetryPolicy;\n  handler:     (payload: P) => Promise<string>;\n};\n\nexport type AttemptOutcome =\n  | { status: \"success\"; attemptNumber: number; message: string }\n  | { status: \"failure\"; attemptNumber: number; error:   string };\n\nexport type TaskResult =\n  | { status: \"succeeded\"; taskId: TaskId; attempts: AttemptOutcome[] }\n  | { status: \"failed\";    taskId: TaskId; attempts: AttemptOutcome[] };\n\nexport interface Scheduler {\n  enqueue<P>(task: Task<P>): void;\n  drain(maxConcurrency: number): Promise<RunReport>;\n}\n\n// Wire it all together:\nexport function createScheduler(): Scheduler { /* TODO */ }",
+    "goals": [
+      "Define all domain types — RetryPolicy, Task<P>, AttemptOutcome, TaskResult, and RunReport — using branded types, numeric literal unions, and discriminated unions.",
+      "Implement `runWithRetry` that executes a task's handler up to `maxAttempts` times, records every AttemptOutcome, and returns a correctly discriminated TaskResult.",
+      "Implement `drain` that processes tasks in strict priority-bucket order, runs tasks within each bucket concurrently up to `maxConcurrency`, and clears the queue afterwards.",
+      "Implement `createScheduler` that wires enqueue and drain together and returns a correctly typed Scheduler object."
+    ],
+    "hints": [
+      "Group enqueued tasks by their `priority` value into a `Map<Priority, Task<unknown>[]>` and iterate the keys in ascending order to enforce bucket sequencing.",
+      "To batch an array of tasks with a concurrency cap, slice the array into chunks of size `maxConcurrency` and await `Promise.all` on each chunk before moving to the next.",
+      "Wrap each `handler` call in a try/catch inside a loop; push an AttemptOutcome on every iteration and `break` early as soon as a success is recorded."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript Handbook — Branded / Nominal Types",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/types-from-types.html"
+      },
+      {
+        "title": "TypeScript Handbook — Discriminated Unions",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html#discriminated-unions"
+      },
+      {
+        "title": "MDN — Promise.all",
+        "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise/all"
+      },
+      {
+        "title": "TypeScript Handbook — Generics",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/generics.html"
+      }
+    ]
   }
 ]
