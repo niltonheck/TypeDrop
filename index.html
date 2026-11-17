@@ -41,18 +41,18 @@
     <!-- CHALLENGE_START -->
     <section class="challenge-card">
       <div class="challenge-header">
-        <span class="challenge-date">2026-11-16</span>
-        <span class="badge medium">Medium</span>
+        <span class="challenge-date">2026-11-17</span>
+        <span class="badge easy">Easy</span>
       </div>
-      <h2>Typed Task Scheduler with Priority Queues &amp; Retry Policies</h2>
-      <p>You're building the job-runner core for a background task platform. Tasks arrive with typed payloads, priority levels, and retry policies; your scheduler must enqueue them, drain them in priority order with a concurrency cap, and surface a typed run report — all enforced by the compiler with no escape hatches.</p>
+      <h2>Typed Recipe Book: Ingredient Scaling &amp; Shopping List Builder</h2>
+      <p>You're building the core logic for a recipe app. Users save recipes with typed ingredients and serving sizes, scale them up or down for a dinner party, and merge multiple scaled recipes into a single de-duplicated shopping list — with the compiler enforcing every ingredient shape, unit, scaling result, and list entry.</p>
       <div class="challenge-goals">
         <h3>Goals</h3>
         <ul>
-          <li>Define all domain types — RetryPolicy, Task&lt;P&gt;, AttemptOutcome, TaskResult, and RunReport — using branded types, numeric literal unions, and discriminated unions.</li>
-          <li>Implement `runWithRetry` that executes a task's handler up to `maxAttempts` times, records every AttemptOutcome, and returns a correctly discriminated TaskResult.</li>
-          <li>Implement `drain` that processes tasks in strict priority-bucket order, runs tasks within each bucket concurrently up to `maxConcurrency`, and clears the queue afterwards.</li>
-          <li>Implement `createScheduler` that wires enqueue and drain together and returns a correctly typed Scheduler object.</li>
+          <li>Define the `Unit` string-literal union and wire it through `Ingredient`, `Recipe`, and `ShoppingListEntry` so the compiler rejects any unknown unit string.</li>
+          <li>Implement `scaleRecipe` to return a structurally-identical but quantity-scaled Recipe, throwing a `RangeError` for non-positive serving counts.</li>
+          <li>Implement `mergeShoppingList` to accumulate ingredients across recipes, summing entries that share both name and unit while keeping different-unit entries separate.</li>
+          <li>Implement `formatShoppingList` to emit alphabetically-sorted lines with the correct spacing rule (symbol units like `g`/`ml` attach directly; word units like `tsp`/`whole` use a space) and whole-number display for integer quantities.</li>
         </ul>
       </div>
       <div class="code-block">
@@ -62,67 +62,66 @@
           <span class="dot green"></span>
           <span class="code-block-title">challenge.ts</span>
         </div>
-        <pre><code class="language-typescript">// Key types and main factory signature
+        <pre><code class="language-typescript">// Core types &amp; main function signatures
 
-export type TaskId = string &amp; { readonly __brand: &quot;TaskId&quot; };
-export type Priority = 1 | 2 | 3;
+export type Unit = &quot;g&quot; | &quot;kg&quot; | &quot;ml&quot; | &quot;l&quot; | &quot;tsp&quot; | &quot;tbsp&quot; | &quot;cup&quot; | &quot;whole&quot; | &quot;pinch&quot;;
 
-export type Task&lt;P&gt; = {
-  id:          TaskId;
-  priority:    Priority;
-  payload:     P;
-  retryPolicy: RetryPolicy;
-  handler:     (payload: P) =&gt; Promise&lt;string&gt;;
-};
-
-export type AttemptOutcome =
-  | { status: &quot;success&quot;; attemptNumber: number; message: string }
-  | { status: &quot;failure&quot;; attemptNumber: number; error:   string };
-
-export type TaskResult =
-  | { status: &quot;succeeded&quot;; taskId: TaskId; attempts: AttemptOutcome[] }
-  | { status: &quot;failed&quot;;    taskId: TaskId; attempts: AttemptOutcome[] };
-
-export interface Scheduler {
-  enqueue&lt;P&gt;(task: Task&lt;P&gt;): void;
-  drain(maxConcurrency: number): Promise&lt;RunReport&gt;;
+export interface Ingredient {
+  readonly name: string;
+  readonly quantity: number;
+  readonly unit: Unit;
 }
 
-// Wire it all together:
-export function createScheduler(): Scheduler { /* TODO */ }</code></pre>
+export interface Recipe {
+  readonly id: string;
+  readonly title: string;
+  readonly servings: number;
+  readonly ingredients: readonly Ingredient[];
+}
+
+export type ShoppingList = readonly ShoppingListEntry[];
+
+// Scale a recipe to a new serving count (throws RangeError if targetServings ≤ 0)
+export function scaleRecipe(recipe: Recipe, targetServings: number): Recipe { ... }
+
+// Merge ingredients across multiple recipes, summing same name+unit pairs
+export function mergeShoppingList(recipes: readonly Recipe[]): ShoppingList { ... }
+
+// Format as sorted, human-readable lines  e.g. &quot;- 200g flour&quot; / &quot;- 1.5 tsp salt&quot;
+export function formatShoppingList(list: ShoppingList): string { ... }</code></pre>
       </div>
       <details class="challenge-hints-details">
         <summary>Hints (click to reveal)</summary>
       <div class="challenge-hints">
         <h3>Hints</h3>
         <ul>
-          <li>Group enqueued tasks by their `priority` value into a `Map&lt;Priority, Task&lt;unknown&gt;[]&gt;` and iterate the keys in ascending order to enforce bucket sequencing.</li>
-          <li>To batch an array of tasks with a concurrency cap, slice the array into chunks of size `maxConcurrency` and await `Promise.all` on each chunk before moving to the next.</li>
-          <li>Wrap each `handler` call in a try/catch inside a loop; push an AttemptOutcome on every iteration and `break` early as soon as a success is recorded.</li>
+          <li>A `Map` whose key is a composite string like `&quot;${name}::${unit}&quot;` is the cleanest way to accumulate merged totals without losing the unit distinction.</li>
+          <li>Create a small `Set&lt;Unit&gt;` (or use `includes` on a const array) of the 'symbol-like' units (`g`, `kg`, `ml`, `l`) to decide whether to add a space before the unit in `formatShoppingList`.</li>
+          <li>Use `Number.isInteger(quantity)` (or check `quantity % 1 === 0`) to format whole numbers without a trailing `.00`.</li>
         </ul>
       </div>
       </details>
       <div class="challenge-docs">
         <h3>Useful resources</h3>
         <ul>
-          <li><a href="https://www.typescriptlang.org/docs/handbook/2/types-from-types.html" target="_blank" rel="noopener noreferrer">TypeScript Handbook — Branded / Nominal Types</a></li>
-          <li><a href="https://www.typescriptlang.org/docs/handbook/2/narrowing.html#discriminated-unions" target="_blank" rel="noopener noreferrer">TypeScript Handbook — Discriminated Unions</a></li>
-          <li><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise/all" target="_blank" rel="noopener noreferrer">MDN — Promise.all</a></li>
-          <li><a href="https://www.typescriptlang.org/docs/handbook/2/generics.html" target="_blank" rel="noopener noreferrer">TypeScript Handbook — Generics</a></li>
+          <li><a href="https://www.typescriptlang.org/docs/handbook/2/everyday-types.html#literal-types" target="_blank" rel="noopener noreferrer">TypeScript – Literal Types</a></li>
+          <li><a href="https://www.typescriptlang.org/docs/handbook/2/objects.html#readonly-properties" target="_blank" rel="noopener noreferrer">TypeScript – readonly &amp; Readonly&lt;T&gt;</a></li>
+          <li><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Map" target="_blank" rel="noopener noreferrer">MDN – Map</a></li>
+          <li><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/sort" target="_blank" rel="noopener noreferrer">MDN – Array.prototype.sort</a></li>
         </ul>
       </div>
       <div class="cta-row">
-        <a class="cta-button cta-primary" href="https://stackblitz.com/github/niltonheck/typedrop/tree/challenge/2026-11-16" target="_blank" rel="noopener noreferrer">
+        <a class="cta-button cta-primary" href="https://stackblitz.com/github/niltonheck/typedrop/tree/challenge/2026-11-17" target="_blank" rel="noopener noreferrer">
           <img class="sb-icon" src="https://cdn.simpleicons.org/stackblitz/e0e0e0" alt=""> StackBlitz
         </a>
-        <a class="cta-button" href="https://codesandbox.io/p/devbox/github/niltonheck/typedrop/tree/challenge/2026-11-16" target="_blank" rel="noopener noreferrer">
+        <a class="cta-button" href="https://codesandbox.io/p/devbox/github/niltonheck/typedrop/tree/challenge/2026-11-17" target="_blank" rel="noopener noreferrer">
           <img class="csb-icon" src="https://cdn.simpleicons.org/codesandbox/e0e0e0" alt=""> CodeSandbox
         </a>
       </div>
       <div class="clone-section">
         <h3>Or clone locally</h3>
         <div class="clone-box">
-          <code id="clone-cmd">git clone -b challenge/2026-11-16 https://github.com/niltonheck/typedrop.git</code>
+          <code id="clone-cmd">git clone -b challenge/2026-11-17 https://github.com/niltonheck/typedrop.git</code>
           <button class="clone-copy-btn" onclick="navigator.clipboard.writeText(document.getElementById('clone-cmd').textContent).then(()=>{this.textContent='Copied!';this.classList.add('copied');setTimeout(()=>{this.textContent='Copy';this.classList.remove('copied')},2000)})">Copy</button>
         </div>
       </div>

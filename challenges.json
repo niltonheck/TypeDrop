@@ -9609,5 +9609,41 @@
         "url": "https://www.typescriptlang.org/docs/handbook/2/generics.html"
       }
     ]
+  },
+  {
+    "date": "2026-11-17",
+    "name": "Typed Recipe Book: Ingredient Scaling & Shopping List Builder",
+    "difficulty": "Easy",
+    "description": "You're building the core logic for a recipe app. Users save recipes with typed ingredients and serving sizes, scale them up or down for a dinner party, and merge multiple scaled recipes into a single de-duplicated shopping list — with the compiler enforcing every ingredient shape, unit, scaling result, and list entry.",
+    "snippet": "// Core types & main function signatures\n\nexport type Unit = \"g\" | \"kg\" | \"ml\" | \"l\" | \"tsp\" | \"tbsp\" | \"cup\" | \"whole\" | \"pinch\";\n\nexport interface Ingredient {\n  readonly name: string;\n  readonly quantity: number;\n  readonly unit: Unit;\n}\n\nexport interface Recipe {\n  readonly id: string;\n  readonly title: string;\n  readonly servings: number;\n  readonly ingredients: readonly Ingredient[];\n}\n\nexport type ShoppingList = readonly ShoppingListEntry[];\n\n// Scale a recipe to a new serving count (throws RangeError if targetServings ≤ 0)\nexport function scaleRecipe(recipe: Recipe, targetServings: number): Recipe { ... }\n\n// Merge ingredients across multiple recipes, summing same name+unit pairs\nexport function mergeShoppingList(recipes: readonly Recipe[]): ShoppingList { ... }\n\n// Format as sorted, human-readable lines  e.g. \"- 200g flour\" / \"- 1.5 tsp salt\"\nexport function formatShoppingList(list: ShoppingList): string { ... }",
+    "goals": [
+      "Define the `Unit` string-literal union and wire it through `Ingredient`, `Recipe`, and `ShoppingListEntry` so the compiler rejects any unknown unit string.",
+      "Implement `scaleRecipe` to return a structurally-identical but quantity-scaled Recipe, throwing a `RangeError` for non-positive serving counts.",
+      "Implement `mergeShoppingList` to accumulate ingredients across recipes, summing entries that share both name and unit while keeping different-unit entries separate.",
+      "Implement `formatShoppingList` to emit alphabetically-sorted lines with the correct spacing rule (symbol units like `g`/`ml` attach directly; word units like `tsp`/`whole` use a space) and whole-number display for integer quantities."
+    ],
+    "hints": [
+      "A `Map` whose key is a composite string like `\"${name}::${unit}\"` is the cleanest way to accumulate merged totals without losing the unit distinction.",
+      "Create a small `Set<Unit>` (or use `includes` on a const array) of the 'symbol-like' units (`g`, `kg`, `ml`, `l`) to decide whether to add a space before the unit in `formatShoppingList`.",
+      "Use `Number.isInteger(quantity)` (or check `quantity % 1 === 0`) to format whole numbers without a trailing `.00`."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript – Literal Types",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/everyday-types.html#literal-types"
+      },
+      {
+        "title": "TypeScript – readonly & Readonly<T>",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/objects.html#readonly-properties"
+      },
+      {
+        "title": "MDN – Map",
+        "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Map"
+      },
+      {
+        "title": "MDN – Array.prototype.sort",
+        "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/sort"
+      }
+    ]
   }
 ]
