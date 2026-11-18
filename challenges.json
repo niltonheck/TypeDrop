@@ -9645,5 +9645,41 @@
         "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/sort"
       }
     ]
+  },
+  {
+    "date": "2026-11-18",
+    "name": "Typed Multi-Tenant Permission Engine with Role Inheritance & Audit Trail",
+    "difficulty": "Hard",
+    "description": "You're building the authorization core for a SaaS platform where each tenant defines its own role hierarchy, roles inherit permissions from parent roles, and every access decision is recorded in a typed, immutable audit trail. The compiler must enforce every role shape, permission grant, inheritance chain, and audit event — no escape hatches allowed.",
+    "snippet": "// Core types at a glance\n\nexport type PermissionAction = \"read\" | \"write\" | \"delete\" | \"admin\";\n\nexport type AccessResult =\n  | { outcome: \"granted\"; role: RoleId }\n  | { outcome: \"denied\";  reason: string };\n\nexport type AuditEvent =\n  | { kind: \"AccessGranted\"; userId: UserId; resource: Resource;\n      action: PermissionAction; roleId: RoleId; timestamp: number }\n  | { kind: \"AccessDenied\";  userId: UserId; resource: Resource;\n      action: PermissionAction; reason: string; timestamp: number }\n  | { kind: \"RoleInherited\"; tenantId: TenantId;\n      childRoleId: RoleId; parentRoleId: RoleId; timestamp: number };\n\n// Main entry points\nexport function resolvePermissions(\n  tenant:      Tenant,\n  startRoleId: RoleId,\n  emitEvent:   (event: AuditEvent) => void,\n): ReadonlySet<PermissionAction>;\n\nexport function buildAuditTrail(\n  tenant:   Tenant,\n  requests: ReadonlyArray<AccessRequest>,\n): ReadonlyArray<AuditEvent>;\n\nexport function summariseAudit(\n  events: ReadonlyArray<AuditEvent>,\n): AuditSummary;\n",
+    "goals": [
+      "Define all branded primitives, the PermissionAction union, Role/Tenant interfaces, AccessResult discriminated union, and the three-variant AuditEvent discriminated union with no `any` usage.",
+      "Implement `resolvePermissions` to walk the role inheritance chain iteratively or recursively, emit a RoleInherited event per edge, guard against cycles, and return a ReadonlySet<PermissionAction>.",
+      "Implement `checkAccess` to look up a user's role, delegate to `resolvePermissions`, and return a typed AccessResult (granted or denied) while forwarding RoleInherited events.",
+      "Implement `buildAuditTrail` and `summariseAudit` so that all access requests produce correctly typed audit events and the summary's perUser breakdown is keyed by the branded UserId type."
+    ],
+    "hints": [
+      "Branded types are plain string intersections — the compiler treats them as distinct even though they're both `string` at runtime; use small factory functions to construct them safely.",
+      "For `resolvePermissions`, keep a `Set<RoleId>` of visited role IDs and stop traversal when the next parentRoleId is already in the set — this is your cycle guard.",
+      "When switching over `AuditEvent.kind` in `summariseAudit`, TypeScript will narrow each branch automatically; add a `default` branch with an `assertNever` helper to make the match exhaustive."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript Handbook — Branded / Nominal Types",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/types-from-types.html"
+      },
+      {
+        "title": "TypeScript Handbook — Discriminated Unions",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html#discriminated-unions"
+      },
+      {
+        "title": "TypeScript Handbook — Mapped & Utility Types (Record)",
+        "url": "https://www.typescriptlang.org/docs/handbook/utility-types.html#recordkeys-type"
+      },
+      {
+        "title": "TypeScript Handbook — Generics & Callbacks",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/generics.html"
+      }
+    ]
   }
 ]
