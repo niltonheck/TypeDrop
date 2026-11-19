@@ -9681,5 +9681,41 @@
         "url": "https://www.typescriptlang.org/docs/handbook/2/generics.html"
       }
     ]
+  },
+  {
+    "date": "2026-11-19",
+    "name": "Typed Expense Report: Categorisation, Budgets & Summary Rollup",
+    "difficulty": "Medium",
+    "description": "You're building the expense-management core for a finance tool. Raw expense submissions arrive as `unknown` JSON, must be validated into strongly-typed records, checked against per-category budgets, and rolled up into a typed summary report — with the compiler enforcing every shape, status flag, and aggregation result.",
+    "snippet": "\nexport type ExpenseCategory =\n  | \"travel\" | \"meals\" | \"accommodation\"\n  | \"equipment\" | \"software\" | \"other\";\n\nexport interface Expense {\n  id: string;\n  submittedBy: string;\n  category: ExpenseCategory;\n  amountCents: number;   // cents, must be > 0\n  date: string;          // \"YYYY-MM-DD\"\n  description: string;\n}\n\nexport interface Budget {\n  category: ExpenseCategory;\n  limitCents: number;\n}\n\n// Result / ParseError / BudgetStatus / ExpenseSummary — you define these!\n\nexport function parseExpense(raw: unknown): Result<Expense>;\n\nexport function evaluateBudget(\n  expenses: readonly Expense[],\n  budget: Budget\n): BudgetStatus;\n\nexport function buildSummary(\n  rawEntries: readonly unknown[],\n  budgets?: readonly Budget[]\n): ExpenseSummary;\n",
+    "goals": [
+      "Define a generic `Result<T>` discriminated union and a `ParseError` discriminated union covering missing_field, invalid_type, and invalid_value variants.",
+      "Implement `parseExpense` to validate an `unknown` value into a typed `Expense`, returning the first `ParseError` encountered.",
+      "Define a `BudgetStatus` discriminated union with variant-specific fields (remainingCents / overageCents) and implement `evaluateBudget` to produce the correct variant.",
+      "Implement `buildSummary` to parse all raw entries, evaluate budgets for every encountered category, and return a fully-typed `ExpenseSummary` rollup."
+    ],
+    "hints": [
+      "Model BudgetStatus as a discriminated union where the discriminant is a `status` string literal — each variant can then carry its own unique fields without optional properties.",
+      "In `parseExpense`, check `typeof raw === 'object' && raw !== null` first, then use `'id' in raw` style guards before narrowing each field — this avoids any `as` casts.",
+      "For the `formatBudgetStatus` exhaustiveness check, add a final `default` branch that passes the status to a helper typed as `(_: never) => never` — the compiler will error if you forget a variant."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript Handbook — Narrowing",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html"
+      },
+      {
+        "title": "TypeScript Handbook — Discriminated Unions",
+        "url": "https://www.typescriptlang.org/docs/handbook/typescript-in-5-minutes-func.html#discriminated-unions"
+      },
+      {
+        "title": "TypeScript Handbook — Generic Types",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/generics.html"
+      },
+      {
+        "title": "TypeScript `satisfies` operator (5.x release notes)",
+        "url": "https://www.typescriptlang.org/docs/handbook/release-notes/typescript-4-9.html#the-satisfies-operator"
+      }
+    ]
   }
 ]
