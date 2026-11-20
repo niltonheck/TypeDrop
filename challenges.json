@@ -9717,5 +9717,41 @@
         "url": "https://www.typescriptlang.org/docs/handbook/release-notes/typescript-4-9.html#the-satisfies-operator"
       }
     ]
+  },
+  {
+    "date": "2026-11-20",
+    "name": "Typed Playlist Builder: Track Filtering, Sorting & Duration Rollup",
+    "difficulty": "Easy",
+    "description": "You're building the core logic for a music streaming app. Users create playlists from a typed track catalogue, filter tracks by genre or mood tag, sort them by various criteria, and compute a typed duration summary — with the compiler enforcing every track shape, filter predicate, sort key, and rollup result.",
+    "snippet": "export type Genre = \"pop\" | \"rock\" | \"jazz\" | \"electronic\" | \"classical\" | \"hip-hop\";\nexport type MoodTag = \"energetic\" | \"chill\" | \"melancholic\" | \"upbeat\" | \"focus\";\n\nexport interface Track {\n  id: string;          title: string;   artist: string;\n  genre: Genre;        mood: MoodTag;\n  durationSeconds: number;  releaseYear: number;  explicit: boolean;\n}\n\nexport type SortKey = /* TODO */ never;  // \"title\" | \"artist\" | ...\nexport interface FilterCriteria {\n  // TODO: genres?, moods?, maxDurationSeconds?, explicitAllowed?, releasedAfter?\n}\nexport interface DurationSummary {\n  // TODO: totalSeconds, averageSeconds, longestTrack, shortestTrack, formatted\n}\n\nexport function createPlaylist(name: string, tracks: Track[]): Playlist { ... }\nexport function filterTracks(playlist: Playlist, criteria: FilterCriteria): Track[] { ... }\nexport function sortTracks(playlist: Playlist, options: SortOptions): Track[] { ... }\nexport function computeDurationSummary(tracks: Track[]): DurationSummary { ... }\nexport function addTrack(playlist: Playlist, track: Track): Playlist { ... }\nexport function removeTrack(playlist: Playlist, trackId: string): Playlist { ... }",
+    "goals": [
+      "Define `SortKey`, `FilterCriteria`, and `DurationSummary` with precise, strict types — no `any`, no loose `string`.",
+      "Implement `filterTracks` so that every present criterion is applied as an AND-condition and the original playlist is never mutated.",
+      "Implement `sortTracks` for all four `SortKey` values in both directions, preserving the original playlist.",
+      "Implement `computeDurationSummary` including the zero-padded `HH:MM:SS` formatted string and correct `null` handling for empty arrays."
+    ],
+    "hints": [
+      "For `SortKey`, think about which `Track` fields are naturally comparable with `<` / `>` — that's your exact union.",
+      "A single-pass `Array.prototype.reduce` can compute `totalSeconds`, `longestTrack`, and `shortestTrack` all at once.",
+      "To build `formatted`, integer-divide and modulo your way from total seconds into hours/minutes/seconds, then use `String.prototype.padStart(2, '0')`."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript – Union Types",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/everyday-types.html#union-types"
+      },
+      {
+        "title": "TypeScript – Utility Types (Pick, Omit, Record…)",
+        "url": "https://www.typescriptlang.org/docs/handbook/utility-types.html"
+      },
+      {
+        "title": "MDN – Array.prototype.reduce()",
+        "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/reduce"
+      },
+      {
+        "title": "MDN – String.prototype.padStart()",
+        "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String/padStart"
+      }
+    ]
   }
 ]
