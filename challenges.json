@@ -9753,5 +9753,41 @@
         "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String/padStart"
       }
     ]
+  },
+  {
+    "date": "2026-11-21",
+    "name": "Typed HTTP API Client: Paginated Fetch, Response Validation & Retry",
+    "difficulty": "Medium",
+    "description": "You're building the data-fetching core for a dashboard that pulls paginated records from a REST API. Raw responses arrive as `unknown`, must be validated into strongly-typed pages, retried on transient failures with a typed retry policy, and aggregated into a single typed collection — all enforced by the compiler with no escape hatches.",
+    "snippet": "\n// Core types you'll work with:\nexport type SortDirection = \"asc\" | \"desc\";\nexport type UserSortField = \"name\" | \"email\" | \"createdAt\";\n\nexport interface User {\n  id: string; name: string; email: string;\n  role: \"admin\" | \"editor\" | \"viewer\";\n  createdAt: string;\n}\nexport interface Page<T> {\n  data: T[]; page: number; pageSize: number;\n  totalPages: number; totalItems: number;\n}\nexport type Result<T, E> = { readonly ok: true; readonly value: T }\n                         | { readonly ok: false; readonly error: E };\nexport type ApiError =\n  | { kind: \"network\";    message: string }\n  | { kind: \"timeout\";    message: string; afterMs: number }\n  | { kind: \"http\";       status: number;  message: string }\n  | { kind: \"validation\"; fields: string[]; raw: unknown }\n  | { kind: \"exhausted\";  attempts: number; lastError: ApiError };\n\n// The four functions you must implement:\nexport function parseUserPage(raw: unknown): Result<Page<User>, ApiError>;\n\nexport async function fetchPageWithRetry(\n  url: string, request: PageRequest,\n  fetcher: Fetcher, policy: RetryPolicy, delay: Delay\n): Promise<Result<Page<User>, ApiError>>;\n\nexport async function fetchAllUsers(\n  url: string,\n  options: { pageSize: number; sort?: PageRequest[\"sort\"];\n             fetcher: Fetcher; policy: RetryPolicy; delay: Delay }\n): Promise<Result<User[], ApiError>>;\n\nexport function groupUsersByRole(users: User[]): Partial<Record<User[\"role\"], User[]>>;\nexport function summariseUsers(users: User[]): UserSummary;\n",
+    "goals": [
+      "Implement `parseUserPage` to validate an `unknown` API response into a typed `Page<User>`, surfacing per-item validation errors with indexed field names.",
+      "Implement `fetchPageWithRetry` with linear backoff, retrying only error kinds listed in the policy and wrapping exhausted attempts in a typed `exhausted` error.",
+      "Implement `fetchAllUsers` to sequentially page through all results, threading the `Result` monad through so any failure short-circuits the entire fetch.",
+      "Implement `groupUsersByRole` and `summariseUsers` using `Partial<Record<User[\"role\"], …>>` so the compiler omits keys for absent roles."
+    ],
+    "hints": [
+      "For `parseUserPage`, call `validatePageEnvelope` first, then map over `data` with `validateUser` — collect all failing indexes into a single `fields` array before returning.",
+      "In `fetchPageWithRetry`, check `policy.retryOn.includes(error.kind)` to decide between an immediate return and scheduling the next attempt; track the attempt number to compute the delay.",
+      "For `fetchAllUsers`, a `while (currentPage <= totalPages)` loop that `await`s `fetchPageWithRetry` and returns early on `!result.ok` is the cleanest approach."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript Handbook — Narrowing",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html"
+      },
+      {
+        "title": "TypeScript Handbook — Utility Types (Partial, Record)",
+        "url": "https://www.typescriptlang.org/docs/handbook/utility-types.html"
+      },
+      {
+        "title": "TypeScript Handbook — Generics",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/generics.html"
+      },
+      {
+        "title": "MDN — Promise.resolve / sequential async patterns",
+        "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise/resolve"
+      }
+    ]
   }
 ]

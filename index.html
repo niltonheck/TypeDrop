@@ -41,18 +41,18 @@
     <!-- CHALLENGE_START -->
     <section class="challenge-card">
       <div class="challenge-header">
-        <span class="challenge-date">2026-11-20</span>
-        <span class="badge easy">Easy</span>
+        <span class="challenge-date">2026-11-21</span>
+        <span class="badge medium">Medium</span>
       </div>
-      <h2>Typed Playlist Builder: Track Filtering, Sorting &amp; Duration Rollup</h2>
-      <p>You're building the core logic for a music streaming app. Users create playlists from a typed track catalogue, filter tracks by genre or mood tag, sort them by various criteria, and compute a typed duration summary — with the compiler enforcing every track shape, filter predicate, sort key, and rollup result.</p>
+      <h2>Typed HTTP API Client: Paginated Fetch, Response Validation &amp; Retry</h2>
+      <p>You're building the data-fetching core for a dashboard that pulls paginated records from a REST API. Raw responses arrive as `unknown`, must be validated into strongly-typed pages, retried on transient failures with a typed retry policy, and aggregated into a single typed collection — all enforced by the compiler with no escape hatches.</p>
       <div class="challenge-goals">
         <h3>Goals</h3>
         <ul>
-          <li>Define `SortKey`, `FilterCriteria`, and `DurationSummary` with precise, strict types — no `any`, no loose `string`.</li>
-          <li>Implement `filterTracks` so that every present criterion is applied as an AND-condition and the original playlist is never mutated.</li>
-          <li>Implement `sortTracks` for all four `SortKey` values in both directions, preserving the original playlist.</li>
-          <li>Implement `computeDurationSummary` including the zero-padded `HH:MM:SS` formatted string and correct `null` handling for empty arrays.</li>
+          <li>Implement `parseUserPage` to validate an `unknown` API response into a typed `Page&lt;User&gt;`, surfacing per-item validation errors with indexed field names.</li>
+          <li>Implement `fetchPageWithRetry` with linear backoff, retrying only error kinds listed in the policy and wrapping exhausted attempts in a typed `exhausted` error.</li>
+          <li>Implement `fetchAllUsers` to sequentially page through all results, threading the `Result` monad through so any failure short-circuits the entire fetch.</li>
+          <li>Implement `groupUsersByRole` and `summariseUsers` using `Partial&lt;Record&lt;User[&quot;role&quot;], …&gt;&gt;` so the compiler omits keys for absent roles.</li>
         </ul>
       </div>
       <div class="code-block">
@@ -62,62 +62,79 @@
           <span class="dot green"></span>
           <span class="code-block-title">challenge.ts</span>
         </div>
-        <pre><code class="language-typescript">export type Genre = &quot;pop&quot; | &quot;rock&quot; | &quot;jazz&quot; | &quot;electronic&quot; | &quot;classical&quot; | &quot;hip-hop&quot;;
-export type MoodTag = &quot;energetic&quot; | &quot;chill&quot; | &quot;melancholic&quot; | &quot;upbeat&quot; | &quot;focus&quot;;
+        <pre><code class="language-typescript">
+// Core types you'll work with:
+export type SortDirection = &quot;asc&quot; | &quot;desc&quot;;
+export type UserSortField = &quot;name&quot; | &quot;email&quot; | &quot;createdAt&quot;;
 
-export interface Track {
-  id: string;          title: string;   artist: string;
-  genre: Genre;        mood: MoodTag;
-  durationSeconds: number;  releaseYear: number;  explicit: boolean;
+export interface User {
+  id: string; name: string; email: string;
+  role: &quot;admin&quot; | &quot;editor&quot; | &quot;viewer&quot;;
+  createdAt: string;
 }
+export interface Page&lt;T&gt; {
+  data: T[]; page: number; pageSize: number;
+  totalPages: number; totalItems: number;
+}
+export type Result&lt;T, E&gt; = { readonly ok: true; readonly value: T }
+                         | { readonly ok: false; readonly error: E };
+export type ApiError =
+  | { kind: &quot;network&quot;;    message: string }
+  | { kind: &quot;timeout&quot;;    message: string; afterMs: number }
+  | { kind: &quot;http&quot;;       status: number;  message: string }
+  | { kind: &quot;validation&quot;; fields: string[]; raw: unknown }
+  | { kind: &quot;exhausted&quot;;  attempts: number; lastError: ApiError };
 
-export type SortKey = /* TODO */ never;  // &quot;title&quot; | &quot;artist&quot; | ...
-export interface FilterCriteria {
-  // TODO: genres?, moods?, maxDurationSeconds?, explicitAllowed?, releasedAfter?
-}
-export interface DurationSummary {
-  // TODO: totalSeconds, averageSeconds, longestTrack, shortestTrack, formatted
-}
+// The four functions you must implement:
+export function parseUserPage(raw: unknown): Result&lt;Page&lt;User&gt;, ApiError&gt;;
 
-export function createPlaylist(name: string, tracks: Track[]): Playlist { ... }
-export function filterTracks(playlist: Playlist, criteria: FilterCriteria): Track[] { ... }
-export function sortTracks(playlist: Playlist, options: SortOptions): Track[] { ... }
-export function computeDurationSummary(tracks: Track[]): DurationSummary { ... }
-export function addTrack(playlist: Playlist, track: Track): Playlist { ... }
-export function removeTrack(playlist: Playlist, trackId: string): Playlist { ... }</code></pre>
+export async function fetchPageWithRetry(
+  url: string, request: PageRequest,
+  fetcher: Fetcher, policy: RetryPolicy, delay: Delay
+): Promise&lt;Result&lt;Page&lt;User&gt;, ApiError&gt;&gt;;
+
+export async function fetchAllUsers(
+  url: string,
+  options: { pageSize: number; sort?: PageRequest[&quot;sort&quot;];
+             fetcher: Fetcher; policy: RetryPolicy; delay: Delay }
+): Promise&lt;Result&lt;User[], ApiError&gt;&gt;;
+
+export function groupUsersByRole(users: User[]): Partial&lt;Record&lt;User[&quot;role&quot;], User[]&gt;&gt;;
+export function summariseUsers(users: User[]): UserSummary;
+</code></pre>
       </div>
       <details class="challenge-hints-details">
         <summary>Hints (click to reveal)</summary>
       <div class="challenge-hints">
         <h3>Hints</h3>
         <ul>
-          <li>For `SortKey`, think about which `Track` fields are naturally comparable with `&lt;` / `&gt;` — that's your exact union.</li>
-          <li>A single-pass `Array.prototype.reduce` can compute `totalSeconds`, `longestTrack`, and `shortestTrack` all at once.</li>
-          <li>To build `formatted`, integer-divide and modulo your way from total seconds into hours/minutes/seconds, then use `String.prototype.padStart(2, '0')`.</li>
+          <li>For `parseUserPage`, call `validatePageEnvelope` first, then map over `data` with `validateUser` — collect all failing indexes into a single `fields` array before returning.</li>
+          <li>In `fetchPageWithRetry`, check `policy.retryOn.includes(error.kind)` to decide between an immediate return and scheduling the next attempt; track the attempt number to compute the delay.</li>
+          <li>For `fetchAllUsers`, a `while (currentPage &lt;= totalPages)` loop that `await`s `fetchPageWithRetry` and returns early on `!result.ok` is the cleanest approach.</li>
         </ul>
       </div>
       </details>
       <div class="challenge-docs">
         <h3>Useful resources</h3>
         <ul>
-          <li><a href="https://www.typescriptlang.org/docs/handbook/2/everyday-types.html#union-types" target="_blank" rel="noopener noreferrer">TypeScript – Union Types</a></li>
-          <li><a href="https://www.typescriptlang.org/docs/handbook/utility-types.html" target="_blank" rel="noopener noreferrer">TypeScript – Utility Types (Pick, Omit, Record…)</a></li>
-          <li><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/reduce" target="_blank" rel="noopener noreferrer">MDN – Array.prototype.reduce()</a></li>
-          <li><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String/padStart" target="_blank" rel="noopener noreferrer">MDN – String.prototype.padStart()</a></li>
+          <li><a href="https://www.typescriptlang.org/docs/handbook/2/narrowing.html" target="_blank" rel="noopener noreferrer">TypeScript Handbook — Narrowing</a></li>
+          <li><a href="https://www.typescriptlang.org/docs/handbook/utility-types.html" target="_blank" rel="noopener noreferrer">TypeScript Handbook — Utility Types (Partial, Record)</a></li>
+          <li><a href="https://www.typescriptlang.org/docs/handbook/2/generics.html" target="_blank" rel="noopener noreferrer">TypeScript Handbook — Generics</a></li>
+          <li><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise/resolve" target="_blank" rel="noopener noreferrer">MDN — Promise.resolve / sequential async patterns</a></li>
         </ul>
       </div>
       <div class="cta-row">
-        <a class="cta-button cta-primary" href="https://stackblitz.com/github/niltonheck/typedrop/tree/challenge/2026-11-20" target="_blank" rel="noopener noreferrer">
+        <a class="cta-button cta-primary" href="https://stackblitz.com/github/niltonheck/typedrop/tree/challenge/2026-11-21" target="_blank" rel="noopener noreferrer">
           <img class="sb-icon" src="https://cdn.simpleicons.org/stackblitz/e0e0e0" alt=""> StackBlitz
         </a>
-        <a class="cta-button" href="https://codesandbox.io/p/devbox/github/niltonheck/typedrop/tree/challenge/2026-11-20" target="_blank" rel="noopener noreferrer">
+        <a class="cta-button" href="https://codesandbox.io/p/devbox/github/niltonheck/typedrop/tree/challenge/2026-11-21" target="_blank" rel="noopener noreferrer">
           <img class="csb-icon" src="https://cdn.simpleicons.org/codesandbox/e0e0e0" alt=""> CodeSandbox
         </a>
       </div>
       <div class="clone-section">
         <h3>Or clone locally</h3>
         <div class="clone-box">
-          <code id="clone-cmd">git clone -b challenge/2026-11-20 https://github.com/niltonheck/typedrop.git</code>
+          <code id="clone-cmd">git clone -b challenge/2026-11-21 https://github.com/niltonheck/typedrop.git</code>
           <button class="clone-copy-btn" onclick="navigator.clipboard.writeText(document.getElementById('clone-cmd').textContent).then(()=>{this.textContent='Copied!';this.classList.add('copied');setTimeout(()=>{this.textContent='Copy';this.classList.remove('copied')},2000)})">Copy</button>
         </div>
       </div>
