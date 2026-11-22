@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TypeDrop — Typed Book Lending Library: Checkout, Returns &amp; Overdue Tracker</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Permanent+Marker&display=swap">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/fontsource/fonts/0x-proto@latest/latin-400-normal.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/fontsource/fonts/0x-proto@latest/latin-700-normal.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1/themes/prism-tomorrow.min.css">
+  <link rel="icon" href="../../misc/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="../../style.css">
+</head>
+<body>
+  <main>
+    <header>
+      <h1><a href="../../index.html" style="color: inherit; text-decoration: none;">TypeDrop</a></h1>
+      <p class="tagline">2026-11-22 Challenge</p>
+    </header>
+
+    <section class="challenge-card">
+      <div class="challenge-header">
+        <span class="challenge-date">2026-11-22</span>
+        <span class="badge easy">Easy</span>
+      </div>
+      <h2>Typed Book Lending Library: Checkout, Returns &amp; Overdue Tracker</h2>
+      <p>You're building the core logic for a neighbourhood book lending library. Members check out books for a fixed loan period, return them, and the system tracks which loans are overdue — with the compiler enforcing every book shape, loan record, status, and overdue report.</p>
+      <div class="challenge-goals">
+        <h3>Goals</h3>
+        <ul>
+          <li>Define the Book, LoanStatus discriminated union, and LoanRecord types with full compiler enforcement and no escape hatches.</li>
+          <li>Implement checkoutBook, returnBook, and markOverdue — returning new records (no mutation) and narrowing the discriminated union correctly.</li>
+          <li>Throw a TypeError in markOverdue when the loan is not in the 'checked-out' state or the due date has not yet passed.</li>
+          <li>Implement getOverdueReport to filter, sort, and aggregate overdue loans into a fully typed OverdueReport.</li>
+        </ul>
+      </div>
+      <div class="code-block">
+        <div class="code-block-header">
+          <span class="dot red"></span>
+          <span class="dot yellow"></span>
+          <span class="dot green"></span>
+          <span class="code-block-title">challenge.ts</span>
+        </div>
+        <pre><code class="language-typescript">/** ISO-8601 calendar date string brand */
+type CalendarDate = string &amp; { readonly __brand: &quot;CalendarDate&quot; };
+
+type Genre = &quot;fiction&quot; | &quot;non-fiction&quot; | &quot;science&quot; | &quot;history&quot; | &quot;biography&quot; | &quot;fantasy&quot;;
+
+type Book = { id: string; title: string; author: string; genre: Genre; totalCopies: number };
+
+type LoanStatus =
+  | { status: &quot;checked-out&quot;; dueDate: CalendarDate }
+  | { status: &quot;returned&quot;;   returnedOn: CalendarDate }
+  | { status: &quot;overdue&quot;;    dueDate: CalendarDate; daysOverdue: number };
+
+type LoanRecord = {
+  id: string; bookId: string; memberId: string;
+  checkedOutOn: CalendarDate; status: LoanStatus;
+};
+
+// Functions you must implement:
+declare function checkoutBook(params: {
+  id: string; book: Book; memberId: string;
+  checkedOutOn: CalendarDate; loanDays: number;
+}): LoanRecord;
+
+declare function returnBook(loan: LoanRecord, returnedOn: CalendarDate): LoanRecord;
+declare function markOverdue(loan: LoanRecord, today: CalendarDate): LoanRecord;
+declare function getOverdueReport(loans: ReadonlyArray&lt;LoanRecord&gt;, today: CalendarDate): OverdueReport;
+</code></pre>
+      </div>
+      <details class="challenge-hints-details">
+        <summary>Hints (click to reveal)</summary>
+      <div class="challenge-hints">
+        <h3>Hints</h3>
+        <ul>
+          <li>Use the provided `toCalendarDate` helper and `addDays`/`daysBetween` utilities — you do not need to write your own date arithmetic.</li>
+          <li>Narrow `loan.status.status` with an `if` or `switch` before accessing discriminant-specific fields like `dueDate` or `daysOverdue`.</li>
+          <li>Spread the existing loan record (`{ ...loan, status: newStatus }`) to produce an immutable copy with an updated status.</li>
+        </ul>
+      </div>
+      </details>
+      <div class="challenge-docs">
+        <h3>Useful resources</h3>
+        <ul>
+          <li><a href="https://www.typescriptlang.org/docs/handbook/2/narrowing.html#discriminated-unions" target="_blank" rel="noopener noreferrer">TypeScript Handbook — Discriminated Unions</a></li>
+          <li><a href="https://www.typescriptlang.org/docs/handbook/2/types-from-types.html" target="_blank" rel="noopener noreferrer">TypeScript Handbook — Branded / Nominal Types</a></li>
+          <li><a href="https://www.typescriptlang.org/docs/handbook/2/narrowing.html" target="_blank" rel="noopener noreferrer">TypeScript Handbook — Narrowing</a></li>
+          <li><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/sort" target="_blank" rel="noopener noreferrer">MDN — Array.prototype.sort()</a></li>
+        </ul>
+      </div>
+      <div class="cta-row">
+        <a class="cta-button cta-primary" href="https://stackblitz.com/github/niltonheck/typedrop/tree/challenge/2026-11-22" target="_blank" rel="noopener noreferrer">
+          <img class="sb-icon" src="https://cdn.simpleicons.org/stackblitz/e0e0e0" alt=""> StackBlitz
+        </a>
+        <a class="cta-button" href="https://codesandbox.io/p/devbox/github/niltonheck/typedrop/tree/challenge/2026-11-22" target="_blank" rel="noopener noreferrer">
+          <img class="csb-icon" src="https://cdn.simpleicons.org/codesandbox/e0e0e0" alt=""> CodeSandbox
+        </a>
+      </div>
+      <div class="clone-section">
+        <h3>Or clone locally</h3>
+        <div class="clone-box">
+          <code id="clone-cmd">git clone -b challenge/2026-11-22 https://github.com/niltonheck/typedrop.git</code>
+          <button class="clone-copy-btn" onclick="navigator.clipboard.writeText(document.getElementById('clone-cmd').textContent).then(()=>{this.textContent='Copied!';this.classList.add('copied');setTimeout(()=>{this.textContent='Copy';this.classList.remove('copied')},2000)})">Copy</button>
+        </div>
+      </div>
+    </section>
+
+    <footer>
+      <p>
+        <a href="../../index.html">&larr; Today's challenge</a>
+        &middot;
+        <a href="../../archive.html">Archive</a>
+      </p>
+    </footer>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1/prism.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1/components/prism-typescript.min.js"></script>
+  <script data-goatcounter="https://niltonheck.goatcounter.com/count"
+        async src="//gc.zgo.at/count.js"></script>
+</body>
+</html>

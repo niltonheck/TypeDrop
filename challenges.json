@@ -9789,5 +9789,41 @@
         "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise/resolve"
       }
     ]
+  },
+  {
+    "date": "2026-11-22",
+    "name": "Typed Book Lending Library: Checkout, Returns & Overdue Tracker",
+    "difficulty": "Easy",
+    "description": "You're building the core logic for a neighbourhood book lending library. Members check out books for a fixed loan period, return them, and the system tracks which loans are overdue — with the compiler enforcing every book shape, loan record, status, and overdue report.",
+    "snippet": "/** ISO-8601 calendar date string brand */\ntype CalendarDate = string & { readonly __brand: \"CalendarDate\" };\n\ntype Genre = \"fiction\" | \"non-fiction\" | \"science\" | \"history\" | \"biography\" | \"fantasy\";\n\ntype Book = { id: string; title: string; author: string; genre: Genre; totalCopies: number };\n\ntype LoanStatus =\n  | { status: \"checked-out\"; dueDate: CalendarDate }\n  | { status: \"returned\";   returnedOn: CalendarDate }\n  | { status: \"overdue\";    dueDate: CalendarDate; daysOverdue: number };\n\ntype LoanRecord = {\n  id: string; bookId: string; memberId: string;\n  checkedOutOn: CalendarDate; status: LoanStatus;\n};\n\n// Functions you must implement:\ndeclare function checkoutBook(params: {\n  id: string; book: Book; memberId: string;\n  checkedOutOn: CalendarDate; loanDays: number;\n}): LoanRecord;\n\ndeclare function returnBook(loan: LoanRecord, returnedOn: CalendarDate): LoanRecord;\ndeclare function markOverdue(loan: LoanRecord, today: CalendarDate): LoanRecord;\ndeclare function getOverdueReport(loans: ReadonlyArray<LoanRecord>, today: CalendarDate): OverdueReport;\n",
+    "goals": [
+      "Define the Book, LoanStatus discriminated union, and LoanRecord types with full compiler enforcement and no escape hatches.",
+      "Implement checkoutBook, returnBook, and markOverdue — returning new records (no mutation) and narrowing the discriminated union correctly.",
+      "Throw a TypeError in markOverdue when the loan is not in the 'checked-out' state or the due date has not yet passed.",
+      "Implement getOverdueReport to filter, sort, and aggregate overdue loans into a fully typed OverdueReport."
+    ],
+    "hints": [
+      "Use the provided `toCalendarDate` helper and `addDays`/`daysBetween` utilities — you do not need to write your own date arithmetic.",
+      "Narrow `loan.status.status` with an `if` or `switch` before accessing discriminant-specific fields like `dueDate` or `daysOverdue`.",
+      "Spread the existing loan record (`{ ...loan, status: newStatus }`) to produce an immutable copy with an updated status."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript Handbook — Discriminated Unions",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html#discriminated-unions"
+      },
+      {
+        "title": "TypeScript Handbook — Branded / Nominal Types",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/types-from-types.html"
+      },
+      {
+        "title": "TypeScript Handbook — Narrowing",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html"
+      },
+      {
+        "title": "MDN — Array.prototype.sort()",
+        "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/sort"
+      }
+    ]
   }
 ]
