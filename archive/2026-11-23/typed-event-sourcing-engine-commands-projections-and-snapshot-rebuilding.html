@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TypeDrop — Typed Event Sourcing Engine: Commands, Projections &amp; Snapshot Rebuilding</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Permanent+Marker&display=swap">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/fontsource/fonts/0x-proto@latest/latin-400-normal.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/fontsource/fonts/0x-proto@latest/latin-700-normal.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1/themes/prism-tomorrow.min.css">
+  <link rel="icon" href="../../misc/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="../../style.css">
+</head>
+<body>
+  <main>
+    <header>
+      <h1><a href="../../index.html" style="color: inherit; text-decoration: none;">TypeDrop</a></h1>
+      <p class="tagline">2026-11-23 Challenge</p>
+    </header>
+
+    <section class="challenge-card">
+      <div class="challenge-header">
+        <span class="challenge-date">2026-11-23</span>
+        <span class="badge hard">Hard</span>
+      </div>
+      <h2>Typed Event Sourcing Engine: Commands, Projections &amp; Snapshot Rebuilding</h2>
+      <p>You're building the core of an event-sourced order management system. Raw commands arrive as `unknown` JSON, are validated into a discriminated-union command type, applied to produce typed domain events, and then replayed (with optional snapshot checkpoints) to rebuild the current aggregate state — the compiler must enforce every command shape, event variant, state transition, and projection result.</p>
+      <div class="challenge-goals">
+        <h3>Goals</h3>
+        <ul>
+          <li>Implement `validateCommand` to safely narrow `unknown` JSON into a typed `DomainCommand`, returning structured `CommandValidationError` variants for every invalid shape.</li>
+          <li>Implement `applyEvent` with exhaustive, compiler-enforced handling of all five `DomainEvent` variants, enforcing legal state transitions and returning `ApplyError` on violations.</li>
+          <li>Implement `replayEvents` to reconstruct `OrderState` by folding events in sequence order, optionally seeding from a `Snapshot` and skipping already-applied events.</li>
+          <li>Implement both projections (`projectOrderTotal`, `projectEventLog`) and `buildSnapshot` using only the typed state and event arrays — no casting or escape hatches.</li>
+        </ul>
+      </div>
+      <div class="code-block">
+        <div class="code-block-header">
+          <span class="dot red"></span>
+          <span class="dot yellow"></span>
+          <span class="dot green"></span>
+          <span class="code-block-title">challenge.ts</span>
+        </div>
+        <pre><code class="language-typescript">
+// Core types at a glance
+type OrderId   = Brand&lt;string, &quot;OrderId&quot;&gt;;
+type EventSeq  = Brand&lt;number, &quot;EventSeq&quot;&gt;;
+
+type OrderState = {
+  readonly orderId: OrderId;
+  readonly status: &quot;Draft&quot; | &quot;Confirmed&quot; | &quot;Cancelled&quot;;
+  readonly items: ReadonlyArray&lt;OrderLineItem&gt;;
+  readonly lastSeq: EventSeq;
+};
+
+type Snapshot = { readonly atSeq: EventSeq; readonly state: OrderState };
+
+// Mapped type: one typed handler per command variant
+type CommandHandlerMap = {
+  [K in DomainCommand[&quot;type&quot;]]: (
+    cmd: Extract&lt;DomainCommand, { type: K }&gt;,
+    state: OrderState | undefined
+  ) =&gt; Result&lt;DomainEvent, ApplyError&gt;;
+};
+
+// Key functions you must implement
+declare function validateCommand(raw: unknown): Result&lt;DomainCommand, CommandValidationError&gt;;
+declare function applyEvent(state: OrderState | undefined, event: DomainEvent): Result&lt;OrderState, ApplyError&gt;;
+declare function replayEvents(events: ReadonlyArray&lt;DomainEvent&gt;, snapshot?: Snapshot): Result&lt;OrderState, ApplyError&gt;;
+declare function projectOrderTotal(state: OrderState): number;
+</code></pre>
+      </div>
+      <details class="challenge-hints-details">
+        <summary>Hints (click to reveal)</summary>
+      <div class="challenge-hints">
+        <h3>Hints</h3>
+        <ul>
+          <li>In `validateCommand`, narrow `unknown` step by step: check `typeof raw === 'object'`, then `'type' in raw`, then use a `switch` on `raw.type` — TypeScript will not narrow `unknown` automatically.</li>
+          <li>The `CommandHandlerMap` mapped type means you can dispatch `handlers[cmd.type](cmd, state)` — but you'll need a small type assertion bridge or a generic helper to satisfy the compiler that `cmd` matches the handler's parameter type; think about `Extract&lt;DomainCommand, { type: typeof cmd.type }&gt;`.</li>
+          <li>In `replayEvents`, filter events to only those with `event.seq &gt; (snapshot?.atSeq ?? -1)` before folding, then use `applyEvent` as the reducer — short-circuit on the first `Err` result.</li>
+        </ul>
+      </div>
+      </details>
+      <div class="challenge-docs">
+        <h3>Useful resources</h3>
+        <ul>
+          <li><a href="https://www.typescriptlang.org/docs/handbook/2/narrowing.html" target="_blank" rel="noopener noreferrer">TypeScript Handbook — Narrowing</a></li>
+          <li><a href="https://www.typescriptlang.org/docs/handbook/2/mapped-types.html" target="_blank" rel="noopener noreferrer">TypeScript Handbook — Mapped Types</a></li>
+          <li><a href="https://www.typescriptlang.org/docs/handbook/2/conditional-types.html" target="_blank" rel="noopener noreferrer">TypeScript Handbook — Conditional Types &amp; Extract</a></li>
+          <li><a href="https://www.typescriptlang.org/docs/handbook/2/template-literal-types.html" target="_blank" rel="noopener noreferrer">TypeScript Handbook — Template Literal &amp; Branded Types pattern</a></li>
+        </ul>
+      </div>
+      <div class="cta-row">
+        <a class="cta-button cta-primary" href="https://stackblitz.com/github/niltonheck/typedrop/tree/challenge/2026-11-23" target="_blank" rel="noopener noreferrer">
+          <img class="sb-icon" src="https://cdn.simpleicons.org/stackblitz/e0e0e0" alt=""> StackBlitz
+        </a>
+        <a class="cta-button" href="https://codesandbox.io/p/devbox/github/niltonheck/typedrop/tree/challenge/2026-11-23" target="_blank" rel="noopener noreferrer">
+          <img class="csb-icon" src="https://cdn.simpleicons.org/codesandbox/e0e0e0" alt=""> CodeSandbox
+        </a>
+      </div>
+      <div class="clone-section">
+        <h3>Or clone locally</h3>
+        <div class="clone-box">
+          <code id="clone-cmd">git clone -b challenge/2026-11-23 https://github.com/niltonheck/typedrop.git</code>
+          <button class="clone-copy-btn" onclick="navigator.clipboard.writeText(document.getElementById('clone-cmd').textContent).then(()=>{this.textContent='Copied!';this.classList.add('copied');setTimeout(()=>{this.textContent='Copy';this.classList.remove('copied')},2000)})">Copy</button>
+        </div>
+      </div>
+    </section>
+
+    <footer>
+      <p>
+        <a href="../../index.html">&larr; Today's challenge</a>
+        &middot;
+        <a href="../../archive.html">Archive</a>
+      </p>
+    </footer>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1/prism.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1/components/prism-typescript.min.js"></script>
+  <script data-goatcounter="https://niltonheck.goatcounter.com/count"
+        async src="//gc.zgo.at/count.js"></script>
+</body>
+</html>

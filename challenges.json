@@ -9825,5 +9825,41 @@
         "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/sort"
       }
     ]
+  },
+  {
+    "date": "2026-11-23",
+    "name": "Typed Event Sourcing Engine: Commands, Projections & Snapshot Rebuilding",
+    "difficulty": "Hard",
+    "description": "You're building the core of an event-sourced order management system. Raw commands arrive as `unknown` JSON, are validated into a discriminated-union command type, applied to produce typed domain events, and then replayed (with optional snapshot checkpoints) to rebuild the current aggregate state — the compiler must enforce every command shape, event variant, state transition, and projection result.",
+    "snippet": "\n// Core types at a glance\ntype OrderId   = Brand<string, \"OrderId\">;\ntype EventSeq  = Brand<number, \"EventSeq\">;\n\ntype OrderState = {\n  readonly orderId: OrderId;\n  readonly status: \"Draft\" | \"Confirmed\" | \"Cancelled\";\n  readonly items: ReadonlyArray<OrderLineItem>;\n  readonly lastSeq: EventSeq;\n};\n\ntype Snapshot = { readonly atSeq: EventSeq; readonly state: OrderState };\n\n// Mapped type: one typed handler per command variant\ntype CommandHandlerMap = {\n  [K in DomainCommand[\"type\"]]: (\n    cmd: Extract<DomainCommand, { type: K }>,\n    state: OrderState | undefined\n  ) => Result<DomainEvent, ApplyError>;\n};\n\n// Key functions you must implement\ndeclare function validateCommand(raw: unknown): Result<DomainCommand, CommandValidationError>;\ndeclare function applyEvent(state: OrderState | undefined, event: DomainEvent): Result<OrderState, ApplyError>;\ndeclare function replayEvents(events: ReadonlyArray<DomainEvent>, snapshot?: Snapshot): Result<OrderState, ApplyError>;\ndeclare function projectOrderTotal(state: OrderState): number;\n",
+    "goals": [
+      "Implement `validateCommand` to safely narrow `unknown` JSON into a typed `DomainCommand`, returning structured `CommandValidationError` variants for every invalid shape.",
+      "Implement `applyEvent` with exhaustive, compiler-enforced handling of all five `DomainEvent` variants, enforcing legal state transitions and returning `ApplyError` on violations.",
+      "Implement `replayEvents` to reconstruct `OrderState` by folding events in sequence order, optionally seeding from a `Snapshot` and skipping already-applied events.",
+      "Implement both projections (`projectOrderTotal`, `projectEventLog`) and `buildSnapshot` using only the typed state and event arrays — no casting or escape hatches."
+    ],
+    "hints": [
+      "In `validateCommand`, narrow `unknown` step by step: check `typeof raw === 'object'`, then `'type' in raw`, then use a `switch` on `raw.type` — TypeScript will not narrow `unknown` automatically.",
+      "The `CommandHandlerMap` mapped type means you can dispatch `handlers[cmd.type](cmd, state)` — but you'll need a small type assertion bridge or a generic helper to satisfy the compiler that `cmd` matches the handler's parameter type; think about `Extract<DomainCommand, { type: typeof cmd.type }>`.",
+      "In `replayEvents`, filter events to only those with `event.seq > (snapshot?.atSeq ?? -1)` before folding, then use `applyEvent` as the reducer — short-circuit on the first `Err` result."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript Handbook — Narrowing",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html"
+      },
+      {
+        "title": "TypeScript Handbook — Mapped Types",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/mapped-types.html"
+      },
+      {
+        "title": "TypeScript Handbook — Conditional Types & Extract",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/conditional-types.html"
+      },
+      {
+        "title": "TypeScript Handbook — Template Literal & Branded Types pattern",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/template-literal-types.html"
+      }
+    ]
   }
 ]
