@@ -9861,5 +9861,41 @@
         "url": "https://www.typescriptlang.org/docs/handbook/2/template-literal-types.html"
       }
     ]
+  },
+  {
+    "date": "2026-11-24",
+    "name": "Typed Recipe Box: Ingredient Scaling, Diet Filtering & Nutrition Rollup",
+    "difficulty": "Easy",
+    "description": "You're building the recipe-management core for a meal-planning app. Users browse a typed recipe catalogue, filter recipes by dietary tags, scale ingredient quantities to a target serving count, and compute a typed nutrition summary — with the compiler enforcing every ingredient shape, diet tag, scaling result, and rollup field.",
+    "snippet": "// Key types & main function signatures\n\nexport type DietTag =\n  \"vegan\" | \"vegetarian\" | \"gluten-free\" | \"dairy-free\" | \"nut-free\";\n\nexport interface NutritionInfo {\n  calories: number; protein: number; carbs: number; fat: number;\n}\n\nexport interface Recipe {\n  id: string;\n  title: string;\n  servings: number;\n  dietTags: readonly DietTag[];\n  ingredients: readonly Ingredient[];\n  nutrition: NutritionInfo;  // per single serving\n}\n\nexport interface ScaledRecipe extends Recipe {\n  targetServings: number;\n  scaledIngredients: readonly Ingredient[];\n  scaledNutrition: NutritionInfo;  // totals for ALL targetServings\n}\n\nexport function filterByDietTag(\n  recipes: readonly Recipe[], tag: DietTag\n): Recipe[] { /* TODO */ }\n\nexport function scaleRecipe(\n  recipe: Recipe, targetServings: number\n): ScaledRecipe { /* TODO */ }\n\nexport function computeNutritionSummary(\n  recipes: readonly ScaledRecipe[]\n): NutritionSummary { /* TODO */ }",
+    "goals": [
+      "Define five strictly-typed interfaces (`NutritionInfo`, `Ingredient`, `Recipe`, `ScaledRecipe`, `NutritionSummary`) and the `DietTag` union with exactly the required members.",
+      "Implement `filterByDietTag` to return only recipes whose `dietTags` array includes the requested `DietTag`.",
+      "Implement `scaleRecipe` to proportionally scale ingredient quantities and compute total nutrition for `targetServings`, throwing a `RangeError` for invalid input.",
+      "Implement `computeNutritionSummary` to aggregate `scaledNutrition` fields across an array of `ScaledRecipe` objects into a typed summary with correct totals and average."
+    ],
+    "hints": [
+      "The `DietTag` union should use string literal types — the compiler will then reject any typo passed to `filterByDietTag` at the call site.",
+      "For `scaleRecipe`, compute a single `factor = targetServings / recipe.servings` and apply it to every ingredient quantity and every `NutritionInfo` field — `Math.round(value * 100) / 100` gives 2 d.p. without `toFixed`.",
+      "In `computeNutritionSummary`, a single `Array.reduce` pass can accumulate all four nutrition totals at once; compute `averageCalories` after the loop using a ternary guard for the empty-array case."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript — Union & Literal Types",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/everyday-types.html#union-types"
+      },
+      {
+        "title": "TypeScript — Interfaces",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/objects.html"
+      },
+      {
+        "title": "TypeScript — readonly Properties",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/objects.html#readonly-properties"
+      },
+      {
+        "title": "MDN — Array.prototype.reduce()",
+        "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/reduce"
+      }
+    ]
   }
 ]
