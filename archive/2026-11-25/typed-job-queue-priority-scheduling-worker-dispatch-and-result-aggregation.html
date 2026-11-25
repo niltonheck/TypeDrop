@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TypeDrop — Typed Job Queue: Priority Scheduling, Worker Dispatch &amp; Result Aggregation</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Permanent+Marker&display=swap">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/fontsource/fonts/0x-proto@latest/latin-400-normal.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/fontsource/fonts/0x-proto@latest/latin-700-normal.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1/themes/prism-tomorrow.min.css">
+  <link rel="icon" href="../../misc/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="../../style.css">
+</head>
+<body>
+  <main>
+    <header>
+      <h1><a href="../../index.html" style="color: inherit; text-decoration: none;">TypeDrop</a></h1>
+      <p class="tagline">2026-11-25 Challenge</p>
+    </header>
+
+    <section class="challenge-card">
+      <div class="challenge-header">
+        <span class="challenge-date">2026-11-25</span>
+        <span class="badge medium">Medium</span>
+      </div>
+      <h2>Typed Job Queue: Priority Scheduling, Worker Dispatch &amp; Result Aggregation</h2>
+      <p>You're building the scheduling core for a background job processing system. Jobs arrive with typed payloads and priorities, are dispatched to typed worker handlers, and results are aggregated into a structured run report — the compiler must enforce every job variant, worker signature, dispatch outcome, and summary shape.</p>
+      <div class="challenge-goals">
+        <h3>Goals</h3>
+        <ul>
+          <li>Define `WorkerFn&lt;J&gt;` and `WorkerRegistry` as a mapped type using `Extract&lt;Job, { kind: K }&gt;` so each job kind maps to a correctly-typed async worker.</li>
+          <li>Implement `sortByPriority` to return a new array sorted highest-priority-first with a stable ordering for equal priorities.</li>
+          <li>Implement `dispatchJob` to narrow the discriminated union by `job.kind` and call the matching worker from the registry — without `any` or unsafe casts.</li>
+          <li>Implement `runQueue` to dispatch all jobs concurrently with `Promise.allSettled`, catch rejecting workers as `JobFailure` entries, and return a fully typed `RunReport`.</li>
+        </ul>
+      </div>
+      <div class="code-block">
+        <div class="code-block-header">
+          <span class="dot red"></span>
+          <span class="dot yellow"></span>
+          <span class="dot green"></span>
+          <span class="code-block-title">challenge.ts</span>
+        </div>
+        <pre><code class="language-typescript">// Key types and main function signatures
+
+export type Priority = 1 | 2 | 3;
+export type JobKind  = &quot;email&quot; | &quot;resize&quot; | &quot;report&quot; | &quot;webhook&quot;;
+
+export type Job = EmailJob | ResizeJob | ReportJob | WebhookJob;
+
+export type JobResult&lt;T&gt; =
+  | { status: &quot;success&quot;; jobId: string; output: T }
+  | { status: &quot;failure&quot;; jobId: string; error: string };
+
+// TODO (3a): WorkerFn&lt;J&gt; — async function receiving job J, returning JobResult
+export type WorkerFn&lt;J extends Job&gt; = /* TODO */ unknown;
+
+// TODO (3b): WorkerRegistry — mapped type over JobKind → correct WorkerFn variant
+export type WorkerRegistry = { [K in JobKind]: /* TODO */ unknown };
+
+// Sort jobs: highest Priority number first (stable)
+export function sortByPriority(jobs: Job[]): Job[];
+
+// Route one job to its registered worker
+export async function dispatchJob(
+  job: Job,
+  registry: WorkerRegistry
+): Promise&lt;JobResult&lt;unknown&gt;&gt;;
+
+// Dispatch all jobs concurrently, collect a RunReport
+export async function runQueue(
+  jobs: Job[],
+  registry: WorkerRegistry
+): Promise&lt;RunReport&gt;;</code></pre>
+      </div>
+      <details class="challenge-hints-details">
+        <summary>Hints (click to reveal)</summary>
+      <div class="challenge-hints">
+        <h3>Hints</h3>
+        <ul>
+          <li>For `WorkerRegistry`, the mapped type key `K` gives you the kind string — use `Extract&lt;Job, { kind: K }&gt;` to pull the exact job variant for that key.</li>
+          <li>In `dispatchJob`, a `switch (job.kind)` block narrows `job` to each concrete variant, letting you call `registry[job.kind](job)` inside each case without any type errors.</li>
+          <li>Use `Promise.allSettled` (not `Promise.all`) in `runQueue` so a rejected worker promise doesn't abort the whole batch — then inspect each `PromiseSettledResult` to build the report.</li>
+        </ul>
+      </div>
+      </details>
+      <div class="challenge-docs">
+        <h3>Useful resources</h3>
+        <ul>
+          <li><a href="https://www.typescriptlang.org/docs/handbook/2/mapped-types.html" target="_blank" rel="noopener noreferrer">TypeScript Handbook — Mapped Types</a></li>
+          <li><a href="https://www.typescriptlang.org/docs/handbook/2/narrowing.html#discriminated-unions" target="_blank" rel="noopener noreferrer">TypeScript Handbook — Discriminated Unions</a></li>
+          <li><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise/allSettled" target="_blank" rel="noopener noreferrer">MDN — Promise.allSettled()</a></li>
+          <li><a href="https://www.typescriptlang.org/docs/handbook/release-notes/typescript-4-9.html#the-satisfies-operator" target="_blank" rel="noopener noreferrer">TypeScript 4.9 — satisfies operator</a></li>
+        </ul>
+      </div>
+      <div class="cta-row">
+        <a class="cta-button cta-primary" href="https://stackblitz.com/github/niltonheck/typedrop/tree/challenge/2026-11-25" target="_blank" rel="noopener noreferrer">
+          <img class="sb-icon" src="https://cdn.simpleicons.org/stackblitz/e0e0e0" alt=""> StackBlitz
+        </a>
+        <a class="cta-button" href="https://codesandbox.io/p/devbox/github/niltonheck/typedrop/tree/challenge/2026-11-25" target="_blank" rel="noopener noreferrer">
+          <img class="csb-icon" src="https://cdn.simpleicons.org/codesandbox/e0e0e0" alt=""> CodeSandbox
+        </a>
+      </div>
+      <div class="clone-section">
+        <h3>Or clone locally</h3>
+        <div class="clone-box">
+          <code id="clone-cmd">git clone -b challenge/2026-11-25 https://github.com/niltonheck/typedrop.git</code>
+          <button class="clone-copy-btn" onclick="navigator.clipboard.writeText(document.getElementById('clone-cmd').textContent).then(()=>{this.textContent='Copied!';this.classList.add('copied');setTimeout(()=>{this.textContent='Copy';this.classList.remove('copied')},2000)})">Copy</button>
+        </div>
+      </div>
+    </section>
+
+    <footer>
+      <p>
+        <a href="../../index.html">&larr; Today's challenge</a>
+        &middot;
+        <a href="../../archive.html">Archive</a>
+      </p>
+    </footer>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1/prism.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1/components/prism-typescript.min.js"></script>
+  <script data-goatcounter="https://niltonheck.goatcounter.com/count"
+        async src="//gc.zgo.at/count.js"></script>
+</body>
+</html>

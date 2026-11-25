@@ -9897,5 +9897,41 @@
         "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/reduce"
       }
     ]
+  },
+  {
+    "date": "2026-11-25",
+    "name": "Typed Job Queue: Priority Scheduling, Worker Dispatch & Result Aggregation",
+    "difficulty": "Medium",
+    "description": "You're building the scheduling core for a background job processing system. Jobs arrive with typed payloads and priorities, are dispatched to typed worker handlers, and results are aggregated into a structured run report — the compiler must enforce every job variant, worker signature, dispatch outcome, and summary shape.",
+    "snippet": "// Key types and main function signatures\n\nexport type Priority = 1 | 2 | 3;\nexport type JobKind  = \"email\" | \"resize\" | \"report\" | \"webhook\";\n\nexport type Job = EmailJob | ResizeJob | ReportJob | WebhookJob;\n\nexport type JobResult<T> =\n  | { status: \"success\"; jobId: string; output: T }\n  | { status: \"failure\"; jobId: string; error: string };\n\n// TODO (3a): WorkerFn<J> — async function receiving job J, returning JobResult\nexport type WorkerFn<J extends Job> = /* TODO */ unknown;\n\n// TODO (3b): WorkerRegistry — mapped type over JobKind → correct WorkerFn variant\nexport type WorkerRegistry = { [K in JobKind]: /* TODO */ unknown };\n\n// Sort jobs: highest Priority number first (stable)\nexport function sortByPriority(jobs: Job[]): Job[];\n\n// Route one job to its registered worker\nexport async function dispatchJob(\n  job: Job,\n  registry: WorkerRegistry\n): Promise<JobResult<unknown>>;\n\n// Dispatch all jobs concurrently, collect a RunReport\nexport async function runQueue(\n  jobs: Job[],\n  registry: WorkerRegistry\n): Promise<RunReport>;",
+    "goals": [
+      "Define `WorkerFn<J>` and `WorkerRegistry` as a mapped type using `Extract<Job, { kind: K }>` so each job kind maps to a correctly-typed async worker.",
+      "Implement `sortByPriority` to return a new array sorted highest-priority-first with a stable ordering for equal priorities.",
+      "Implement `dispatchJob` to narrow the discriminated union by `job.kind` and call the matching worker from the registry — without `any` or unsafe casts.",
+      "Implement `runQueue` to dispatch all jobs concurrently with `Promise.allSettled`, catch rejecting workers as `JobFailure` entries, and return a fully typed `RunReport`."
+    ],
+    "hints": [
+      "For `WorkerRegistry`, the mapped type key `K` gives you the kind string — use `Extract<Job, { kind: K }>` to pull the exact job variant for that key.",
+      "In `dispatchJob`, a `switch (job.kind)` block narrows `job` to each concrete variant, letting you call `registry[job.kind](job)` inside each case without any type errors.",
+      "Use `Promise.allSettled` (not `Promise.all`) in `runQueue` so a rejected worker promise doesn't abort the whole batch — then inspect each `PromiseSettledResult` to build the report."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript Handbook — Mapped Types",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/mapped-types.html"
+      },
+      {
+        "title": "TypeScript Handbook — Discriminated Unions",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html#discriminated-unions"
+      },
+      {
+        "title": "MDN — Promise.allSettled()",
+        "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise/allSettled"
+      },
+      {
+        "title": "TypeScript 4.9 — satisfies operator",
+        "url": "https://www.typescriptlang.org/docs/handbook/release-notes/typescript-4-9.html#the-satisfies-operator"
+      }
+    ]
   }
 ]
