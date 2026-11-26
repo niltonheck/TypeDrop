@@ -9933,5 +9933,41 @@
         "url": "https://www.typescriptlang.org/docs/handbook/release-notes/typescript-4-9.html#the-satisfies-operator"
       }
     ]
+  },
+  {
+    "date": "2026-11-26",
+    "name": "Typed Expense Splitter: Group Bills, Share Calculation & Settlement Summary",
+    "difficulty": "Easy",
+    "description": "You're building the core logic for a group travel expense app. Friends log shared bills, the system splits costs by participant, and then produces a typed settlement summary showing exactly who owes whom — with the compiler enforcing every expense shape, split strategy, and debt record.",
+    "snippet": "// Core types you must define:\n\ntype SplitStrategy =\n  | { kind: \"equal\" }\n  | { kind: \"custom\"; shares: Record<string, number> };\n\ntype Expense = {\n  id: string;\n  description: string;\n  paidBy: string;\n  participants: string[];\n  amount: number;       // in cents\n  split: SplitStrategy;\n};\n\ntype Settlement = { from: string; to: string; amount: number };\n\ntype SplitSummary = {\n  balances: Record<string, number>;\n  settlements: Settlement[];\n};\n\n// Functions you must implement:\ndeclare function computeShares(expense: Expense): Record<string, number>;\ndeclare function computeBalances(expenses: Expense[]): Record<string, number>;\ndeclare function settleDebts(balances: Record<string, number>): Settlement[];\ndeclare function splitExpenses(expenses: Expense[]): SplitSummary;",
+    "goals": [
+      "Define a `SplitStrategy` discriminated union with `\"equal\"` and `\"custom\"` variants, and build the `Expense`, `Settlement`, and `SplitSummary` types around it.",
+      "Implement `computeShares` that narrows on `split.kind` to return each participant's share in cents, correctly distributing any remainder to the first participant.",
+      "Implement `computeBalances` that aggregates net balances across all expenses — crediting the payer the full amount and debiting every participant their computed share.",
+      "Implement `settleDebts` with a greedy creditor/debtor matching loop, then compose everything in `splitExpenses` to return a complete `SplitSummary`."
+    ],
+    "hints": [
+      "Use a `kind` discriminant on `SplitStrategy` so TypeScript narrows the type inside an `if` or `switch` — no type assertions needed.",
+      "In `computeBalances`, initialise each person's balance with `record[name] ?? 0` before adding or subtracting to avoid `undefined` arithmetic.",
+      "For `settleDebts`, sort creditors and debtors by absolute value descending, then use a two-pointer / while-loop approach — settle `Math.min(credit, debt)` each iteration and discard entries whose balance drops below 1."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript Handbook — Discriminated Unions",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html#discriminated-unions"
+      },
+      {
+        "title": "TypeScript Handbook — Record<Keys, Type>",
+        "url": "https://www.typescriptlang.org/docs/handbook/utility-types.html#recordkeys-type"
+      },
+      {
+        "title": "TypeScript Handbook — Narrowing",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html"
+      },
+      {
+        "title": "MDN — Array.prototype.reduce()",
+        "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/reduce"
+      }
+    ]
   }
 ]

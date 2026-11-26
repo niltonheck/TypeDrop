@@ -41,18 +41,18 @@
     <!-- CHALLENGE_START -->
     <section class="challenge-card">
       <div class="challenge-header">
-        <span class="challenge-date">2026-11-25</span>
-        <span class="badge medium">Medium</span>
+        <span class="challenge-date">2026-11-26</span>
+        <span class="badge easy">Easy</span>
       </div>
-      <h2>Typed Job Queue: Priority Scheduling, Worker Dispatch &amp; Result Aggregation</h2>
-      <p>You're building the scheduling core for a background job processing system. Jobs arrive with typed payloads and priorities, are dispatched to typed worker handlers, and results are aggregated into a structured run report — the compiler must enforce every job variant, worker signature, dispatch outcome, and summary shape.</p>
+      <h2>Typed Expense Splitter: Group Bills, Share Calculation &amp; Settlement Summary</h2>
+      <p>You're building the core logic for a group travel expense app. Friends log shared bills, the system splits costs by participant, and then produces a typed settlement summary showing exactly who owes whom — with the compiler enforcing every expense shape, split strategy, and debt record.</p>
       <div class="challenge-goals">
         <h3>Goals</h3>
         <ul>
-          <li>Define `WorkerFn&lt;J&gt;` and `WorkerRegistry` as a mapped type using `Extract&lt;Job, { kind: K }&gt;` so each job kind maps to a correctly-typed async worker.</li>
-          <li>Implement `sortByPriority` to return a new array sorted highest-priority-first with a stable ordering for equal priorities.</li>
-          <li>Implement `dispatchJob` to narrow the discriminated union by `job.kind` and call the matching worker from the registry — without `any` or unsafe casts.</li>
-          <li>Implement `runQueue` to dispatch all jobs concurrently with `Promise.allSettled`, catch rejecting workers as `JobFailure` entries, and return a fully typed `RunReport`.</li>
+          <li>Define a `SplitStrategy` discriminated union with `&quot;equal&quot;` and `&quot;custom&quot;` variants, and build the `Expense`, `Settlement`, and `SplitSummary` types around it.</li>
+          <li>Implement `computeShares` that narrows on `split.kind` to return each participant's share in cents, correctly distributing any remainder to the first participant.</li>
+          <li>Implement `computeBalances` that aggregates net balances across all expenses — crediting the payer the full amount and debiting every participant their computed share.</li>
+          <li>Implement `settleDebts` with a greedy creditor/debtor matching loop, then compose everything in `splitExpenses` to return a complete `SplitSummary`.</li>
         </ul>
       </div>
       <div class="code-block">
@@ -62,70 +62,66 @@
           <span class="dot green"></span>
           <span class="code-block-title">challenge.ts</span>
         </div>
-        <pre><code class="language-typescript">// Key types and main function signatures
+        <pre><code class="language-typescript">// Core types you must define:
 
-export type Priority = 1 | 2 | 3;
-export type JobKind  = &quot;email&quot; | &quot;resize&quot; | &quot;report&quot; | &quot;webhook&quot;;
+type SplitStrategy =
+  | { kind: &quot;equal&quot; }
+  | { kind: &quot;custom&quot;; shares: Record&lt;string, number&gt; };
 
-export type Job = EmailJob | ResizeJob | ReportJob | WebhookJob;
+type Expense = {
+  id: string;
+  description: string;
+  paidBy: string;
+  participants: string[];
+  amount: number;       // in cents
+  split: SplitStrategy;
+};
 
-export type JobResult&lt;T&gt; =
-  | { status: &quot;success&quot;; jobId: string; output: T }
-  | { status: &quot;failure&quot;; jobId: string; error: string };
+type Settlement = { from: string; to: string; amount: number };
 
-// TODO (3a): WorkerFn&lt;J&gt; — async function receiving job J, returning JobResult
-export type WorkerFn&lt;J extends Job&gt; = /* TODO */ unknown;
+type SplitSummary = {
+  balances: Record&lt;string, number&gt;;
+  settlements: Settlement[];
+};
 
-// TODO (3b): WorkerRegistry — mapped type over JobKind → correct WorkerFn variant
-export type WorkerRegistry = { [K in JobKind]: /* TODO */ unknown };
-
-// Sort jobs: highest Priority number first (stable)
-export function sortByPriority(jobs: Job[]): Job[];
-
-// Route one job to its registered worker
-export async function dispatchJob(
-  job: Job,
-  registry: WorkerRegistry
-): Promise&lt;JobResult&lt;unknown&gt;&gt;;
-
-// Dispatch all jobs concurrently, collect a RunReport
-export async function runQueue(
-  jobs: Job[],
-  registry: WorkerRegistry
-): Promise&lt;RunReport&gt;;</code></pre>
+// Functions you must implement:
+declare function computeShares(expense: Expense): Record&lt;string, number&gt;;
+declare function computeBalances(expenses: Expense[]): Record&lt;string, number&gt;;
+declare function settleDebts(balances: Record&lt;string, number&gt;): Settlement[];
+declare function splitExpenses(expenses: Expense[]): SplitSummary;</code></pre>
       </div>
       <details class="challenge-hints-details">
         <summary>Hints (click to reveal)</summary>
       <div class="challenge-hints">
         <h3>Hints</h3>
         <ul>
-          <li>For `WorkerRegistry`, the mapped type key `K` gives you the kind string — use `Extract&lt;Job, { kind: K }&gt;` to pull the exact job variant for that key.</li>
-          <li>In `dispatchJob`, a `switch (job.kind)` block narrows `job` to each concrete variant, letting you call `registry[job.kind](job)` inside each case without any type errors.</li>
-          <li>Use `Promise.allSettled` (not `Promise.all`) in `runQueue` so a rejected worker promise doesn't abort the whole batch — then inspect each `PromiseSettledResult` to build the report.</li>
+          <li>Use a `kind` discriminant on `SplitStrategy` so TypeScript narrows the type inside an `if` or `switch` — no type assertions needed.</li>
+          <li>In `computeBalances`, initialise each person's balance with `record[name] ?? 0` before adding or subtracting to avoid `undefined` arithmetic.</li>
+          <li>For `settleDebts`, sort creditors and debtors by absolute value descending, then use a two-pointer / while-loop approach — settle `Math.min(credit, debt)` each iteration and discard entries whose balance drops below 1.</li>
         </ul>
       </div>
       </details>
       <div class="challenge-docs">
         <h3>Useful resources</h3>
         <ul>
-          <li><a href="https://www.typescriptlang.org/docs/handbook/2/mapped-types.html" target="_blank" rel="noopener noreferrer">TypeScript Handbook — Mapped Types</a></li>
           <li><a href="https://www.typescriptlang.org/docs/handbook/2/narrowing.html#discriminated-unions" target="_blank" rel="noopener noreferrer">TypeScript Handbook — Discriminated Unions</a></li>
-          <li><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise/allSettled" target="_blank" rel="noopener noreferrer">MDN — Promise.allSettled()</a></li>
-          <li><a href="https://www.typescriptlang.org/docs/handbook/release-notes/typescript-4-9.html#the-satisfies-operator" target="_blank" rel="noopener noreferrer">TypeScript 4.9 — satisfies operator</a></li>
+          <li><a href="https://www.typescriptlang.org/docs/handbook/utility-types.html#recordkeys-type" target="_blank" rel="noopener noreferrer">TypeScript Handbook — Record&lt;Keys, Type&gt;</a></li>
+          <li><a href="https://www.typescriptlang.org/docs/handbook/2/narrowing.html" target="_blank" rel="noopener noreferrer">TypeScript Handbook — Narrowing</a></li>
+          <li><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/reduce" target="_blank" rel="noopener noreferrer">MDN — Array.prototype.reduce()</a></li>
         </ul>
       </div>
       <div class="cta-row">
-        <a class="cta-button cta-primary" href="https://stackblitz.com/github/niltonheck/typedrop/tree/challenge/2026-11-25" target="_blank" rel="noopener noreferrer">
+        <a class="cta-button cta-primary" href="https://stackblitz.com/github/niltonheck/typedrop/tree/challenge/2026-11-26" target="_blank" rel="noopener noreferrer">
           <img class="sb-icon" src="https://cdn.simpleicons.org/stackblitz/e0e0e0" alt=""> StackBlitz
         </a>
-        <a class="cta-button" href="https://codesandbox.io/p/devbox/github/niltonheck/typedrop/tree/challenge/2026-11-25" target="_blank" rel="noopener noreferrer">
+        <a class="cta-button" href="https://codesandbox.io/p/devbox/github/niltonheck/typedrop/tree/challenge/2026-11-26" target="_blank" rel="noopener noreferrer">
           <img class="csb-icon" src="https://cdn.simpleicons.org/codesandbox/e0e0e0" alt=""> CodeSandbox
         </a>
       </div>
       <div class="clone-section">
         <h3>Or clone locally</h3>
         <div class="clone-box">
-          <code id="clone-cmd">git clone -b challenge/2026-11-25 https://github.com/niltonheck/typedrop.git</code>
+          <code id="clone-cmd">git clone -b challenge/2026-11-26 https://github.com/niltonheck/typedrop.git</code>
           <button class="clone-copy-btn" onclick="navigator.clipboard.writeText(document.getElementById('clone-cmd').textContent).then(()=>{this.textContent='Copied!';this.classList.add('copied');setTimeout(()=>{this.textContent='Copy';this.classList.remove('copied')},2000)})">Copy</button>
         </div>
       </div>
