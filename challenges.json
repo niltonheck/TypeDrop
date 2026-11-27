@@ -9969,5 +9969,23 @@
         "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/reduce"
       }
     ]
+  },
+  {
+    "date": "2026-11-27",
+    "name": "Typed API Rate Limiter: Token Buckets, Throttled Fetch & Retry Orchestration",
+    "difficulty": "Hard",
+    "description": "You're building the HTTP client layer for a SaaS dashboard that talks to multiple third-party APIs, each with its own rate-limit policy. Requests must be throttled through per-endpoint token buckets, failed requests retried with typed back-off strategies, and every outcome recorded in a strongly-typed audit log — the compiler must enforce every policy shape, request variant, retry strategy, and call result.",
+    "snippet": "\n// Core policy + outcome types, plus the main orchestration signature\n\ntype RateLimitPolicy =\n  | { kind: \"fixed-window\";  windowMs: Milliseconds; maxRequests: Tokens }\n  | { kind: \"token-bucket\";  capacityTokens: Tokens; refillRateMs: Milliseconds }\n  | { kind: \"leaky-bucket\";  capacityTokens: Tokens; drainRateMs:  Milliseconds };\n\ntype CallOutcome<TResponse> =\n  | { kind: \"success\";   requestId: RequestId; endpointId: EndpointId;\n      data: TResponse;   attempts: number;     totalMs: Milliseconds }\n  | { kind: \"throttled\"; requestId: RequestId; endpointId: EndpointId;\n      retryAfterMs: Milliseconds }\n  | { kind: \"failed\";    requestId: RequestId; endpointId: EndpointId;\n      error: string;     attempts: number;     totalMs: Milliseconds };\n\ntype Fetcher = (url: string, method: string, body?: string) => Promise<unknown>;\ntype Sleeper = (delayMs: number) => Promise<void>;\n\nasync function dispatchWithRetry<TBody, TResponse>(\n  config:    EndpointConfig<TBody, TResponse>,\n  requestId: RequestId,\n  registry:  RateLimiterRegistry,\n  body:      TBody | undefined,\n  fetcher:   Fetcher,\n  sleep:     Sleeper\n): Promise<CallOutcome<TResponse>> { /* TODO */ }\n",
+    "goals": [
+      "Implement createRegistry to initialise a BucketState per endpoint using exhaustive narrowing of all three RateLimitPolicy kinds.",
+      "Implement computeBackoffMs to return correctly clamped delays for exponential and linear strategies, and null when retries are exhausted or strategy is 'none'.",
+      "Implement tryConsume to apply per-policy token refill logic and atomically consume one token, returning false without mutation when the bucket is empty.",
+      "Implement dispatchWithRetry to orchestrate throttle-checking, fetch attempts, retry back-off loops, and typed outcome construction — then aggregate outcomes with buildAuditSummary in a single pass."
+    ],
+    "hints": [
+      "For exhaustive narrowing, write a helper: `function assertNever(x: never): never { throw new Error('Unhandled case') }` and call it in the default branch of every policy/strategy switch.",
+      "In dispatchWithRetry, model the retry loop as a `while (attempt <= maxRetries + 1)` counter rather than recursion — it makes tracking `attempts` and `totalMs` much cleaner.",
+      "Branded types like `Milliseconds` are just numbers at runtime — arithmetic works normally; you only need to cast back with `ms(result)` when returning a Milliseconds value."
+    ]
   }
 ]

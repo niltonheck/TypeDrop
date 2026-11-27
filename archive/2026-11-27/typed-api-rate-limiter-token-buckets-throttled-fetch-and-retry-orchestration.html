@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TypeDrop — Typed API Rate Limiter: Token Buckets, Throttled Fetch &amp; Retry Orchestration</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Permanent+Marker&display=swap">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/fontsource/fonts/0x-proto@latest/latin-400-normal.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/fontsource/fonts/0x-proto@latest/latin-700-normal.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1/themes/prism-tomorrow.min.css">
+  <link rel="icon" href="../../misc/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="../../style.css">
+</head>
+<body>
+  <main>
+    <header>
+      <h1><a href="../../index.html" style="color: inherit; text-decoration: none;">TypeDrop</a></h1>
+      <p class="tagline">2026-11-27 Challenge</p>
+    </header>
+
+    <section class="challenge-card">
+      <div class="challenge-header">
+        <span class="challenge-date">2026-11-27</span>
+        <span class="badge hard">Hard</span>
+      </div>
+      <h2>Typed API Rate Limiter: Token Buckets, Throttled Fetch &amp; Retry Orchestration</h2>
+      <p>You're building the HTTP client layer for a SaaS dashboard that talks to multiple third-party APIs, each with its own rate-limit policy. Requests must be throttled through per-endpoint token buckets, failed requests retried with typed back-off strategies, and every outcome recorded in a strongly-typed audit log — the compiler must enforce every policy shape, request variant, retry strategy, and call result.</p>
+      <div class="challenge-goals">
+        <h3>Goals</h3>
+        <ul>
+          <li>Implement createRegistry to initialise a BucketState per endpoint using exhaustive narrowing of all three RateLimitPolicy kinds.</li>
+          <li>Implement computeBackoffMs to return correctly clamped delays for exponential and linear strategies, and null when retries are exhausted or strategy is 'none'.</li>
+          <li>Implement tryConsume to apply per-policy token refill logic and atomically consume one token, returning false without mutation when the bucket is empty.</li>
+          <li>Implement dispatchWithRetry to orchestrate throttle-checking, fetch attempts, retry back-off loops, and typed outcome construction — then aggregate outcomes with buildAuditSummary in a single pass.</li>
+        </ul>
+      </div>
+      <div class="code-block">
+        <div class="code-block-header">
+          <span class="dot red"></span>
+          <span class="dot yellow"></span>
+          <span class="dot green"></span>
+          <span class="code-block-title">challenge.ts</span>
+        </div>
+        <pre><code class="language-typescript">
+// Core policy + outcome types, plus the main orchestration signature
+
+type RateLimitPolicy =
+  | { kind: &quot;fixed-window&quot;;  windowMs: Milliseconds; maxRequests: Tokens }
+  | { kind: &quot;token-bucket&quot;;  capacityTokens: Tokens; refillRateMs: Milliseconds }
+  | { kind: &quot;leaky-bucket&quot;;  capacityTokens: Tokens; drainRateMs:  Milliseconds };
+
+type CallOutcome&lt;TResponse&gt; =
+  | { kind: &quot;success&quot;;   requestId: RequestId; endpointId: EndpointId;
+      data: TResponse;   attempts: number;     totalMs: Milliseconds }
+  | { kind: &quot;throttled&quot;; requestId: RequestId; endpointId: EndpointId;
+      retryAfterMs: Milliseconds }
+  | { kind: &quot;failed&quot;;    requestId: RequestId; endpointId: EndpointId;
+      error: string;     attempts: number;     totalMs: Milliseconds };
+
+type Fetcher = (url: string, method: string, body?: string) =&gt; Promise&lt;unknown&gt;;
+type Sleeper = (delayMs: number) =&gt; Promise&lt;void&gt;;
+
+async function dispatchWithRetry&lt;TBody, TResponse&gt;(
+  config:    EndpointConfig&lt;TBody, TResponse&gt;,
+  requestId: RequestId,
+  registry:  RateLimiterRegistry,
+  body:      TBody | undefined,
+  fetcher:   Fetcher,
+  sleep:     Sleeper
+): Promise&lt;CallOutcome&lt;TResponse&gt;&gt; { /* TODO */ }
+</code></pre>
+      </div>
+      <details class="challenge-hints-details">
+        <summary>Hints (click to reveal)</summary>
+      <div class="challenge-hints">
+        <h3>Hints</h3>
+        <ul>
+          <li>For exhaustive narrowing, write a helper: `function assertNever(x: never): never { throw new Error('Unhandled case') }` and call it in the default branch of every policy/strategy switch.</li>
+          <li>In dispatchWithRetry, model the retry loop as a `while (attempt &lt;= maxRetries + 1)` counter rather than recursion — it makes tracking `attempts` and `totalMs` much cleaner.</li>
+          <li>Branded types like `Milliseconds` are just numbers at runtime — arithmetic works normally; you only need to cast back with `ms(result)` when returning a Milliseconds value.</li>
+        </ul>
+      </div>
+      </details>
+
+      <div class="cta-row">
+        <a class="cta-button cta-primary" href="https://stackblitz.com/github/niltonheck/typedrop/tree/challenge/2026-11-27" target="_blank" rel="noopener noreferrer">
+          <img class="sb-icon" src="https://cdn.simpleicons.org/stackblitz/e0e0e0" alt=""> StackBlitz
+        </a>
+        <a class="cta-button" href="https://codesandbox.io/p/devbox/github/niltonheck/typedrop/tree/challenge/2026-11-27" target="_blank" rel="noopener noreferrer">
+          <img class="csb-icon" src="https://cdn.simpleicons.org/codesandbox/e0e0e0" alt=""> CodeSandbox
+        </a>
+      </div>
+      <div class="clone-section">
+        <h3>Or clone locally</h3>
+        <div class="clone-box">
+          <code id="clone-cmd">git clone -b challenge/2026-11-27 https://github.com/niltonheck/typedrop.git</code>
+          <button class="clone-copy-btn" onclick="navigator.clipboard.writeText(document.getElementById('clone-cmd').textContent).then(()=>{this.textContent='Copied!';this.classList.add('copied');setTimeout(()=>{this.textContent='Copy';this.classList.remove('copied')},2000)})">Copy</button>
+        </div>
+      </div>
+    </section>
+
+    <footer>
+      <p>
+        <a href="../../index.html">&larr; Today's challenge</a>
+        &middot;
+        <a href="../../archive.html">Archive</a>
+      </p>
+    </footer>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1/prism.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1/components/prism-typescript.min.js"></script>
+  <script data-goatcounter="https://niltonheck.goatcounter.com/count"
+        async src="//gc.zgo.at/count.js"></script>
+</body>
+</html>
