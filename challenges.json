@@ -9987,5 +9987,41 @@
       "In dispatchWithRetry, model the retry loop as a `while (attempt <= maxRetries + 1)` counter rather than recursion — it makes tracking `attempts` and `totalMs` much cleaner.",
       "Branded types like `Milliseconds` are just numbers at runtime — arithmetic works normally; you only need to cast back with `ms(result)` when returning a Milliseconds value."
     ]
+  },
+  {
+    "date": "2026-11-28",
+    "name": "Typed Contact Book: Search, Tag Filtering & vCard Export",
+    "difficulty": "Easy",
+    "description": "You're building the core logic for a personal contact management app. Users store contacts with typed fields, filter them by tags, search by name or email, and export individual contacts as a formatted vCard string — with the compiler enforcing every contact shape, filter predicate, and export field.",
+    "snippet": "// Key types and main function signatures — no solution included\n\nexport type PhoneType = \"mobile\" | \"home\" | \"work\";\n\nexport interface Contact {\n  id:        string;\n  firstName: string;\n  lastName:  string;\n  email:     string;\n  phones:    readonly PhoneEntry[];\n  tags:      readonly ContactTag[];\n  birthday?: string;\n  company?:  string;\n}\n\nexport type SearchQuery = { /* all fields optional */ };\n\n// Mapped type: every Contact key → string\nexport type VCardField = { [K in keyof Contact]: string };\n\nexport function searchContacts(\n  contacts: readonly Contact[],\n  query: SearchQuery\n): Contact[] { /* TODO */ }\n\nexport function formatVCard(contact: Contact): string { /* TODO */ }\n\nexport function groupByTag(\n  contacts: readonly Contact[]\n): Record<ContactTag, Contact[]> { /* TODO */ }",
+    "goals": [
+      "Define all required union types, the Contact interface (with optional fields), SearchQuery, and the VCardField mapped type.",
+      "Implement searchContacts so it correctly filters by name substring, email substring, and all-tags-must-match logic.",
+      "Implement formatVCard to produce a spec-compliant vCard 3.0 string, conditionally including company and birthday lines.",
+      "Implement groupByTag so every ContactTag key is always present in the result and contacts appear under each of their tags."
+    ],
+    "hints": [
+      "For VCardField, use a mapped type `{ [K in keyof Contact]: string }` — not a plain `Record` alias — to satisfy the requirement.",
+      "In groupByTag, initialise the result object first with every ContactTag key mapped to `[]`, then iterate contacts; this ensures no key is ever missing.",
+      "In formatVCard, use an intermediate `string[]` array and push optional lines only when the field is defined, then join with `\"\\n\"` at the end."
+    ],
+    "docs": [
+      {
+        "title": "TypeScript Mapped Types",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/mapped-types.html"
+      },
+      {
+        "title": "TypeScript Union Types",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/everyday-types.html#union-types"
+      },
+      {
+        "title": "TypeScript Interfaces (optional fields)",
+        "url": "https://www.typescriptlang.org/docs/handbook/2/objects.html"
+      },
+      {
+        "title": "vCard 3.0 Format Reference (RFC 2426)",
+        "url": "https://datatracker.ietf.org/doc/html/rfc2426"
+      }
+    ]
   }
 ]
